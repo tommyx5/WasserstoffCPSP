@@ -5,15 +5,18 @@ from mqtt.mqtt_wrapper import MQTTWrapper
 import math
 import os
 
+def getenv_or_exit(env_name, default="default"):
+    value = os.getenv(env_name, default)
+    if value == default:
+        raise SystemExit(f"Environment variable {env_name} not set")
+    return value
+
 # topic for receiving tick messages
-TICK = os.getenv('TOPIC_TICK', 'default')
-print("Tick ", TICK)
+TICK = getenv_or_exit('TOPIC_TICK_GEN_TICK', 'default')
 # topic for publishing water volume
-TOPIC_WATER = os.getenv('TOPIC_WATER_PIPE_VOLUME', "default")
-print("water ", TOPIC_WATER)
+TOPIC_WATER = getenv_or_exit('TOPIC_WATER_PIPE_SUPPLY', "default")
 # Water volume (in m^3) supplied by the pipe
-WATER_VOLUME = float(os.getenv('WATER_PIPE_VOLUME', 0.0))
-print("volume ", WATER_VOLUME)
+WATER_VOLUME = float(getenv_or_exit('WATER_PIPE_SUPPLY', 0.0))
 
 def on_message_tick(client, userdata, msg):
     """
@@ -28,9 +31,16 @@ def on_message_tick(client, userdata, msg):
     global WATER_VOLUME
     global TOPIC_WATER
     
-    payload = json.loads(msg.payload) 
-    timestamp = payload["timestamp"]
-    data = {"water_volume": WATER_VOLUME, "timestamp": timestamp}
+     
+    #extracting the timestamp 
+    timestamp = msg.payload.decode("utf-8")
+
+    #creating the new data
+    data = {
+        "water_volume": WATER_VOLUME,  # Ensure this is a float, which is JSON serializable
+        "timestamp": timestamp
+    }
+    
     client.publish(TOPIC_WATER, json.dumps(data))
 
 def main():
