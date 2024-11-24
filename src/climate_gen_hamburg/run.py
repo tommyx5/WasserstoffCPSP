@@ -6,24 +6,30 @@ from datetime import datetime
 from meteostat import Point, Daily, Hourly
 import os
 
+RS =  287.1 #J/(kg·K)
+HEKTO = 100
+CELSIUS_IN_KELVIN = 273.15
+
 def getenv_or_exit(env_name, default="default"):
     value = os.getenv(env_name, default)
     if value == default:
         raise SystemExit(f"Environment variable {env_name} not set")
     return value
 
-RS =  287.1 #J/(kg·K)
-HEKTO = 100
-CELSIUS_IN_KELVIN = 273.15
-
+LATITUDE = float(getenv_or_exit("CLIMATE_GEN_COORDINATES_LATITUDE", -1.0)) 
+LONGITUDE = float(getenv_or_exit("CLIMATE_GEN_COORDINATES_LONGITUDE", -1.0))
+ALTITUDE = int(getenv_or_exit("CLIMATE_GEN_COORDINATES_ALTITUDE", -1))
 # Create Point for Hamburg Koordinaten: 53° 33′ N, 10° 0′ O 6m
-HAMBURG = Point(53.33, 10.0, 6)
+POINT = Point(LATITUDE, LONGITUDE, ALTITUDE)
 
-start = datetime(2018, 1, 1)
+START_YEAR = int(getenv_or_exit('TICK_GEN_START_YEAR', 0))
+START_MONTH = int(getenv_or_exit('TICK_GEN_START_MONTH', 0))
+START_DAY = int(getenv_or_exit('TICK_GEN_START_DAY', 0))
+start = datetime(START_YEAR, START_MONTH, START_DAY)
 end = datetime(2022, 12, 31, 23, 59)
 
 # Get daily data for 2018 - 2022
-data = Hourly(HAMBURG, start, end)
+data = Hourly(POINT, start, end)
 data = data.fetch()
 
 p = data['pres']
@@ -44,7 +50,6 @@ DIVIDE = 4
 NAME = getenv_or_exit("CLIMATE_GEN_NAME", "default")
 # MQTT topic for publishing sensor data
 CLIMATE_DATA = getenv_or_exit("TOPIC_CLIMATE_GEN_CLIMATE_DATA", "default")
-
 # MQTT topic for receiving tick messages
 TICK_TOPIC = getenv_or_exit("TOPIC_TICK_GEN_TICK", "default")
 
@@ -58,7 +63,7 @@ def on_message_tick(client, userdata, msg):
     userdata: User-defined data (not used here)
     msg (MQTTMessage): The message containing the tick timestamp
     """
-    global CLIMATE_DATA_TOPIC, DATA, POS, LENGTH, DIVIDE, COUNT
+    global DATA, POS, LENGTH, DIVIDE, COUNT
     
     # Extract the timestamp from the tick message and decode it from UTF-8
     ts_iso = msg.payload.decode("utf-8")

@@ -11,7 +11,7 @@ services:
   tick_gen:
     build: ./src/tick_gen # the path to the dockerfile the container has to be build from
     container_name: tick_gen
-    depends_on:  # theservice that needs to be started before 
+    depends_on:  # the service that needs to be started before 
       - mqttbroker
     env_file: # file with environmental variables
       - src/.env  

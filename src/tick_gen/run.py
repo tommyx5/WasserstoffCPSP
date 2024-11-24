@@ -15,6 +15,14 @@ def getenv_or_exit(env_name, default="default"):
 TICK_TOPIC = getenv_or_exit('TOPIC_TICK_GEN_TICK', 'default')
 SPEEDFACTOR_TOPIC = getenv_or_exit('TOPIC_TICK_GEN_SPEED_FACTOR', 'default')
 
+START_YEAR = int(getenv_or_exit('TICK_GEN_START_YEAR', 0))
+START_MONTH = int(getenv_or_exit('TICK_GEN_START_MONTH', 0))
+START_DAY = int(getenv_or_exit('TICK_GEN_START_DAY', 0))
+#START_MINUTE = int(getenv_or_exit('TICK_GEN_START_MINUTE', 0))
+#START_SECOND = int(getenv_or_exit('TICK_GEN_START_SECOND', 0))
+#START_MICROSECOND = int(getenv_or_exit('TICK_GEN_START_MICROSECOND', 0))
+START_DATE = datetime(START_YEAR, START_MONTH, START_DAY)
+
 interval_sec = 30
 speed_factor = 30
 
@@ -25,7 +33,6 @@ def on_message_speedfactor(client, userdata, msg):
         speed_factor = new_speed_factor
 
 def main():
-    START_DATE = datetime.utcnow().replace(year=2018, month=1, day=1, minute=0, second=0, microsecond=0)
     tick_sec = 0
     tick_minutes = 0
     
