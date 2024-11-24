@@ -3,13 +3,15 @@ import json
 import logging
 from random import seed, randint
 from mqtt.mqtt_wrapper import MQTTWrapper
+import os
 
 # MQTT topic for publishing sensor data
-WIND_POWER_SUM_DATA = "data/power/sum"
+WIND_POWER_SUM_DATA = os.getenv("TOPIC_POWER_SUM_PUB_WIND_POWER_SUM_DATA", "default")
 
 # MQTT topic for receiving tick messages
-COUNT_POWER_GEN = 2
-WIND_POWER_DATA = "data/power/"
+COUNT_POWER_GEN = int(os.getenv("POWER_SUM_COUNT_POWER_GEN", 0))
+WIND_POWER_DATA = os.getenv("TOPIC_POWER_SUM_SUB_WIND_POWER_DATA", "default")
+
 WIND_POWER_DATA_LIST = []
 for i in range(COUNT_POWER_GEN):
     WIND_POWER_DATA_LIST.append(WIND_POWER_DATA+str(i))

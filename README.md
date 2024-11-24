@@ -1,5 +1,5 @@
 # WasserstoffCPSP
-Simulation od hydrogen production plant as part of the praktikum: cyber-physical systems
+Simulation of hydrogen production plant as part of a praktikum: cyber-physical systems
 
 You have 2 options to start the Application.
 Option 1 for windows use: 
@@ -9,4 +9,4 @@ Option 2 for linux use:
     Ofc you can also run the "docker compose up" command
 
 # Note
-when adding new containers or changing configuration of old dont forget to change both the script and compose files 
+When adding new containers or changing configuration of old dont forget to change both the script and the docker compose files 

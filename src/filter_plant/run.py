@@ -3,12 +3,10 @@ import json
 import logging
 from mqtt.mqtt_wrapper import MQTTWrapper
 import math
-import os
 
-UPPER_CUT_OUT_WIND_SPEED = float(os.getenv("POWER_PLANT_1_UPPER_CUT_OUT_WIND_SPEED", "0.0")) 
-LOWER_CUT_OUT_WIND_SPEED = float(os.getenv("POWER_PLANT_1_LOWER_CUT_OUT_WIND_SPEED", "0.0"))
-
-KMH_IN_MS = 3.6
+UPPER_CUT_OUT_WIND_SPEED = 34   #28 – 34 m/s 
+LOWER_CUT_OUT_WIND_SPEED = 28   #28 – 34 m/s
+KMH_IN_MS = 1000/3600
 WATT_IN_KILOWATT = 1000
 PERCENT = 100
 POW2 = 2
@@ -29,19 +27,19 @@ def calc_power(area, density, windspeed):
     cp = 0.5
     return (0.5*area*density*math.pow(windspeed*KMH_IN_MS,POW3)*cp)/WATT_IN_KILOWATT
 
-MODEL = os.getenv("POWER_PLANT_1_MODEL", "default")
-ROTOR_DIAMETER = float(os.getenv("POWER_PLANT_1_ROTOR_DIAMETER", 0.0)) #meter
+MODEL = "E126"
+ROTOR_DIAMETER = 127.0 #meter
 AREA = calc_area(ROTOR_DIAMETER)
-RATED_POWER = float(os.getenv("POWER_PLANT_1_RATED_POWER", 0.0)) #kW
+RATED_POWER = 7500 #kW
 
-ID = os.getenv("POWER_PLANT_1_ID", "default")
-NAME = os.getenv("POWER_PLANT_1_NAME", "default")
-
+ID = 0
+ID_S = str(ID)
+NAME = "hamburg"
 # MQTT topic for publishing sensor data
-WIND_POWER_DATA = os.getenv("TOPIC_POWER_PLANT_1_MODEL_WIND_POWER_DATA", "default")
+WIND_POWER_DATA = "data/power/"+ID_S
 
 # MQTT topic for receiving tick messages
-CLIMATE_DATA = os.getenv("TOPIC_CLIMATE_DATA", "default")
+CLIMATE_DATA = "data/weather/"
 
 def on_message_weather(client, userdata, msg):
     """
@@ -56,7 +54,7 @@ def on_message_weather(client, userdata, msg):
     global WIND_POWER_DATA
     global AREA
     global RATED_POWER
-    global ID
+    global ID_S
     
     payload = json.loads(msg.payload) 
     timestamp = payload["timestamp"]
@@ -70,7 +68,7 @@ def on_message_weather(client, userdata, msg):
     power = round(calc_power(AREA, density, windspeed),2)
     if power >= RATED_POWER*1.02:
         power = 0
-    data = {"id": ID, "power": power, "timestamp": timestamp}
+    data = {"id": ID_S, "power": power, "timestamp": timestamp}
     # Publish the data to the chaos sensor topic in JSON format
     client.publish(WIND_POWER_DATA, json.dumps(data))
 
@@ -81,7 +79,7 @@ def main():
     """
     
     # Initialize the MQTT client and connect to the broker
-    mqtt = MQTTWrapper('mqttbroker', 1883, name='wind_power_plant_'+ID)
+    mqtt = MQTTWrapper('mqttbroker', 1883, name='wind_power_plant_'+ID_S)
     
     # Subscribe to the tick topic
     mqtt.subscribe(CLIMATE_DATA)

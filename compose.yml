@@ -11,12 +11,8 @@ services:
   tick_gen:
     build: ./src/tick_gen # the path to the dockerfile the container has to be build from
     container_name: tick_gen
-    networks:
-      - hydroplant
-  
-  turbine_sim:
-    build: ./src/turbine_sim
-    container_name: turbine_sim
+    depends_on:  # theservice that needs to be started before 
+      - mqttbroker  
     networks:
       - hydroplant
   
@@ -31,30 +27,52 @@ services:
   climate_gen_hamburg:
     build: ./src/climate_gen_hamburg
     container_name: climate_gen_hamburg
+    depends_on:  
+      - mqttbroker
     networks:
       - hydroplant
 
   request_hydrogen_gen:
     build: ./src/request_hydrogen_gen
     container_name: request_hydrogen_gen
+    depends_on:  
+      - mqttbroker
     networks:
       - hydroplant
 
   wind_power_plant_0:
     build: ./src/wind_power_plant_0
-    container: wind_power_plant_0
+    container_name: wind_power_plant_0
+    depends_on:  
+      - mqttbroker
     networks:
       - hydroplant
 
   wind_power_plant_1:
     build: ./src/wind_power_plant_1
-    container: wind_power_plant_1
+    container_name: wind_power_plant_1
+    depends_on:  
+      - mqttbroker
     networks:
       - hydroplant
 
   wind_power_sum:
     build: ./src/wind_power_sum
-    container: wind_power_sum
+    container_name: wind_power_sum
+    depends_on:  
+      - mqttbroker
+    env_file:
+      - src/.env
+    networks:
+      - hydroplant
+
+  water_pipe:
+    build: ./src/water_pipe
+    container_name: water_pipe
+    depends_on: # theservice that needs to be started before 
+      - mqttbroker
+    env_file: # file with environmental variables
+      - src/.env
     networks:
       - hydroplant
 
