@@ -3,17 +3,25 @@ import json
 import logging
 from random import seed, randint
 from mqtt.mqtt_wrapper import MQTTWrapper
+import os
+
+def getenv_or_exit(env_name, default="default"):
+    value = os.getenv(env_name, default)
+    if value == default:
+        raise SystemExit(f"Environment variable {env_name} not set")
+    return value
+
 
 # MQTT topic for publishing sensor data
-HYDROGEN_REQUEST = "data/hydrogen/request"
+HYDROGEN_REQUEST = getenv_or_exit("TOPIC_HYDROGEN_DEMAND_GEN_HYDROGEN_DEMAND", "default")
 
 # MQTT topic for receiving tick messages
-TICK_TOPIC = "tickgen/tick"
+TICK_TOPIC = getenv_or_exit("TOPIC_TICK_GEN_TICK", "default")
 
 COUNT = 0
 LIMIT = 24*4
 L_IN_KG = 25
-MAX_OUTPUT = 430 #kg Wasserstoff pro Tag
+MAX_OUTPUT = float(getenv_or_exit("HYDROGEN_DEMAND_GEN_DAYLY_DEMAND", 0)) #kg Wasserstoff pro Tag
 
 SEED = MAX_OUTPUT
 print(SEED)

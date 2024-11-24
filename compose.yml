@@ -12,8 +12,10 @@ services:
     build: ./src/tick_gen # the path to the dockerfile the container has to be build from
     container_name: tick_gen
     depends_on:  # theservice that needs to be started before 
-      - mqttbroker  
-    networks:
+      - mqttbroker
+    env_file: # file with environmental variables
+      - src/.env  
+    networks: # network of containers
       - hydroplant
   
   dashboard:
@@ -29,6 +31,8 @@ services:
     container_name: climate_gen_hamburg
     depends_on:  
       - mqttbroker
+    env_file: 
+      - src/.env
     networks:
       - hydroplant
 
@@ -37,6 +41,8 @@ services:
     container_name: request_hydrogen_gen
     depends_on:  
       - mqttbroker
+    env_file: 
+      - src/.env
     networks:
       - hydroplant
 
@@ -45,6 +51,8 @@ services:
     container_name: wind_power_plant_0
     depends_on:  
       - mqttbroker
+    env_file: 
+      - src/.env
     networks:
       - hydroplant
 
@@ -53,6 +61,8 @@ services:
     container_name: wind_power_plant_1
     depends_on:  
       - mqttbroker
+    env_file: 
+      - src/.env
     networks:
       - hydroplant
 

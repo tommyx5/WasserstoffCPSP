@@ -5,8 +5,14 @@ from mqtt.mqtt_wrapper import MQTTWrapper
 import math
 import os
 
-UPPER_CUT_OUT_WIND_SPEED = float(os.getenv("POWER_PLANT_0_UPPER_CUT_OUT_WIND_SPEED", "0.0")) 
-LOWER_CUT_OUT_WIND_SPEED = float(os.getenv("POWER_PLANT_0_LOWER_CUT_OUT_WIND_SPEED", "0.0"))
+def getenv_or_exit(env_name, default="default"):
+    value = os.getenv(env_name, default)
+    if value == default:
+        raise SystemExit(f"Environment variable {env_name} not set")
+    return value
+
+UPPER_CUT_OUT_WIND_SPEED = float(getenv_or_exit("POWER_PLANT_0_UPPER_CUT_OUT_WIND_SPEED", "0.0")) 
+LOWER_CUT_OUT_WIND_SPEED = float(getenv_or_exit("POWER_PLANT_0_LOWER_CUT_OUT_WIND_SPEED", "0.0"))
 
 KMH_IN_MS = 3.6
 WATT_IN_KILOWATT = 1000
@@ -29,19 +35,19 @@ def calc_power(area, density, windspeed):
     cp = 0.5
     return (0.5*area*density*math.pow(windspeed*KMH_IN_MS,POW3)*cp)/WATT_IN_KILOWATT
 
-MODEL = os.getenv("POWER_PLANT_0_MODEL", "default")
-ROTOR_DIAMETER = float(os.getenv("POWER_PLANT_0_ROTOR_DIAMETER", 0.0)) #meter
+MODEL = getenv_or_exit("POWER_PLANT_0_MODEL", "default")
+ROTOR_DIAMETER = float(getenv_or_exit("POWER_PLANT_0_ROTOR_DIAMETER", 0.0)) #meter
 AREA = calc_area(ROTOR_DIAMETER)
-RATED_POWER = float(os.getenv("POWER_PLANT_0_RATED_POWER", 0.0)) #kW
+RATED_POWER = float(getenv_or_exit("POWER_PLANT_0_RATED_POWER", 0.0)) #kW
 
-ID = os.getenv("POWER_PLANT_0_ID", "default")
-NAME = os.getenv("POWER_PLANT_0_NAME", "default")
+ID = getenv_or_exit("POWER_PLANT_0_ID", "default")
+NAME = getenv_or_exit("POWER_PLANT_0_NAME", "default")
 
 # MQTT topic for publishing sensor data
-WIND_POWER_DATA = os.getenv("TOPIC_POWER_PLANT_0_MODEL_WIND_POWER_DATA", "default")
+WIND_POWER_DATA = getenv_or_exit("TOPIC_POWER_PLANT_0_WIND_POWER_DATA", "default")
 
 # MQTT topic for receiving tick messages
-CLIMATE_DATA = os.getenv("TOPIC_CLIMATE_DATA", "default")
+CLIMATE_DATA = getenv_or_exit("TOPIC_CLIMATE_GEN_CLIMATE_DATA", "default")
 
 def on_message_weather(client, userdata, msg):
     """
