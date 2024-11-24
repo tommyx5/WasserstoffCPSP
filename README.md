@@ -1,12 +1,12 @@
 # WasserstoffCPSP
 Simulation of hydrogen production plant as part of a praktikum: cyber-physical systems
 
-You have 2 options to start the Application.
-Option 1 for windows use: 
-    Run the "docker compose up" command, in the browser go to 127.0.0.1:1880/ui adress to see the dashboard
-Option 2 for linux use:
-    Run the scripts in the scripts folder: build, run, observe
-    Ofc you can also run the "docker compose up" command
+To start the Application.
+Run the "docker compose up" command, then in the browser go to 127.0.0.1:1880/ui adress to see the dashboard.
+
+The Application uses .env file to store the environmental variables. While adding the new or changing the old code, keep in mind and use it. 
 
 # Note
-When adding new containers or changing configuration of old dont forget to change both the script and the docker compose files 
+Usefull commands:
+docker compose build - to build the container network without runnig it
+docker compose down - to remove the container network
