@@ -6,15 +6,15 @@ from datetime import datetime
 from meteostat import Point, Daily, Hourly
 import os
 
+RS =  287.1 #J/(kg·K)
+HEKTO = 100
+CELSIUS_IN_KELVIN = 273.15
+
 def getenv_or_exit(env_name, default="default"):
     value = os.getenv(env_name, default)
     if value == default:
         raise SystemExit(f"Environment variable {env_name} not set")
     return value
-
-RS =  287.1 #J/(kg·K)
-HEKTO = 100
-CELSIUS_IN_KELVIN = 273.15
 
 LATITUDE = float(getenv_or_exit("CLIMATE_GEN_COORDINATES_LATITUDE", -1.0)) 
 LONGITUDE = float(getenv_or_exit("CLIMATE_GEN_COORDINATES_LONGITUDE", -1.0))
@@ -50,7 +50,6 @@ DIVIDE = 4
 NAME = getenv_or_exit("CLIMATE_GEN_NAME", "default")
 # MQTT topic for publishing sensor data
 CLIMATE_DATA = getenv_or_exit("TOPIC_CLIMATE_GEN_CLIMATE_DATA", "default")
-
 # MQTT topic for receiving tick messages
 TICK_TOPIC = getenv_or_exit("TOPIC_TICK_GEN_TICK", "default")
 
