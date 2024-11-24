@@ -4,6 +4,13 @@ import logging
 from mqtt.mqtt_wrapper import MQTTWrapper
 from datetime import datetime
 from meteostat import Point, Daily, Hourly
+import os
+
+def getenv_or_exit(env_name, default="default"):
+    value = os.getenv(env_name, default)
+    if value == default:
+        raise SystemExit(f"Environment variable {env_name} not set")
+    return value
 
 RS =  287.1 #J/(kg·K)
 HEKTO = 100
@@ -34,12 +41,12 @@ POS = 0
 COUNT = 0
 DIVIDE = 4
 
-NAME = "hamburg"
+NAME = getenv_or_exit("CLIMATE_GEN_NAME", "default")
 # MQTT topic for publishing sensor data
-CLIMATE_DATA = "data/weather/"
+CLIMATE_DATA = getenv_or_exit("TOPIC_CLIMATE_GEN_CLIMATE_DATA", "default")
 
 # MQTT topic for receiving tick messages
-TICK_TOPIC = "tickgen/tick"
+TICK_TOPIC = getenv_or_exit("TOPIC_TICK_GEN_TICK", "default")
 
 def on_message_tick(client, userdata, msg):
     """

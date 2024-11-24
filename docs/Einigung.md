@@ -19,6 +19,7 @@
 7. Wetterdaten-Generator
 8. Wasserstofftank
 9. Wassertank (optional)
+10. (Nicht besprochen) Wasserrohr was wasser liefert
 
 # Schnittstellen
 ## Aktive Komponenten

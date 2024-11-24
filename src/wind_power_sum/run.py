@@ -3,13 +3,22 @@ import json
 import logging
 from random import seed, randint
 from mqtt.mqtt_wrapper import MQTTWrapper
+import os
+
+def getenv_or_exit(env_name, default="default"):
+    value = os.getenv(env_name, default)
+    if value == default:
+        raise SystemExit(f"Environment variable {env_name} not set")
+    return value
 
 # MQTT topic for publishing sensor data
-WIND_POWER_SUM_DATA = "data/power/sum"
+WIND_POWER_SUM_DATA = getenv_or_exit("TOPIC_POWER_SUM_WIND_POWER_SUM_DATA", "default")
 
 # MQTT topic for receiving tick messages
-COUNT_POWER_GEN = 2
-WIND_POWER_DATA = "data/power/"
+COUNT_POWER_GEN = int(getenv_or_exit("POWER_SUM_COUNT_POWER_GEN", 0))
+
+WIND_POWER_DATA = getenv_or_exit("TOPIC_POWER_SUM_WIND_POWER_DATA", "default")
+
 WIND_POWER_DATA_LIST = []
 for i in range(COUNT_POWER_GEN):
     WIND_POWER_DATA_LIST.append(WIND_POWER_DATA+str(i))

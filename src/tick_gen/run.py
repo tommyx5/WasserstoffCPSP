@@ -4,9 +4,17 @@ import time
 import logging
 from datetime import datetime, timedelta
 from mqtt.mqtt_wrapper import MQTTWrapper
+import os
 
-TICK_TOPIC = "tickgen/tick"
-SPEEDFACTOR_TOPIC = "tickgen/speed_factor"
+def getenv_or_exit(env_name, default="default"):
+    value = os.getenv(env_name, default)
+    if value == default:
+        raise SystemExit(f"Environment variable {env_name} not set")
+    return value
+
+TICK_TOPIC = getenv_or_exit('TOPIC_TICK_GEN_TICK', 'default')
+SPEEDFACTOR_TOPIC = getenv_or_exit('TOPIC_TICK_GEN_SPEED_FACTOR', 'default')
+
 interval_sec = 30
 speed_factor = 30
 

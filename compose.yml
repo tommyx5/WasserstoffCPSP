@@ -1,0 +1,92 @@
+services:
+  
+  mqttbroker:
+    image: eclipse-mosquitto:1.6.13 # the image the container is build from
+    container_name: mqttbroker
+    ports:
+      - "8883:1883"  
+    networks:
+      - hydroplant
+  
+  tick_gen:
+    build: ./src/tick_gen # the path to the dockerfile the container has to be build from
+    container_name: tick_gen
+    depends_on:  # theservice that needs to be started before 
+      - mqttbroker
+    env_file: # file with environmental variables
+      - src/.env  
+    networks: # network of containers
+      - hydroplant
+  
+  dashboard:
+    build: ./src/dashboard
+    container_name: dashboard
+    ports:
+      - "1880:1880"  
+    networks:
+      - hydroplant
+
+  climate_gen_hamburg:
+    build: ./src/climate_gen_hamburg
+    container_name: climate_gen_hamburg
+    depends_on:  
+      - mqttbroker
+    env_file: 
+      - src/.env
+    networks:
+      - hydroplant
+
+  request_hydrogen_gen:
+    build: ./src/request_hydrogen_gen
+    container_name: request_hydrogen_gen
+    depends_on:  
+      - mqttbroker
+    env_file: 
+      - src/.env
+    networks:
+      - hydroplant
+
+  wind_power_plant_0:
+    build: ./src/wind_power_plant_0
+    container_name: wind_power_plant_0
+    depends_on:  
+      - mqttbroker
+    env_file: 
+      - src/.env
+    networks:
+      - hydroplant
+
+  wind_power_plant_1:
+    build: ./src/wind_power_plant_1
+    container_name: wind_power_plant_1
+    depends_on:  
+      - mqttbroker
+    env_file: 
+      - src/.env
+    networks:
+      - hydroplant
+
+  wind_power_sum:
+    build: ./src/wind_power_sum
+    container_name: wind_power_sum
+    depends_on:  
+      - mqttbroker
+    env_file:
+      - src/.env
+    networks:
+      - hydroplant
+
+  water_pipe:
+    build: ./src/water_pipe
+    container_name: water_pipe
+    depends_on: # theservice that needs to be started before 
+      - mqttbroker
+    env_file: # file with environmental variables
+      - src/.env
+    networks:
+      - hydroplant
+
+# Define a shared network for the containers
+networks:
+  hydroplant:
+    driver: bridge
