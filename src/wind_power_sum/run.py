@@ -35,9 +35,15 @@ for i in range(COUNT_TICKS_MAX):
 def calc_mean():
     global SUM_POWER, MEAN_POWER, POWER_LIST
     summe = 0
+    count = 0
     for i in range(COUNT_TICKS_MAX):
-        summe += POWER_LIST[i]
-    MEAN_POWER = round(summe / COUNT_TICKS_MAX, 2)
+        if POWER_LIST[i] > 0:
+            summe += POWER_LIST[i]
+            count += 1
+    if count > 0:
+        MEAN_POWER = round(summe / count, 2)
+    else:
+        MEAN_POWER = 0
 
 
 def on_message_power(client, userdata, msg):

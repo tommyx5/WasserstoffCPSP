@@ -14,7 +14,7 @@ def getenv_or_exit(env_name, default="default"):
 UPPER_CUT_OUT_WIND_SPEED = float(getenv_or_exit("POWER_PLANT_0_UPPER_CUT_OUT_WIND_SPEED", "0.0")) 
 LOWER_CUT_OUT_WIND_SPEED = float(getenv_or_exit("POWER_PLANT_0_LOWER_CUT_OUT_WIND_SPEED", "0.0"))
 
-KMH_IN_MS = 3.6
+KMH_IN_MS = 1000/3600
 WATT_IN_KILOWATT = 1000
 PERCENT = 100
 POW2 = 2

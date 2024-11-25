@@ -24,7 +24,7 @@ L_IN_KG = 25
 MAX_OUTPUT = float(getenv_or_exit("HYDROGEN_DEMAND_GEN_DAYLY_DEMAND", 0)) #kg Wasserstoff pro Tag
 
 SEED = MAX_OUTPUT
-print(SEED)
+
 def on_message_tick(client, userdata, msg):
     global COUNT, LIMIT,L_IN_KG, MAX_OUTPUT
 
