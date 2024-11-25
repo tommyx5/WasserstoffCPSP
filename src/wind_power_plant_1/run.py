@@ -75,7 +75,8 @@ def on_message_weather(client, userdata, msg):
     # in timestamps can cause errors in the display.
     power = round(calc_power(AREA, density, windspeed),2)
     if power >= RATED_POWER*1.02:
-        power = 0
+        print(f"Actual power output {power} exceeds rated power output {RATED_POWER}")
+        power = RATED_POWER
     data = {"id": ID, "power": power, "timestamp": timestamp}
     # Publish the data to the chaos sensor topic in JSON format
     client.publish(WIND_POWER_DATA, json.dumps(data))

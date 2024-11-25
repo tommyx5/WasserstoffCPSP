@@ -4,44 +4,10 @@ import logging
 from mqtt.mqtt_wrapper import MQTTWrapper
 import math
 
-UPPER_CUT_OUT_WIND_SPEED = 34   #28 – 34 m/s 
-LOWER_CUT_OUT_WIND_SPEED = 28   #28 – 34 m/s
-KMH_IN_MS = 1000/3600
-WATT_IN_KILOWATT = 1000
-PERCENT = 100
-POW2 = 2
-POW3 = 3
 
-CP = [0.0, 0.12,0.29,0.4,0.43,0.46,0.48,0.49,0.5,0.49,0.44,0.39,0.35,0.3,0.26,0.22,0.19,0.16,0.14,0.12,0.1,0.09,0.08,0.07,0.06]
 
-def calc_area(diameter):
-    return math.pi*math.pow(diameter/2,POW2)
+def on_message_water_received(client, userdata, msg):
 
-def calc_power(area, density, windspeed):
-    global CP
-    cp = 0
-    if windspeed < 26:
-        cp = CP[int(windspeed)%len(CP)]
-    else:
-        cp = 0
-    cp = 0.5
-    return (0.5*area*density*math.pow(windspeed*KMH_IN_MS,POW3)*cp)/WATT_IN_KILOWATT
-
-MODEL = "E126"
-ROTOR_DIAMETER = 127.0 #meter
-AREA = calc_area(ROTOR_DIAMETER)
-RATED_POWER = 7500 #kW
-
-ID = 0
-ID_S = str(ID)
-NAME = "hamburg"
-# MQTT topic for publishing sensor data
-WIND_POWER_DATA = "data/power/"+ID_S
-
-# MQTT topic for receiving tick messages
-CLIMATE_DATA = "data/weather/"
-
-def on_message_weather(client, userdata, msg):
     """
     Callback function that processes messages from the tick generator topic.
     It generates a random sensor value and publishes it along with the tick's timestamp.
@@ -79,7 +45,7 @@ def main():
     """
     
     # Initialize the MQTT client and connect to the broker
-    mqtt = MQTTWrapper('mqttbroker', 1883, name='wind_power_plant_'+ID_S)
+    mqtt = MQTTWrapper('mqttbroker', 1883, name='filter_plant')
     
     # Subscribe to the tick topic
     mqtt.subscribe(CLIMATE_DATA)
