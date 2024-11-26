@@ -3,13 +3,22 @@ import json
 import logging
 from random import seed, randint
 from mqtt.mqtt_wrapper import MQTTWrapper
+import os
+
+def getenv_or_exit(env_name, default="default"):
+    value = os.getenv(env_name, default)
+    if value == default:
+        raise SystemExit(f"Environment variable {env_name} not set")
+    return value
 
 # MQTT topic for publishing sensor data
-FILTER_SYSTEM_SUM_DATA = "data/fwater/sum"
+FILTER_SYSTEM_SUM_DATA = getenv_or_exit("TOPIC_FILTER_SYSTEM_SUM_FILTER_SYSTEM_SUM_DATA", "default")
 
 # MQTT topic for receiving tick messages
-COUNT_FILTER_SYSTEM = 10 #?
-FILTER_SYSTEM_DATA = "data/fwater/"
+COUNT_FILTER_SYSTEM = int(getenv_or_exit("FILTER_SYSTEM_SUM_COUNT_FILTER_SYSTEM", 0))
+
+FILTER_SYSTEM_DATA = getenv_or_exit("TOPIC_FILTER_SYSTEM_SUM_FILTER_SYSTEM_DATA", "default")
+
 FILTER_SYSTEM_DATA_LIST = []
 for i in range(COUNT_FILTER_SYSTEM):
     FILTER_SYSTEM_DATA_LIST.append(FILTER_SYSTEM_DATA+str(i))
@@ -26,9 +35,15 @@ for i in range(COUNT_TICKS_MAX):
 def calc_mean():
     global SUM_FWATER, MEAN_FWATER, FWATER_LIST
     summe = 0
+    count = 0
     for i in range(COUNT_TICKS_MAX):
-        summe += FWATER_LIST[i]
-    MEAN_FWATER = round(summe / COUNT_TICKS_MAX, 2)
+        if FWATER_LIST[i] > 0:
+                summe += FWATER_LIST[i]
+                count += 1
+        if count > 0:
+            MEAN_FWATER = round(summe / count, 2)
+        else:
+            MEAN_FWATER = 0
 
 
 def on_message_power(client, userdata, msg):
