@@ -76,6 +76,26 @@ services:
     networks:
       - hydroplant
 
+  hydrogen_cell_sum:
+    build: ./src/hydrogen_cell_sum
+    container_name: hydrogen_cell_sum
+    depends_on:  
+      - mqttbroker
+    env_file:
+      - src/.env
+    networks:
+      - hydroplant
+
+  filter_system_sum:
+    build: ./src/filter_system_sum
+    container_name: filter_system_sum
+    depends_on:  
+      - mqttbroker
+    env_file:
+      - src/.env
+    networks:
+      - hydroplant
+
   water_pipe:
     build: ./src/water_pipe
     container_name: water_pipe
