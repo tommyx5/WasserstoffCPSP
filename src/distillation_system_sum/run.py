@@ -77,7 +77,7 @@ def main():
     """
     
     # Initialize the MQTT client and connect to the broker
-    mqtt = MQTTWrapper('mqttbroker', 1883, name='DISTILLATION_system_sum')
+    mqtt = MQTTWrapper('mqttbroker', 1883, name='distillation_system_sum')
     
     for topic in DISTILLATION_SYSTEM_DATA_LIST:
         # Subscribe to the tick topic
