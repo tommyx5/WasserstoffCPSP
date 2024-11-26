@@ -46,20 +46,10 @@ def calc_mean():
     else:
         MEAN_POWER = 0
 
-"""
 def on_message_tick(client, userdata, msg):
+    # reset each tick available power to 0
     global available_power
-    #extracting the timestamp 
-    timestamp = msg.payload.decode("utf-8")
-
-    available_power =  # update available power
-
-    data = {
-        "timestamp": timestamp
-    }
-    
-    client.publish(, json.dumps(data))
-"""
+    available_power =  0
 
 def calculate_supply(demand):
     global available_power
@@ -72,7 +62,7 @@ def calculate_supply(demand):
         power_supplied = available_power
         available_power = 0
     return power_supplied
-    
+
 def on_message_power(client, userdata, msg):
     global WIND_POWER_SUM_DATA
     global COUNT, COUNT_TICKS_MAX, COUNT_TICKS
@@ -133,10 +123,8 @@ def main():
     # Initialize the MQTT client and connect to the broker
     mqtt = MQTTWrapper('mqttbroker', 1883, name='wind_power_sum')
     
-    """
     mqtt.subscribe(TICK)
     mqtt.subscribe_with_callback(TICK, on_message_tick)
-    """
     mqtt.subscribe(TOPIC_REQUEST)
     mqtt.subscribe_with_callback(TOPIC_REQUEST, on_message_request)
 

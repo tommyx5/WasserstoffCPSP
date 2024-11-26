@@ -11,8 +11,10 @@ def getenv_or_exit(env_name, default="default"):
         raise SystemExit(f"Environment variable {env_name} not set")
     return value
 
-UPPER_CUT_OUT_WIND_SPEED = float(getenv_or_exit("POWER_PLANT_0_UPPER_CUT_OUT_WIND_SPEED", "0.0")) 
-LOWER_CUT_OUT_WIND_SPEED = float(getenv_or_exit("POWER_PLANT_0_LOWER_CUT_OUT_WIND_SPEED", "0.0"))
+ID = getenv_or_exit("ID", "default")
+
+UPPER_CUT_OUT_WIND_SPEED = float(getenv_or_exit("POWER_PLANT_" + ID + "_UPPER_CUT_OUT_WIND_SPEED", "0.0")) 
+LOWER_CUT_OUT_WIND_SPEED = float(getenv_or_exit("POWER_PLANT_" + ID + "_LOWER_CUT_OUT_WIND_SPEED", "0.0"))
 
 KMH_IN_MS = 1000/3600
 WATT_IN_KILOWATT = 1000
@@ -35,16 +37,14 @@ def calc_power(area, density, windspeed):
     cp = 0.5
     return (0.5*area*density*math.pow(windspeed*KMH_IN_MS,POW3)*cp)/WATT_IN_KILOWATT
 
-MODEL = getenv_or_exit("POWER_PLANT_0_MODEL", "default")
-ROTOR_DIAMETER = float(getenv_or_exit("POWER_PLANT_0_ROTOR_DIAMETER", 0.0)) #meter
+MODEL = getenv_or_exit("POWER_PLANT_" + ID + "_MODEL", "default")
+ROTOR_DIAMETER = float(getenv_or_exit("POWER_PLANT_" + ID + "_ROTOR_DIAMETER", 0.0)) #meter
 AREA = calc_area(ROTOR_DIAMETER)
-RATED_POWER = float(getenv_or_exit("POWER_PLANT_0_RATED_POWER", 0.0)) #kW
-
-ID = getenv_or_exit("POWER_PLANT_0_ID", "default")
-NAME = getenv_or_exit("POWER_PLANT_0_NAME", "default")
+RATED_POWER = float(getenv_or_exit("POWER_PLANT_" + ID + "_RATED_POWER", 0.0)) #kW
+NAME = getenv_or_exit("POWER_PLANT_" + ID + "_NAME", "default")
 
 # MQTT topic for publishing sensor data
-WIND_POWER_DATA = getenv_or_exit("TOPIC_POWER_PLANT_0_WIND_POWER_DATA", "default")
+TOPIC_WIND_POWER_DATA = getenv_or_exit("TOPIC_POWER_PLANT_POWER_DATA", "default") + ID # must be followed by the power plant id
 
 # MQTT topic for receiving tick messages
 CLIMATE_DATA = getenv_or_exit("TOPIC_CLIMATE_GEN_CLIMATE_DATA", "default")
@@ -59,7 +59,7 @@ def on_message_weather(client, userdata, msg):
     userdata: User-defined data (not used here)
     msg (MQTTMessage): The message containing the tick timestamp
     """
-    global WIND_POWER_DATA
+    global TOPIC_WIND_POWER_DATA
     global AREA
     global RATED_POWER
     global ID
@@ -79,7 +79,7 @@ def on_message_weather(client, userdata, msg):
         power = RATED_POWER
     data = {"id": ID, "power": power, "timestamp": timestamp}
     # Publish the data to the chaos sensor topic in JSON format
-    client.publish(WIND_POWER_DATA, json.dumps(data))
+    client.publish(TOPIC_WIND_POWER_DATA, json.dumps(data))
 
 def main():
     """

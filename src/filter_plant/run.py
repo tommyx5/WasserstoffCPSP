@@ -11,7 +11,7 @@ def getenv_or_exit(env_name, default="default"):
         raise SystemExit(f"Environment variable {env_name} not set")
     return value
 
-ID = getenv_or_exit("FILTER_PLANT_0_ID", "default")
+ID = getenv_or_exit("ID", "default")
 WATER_DEMAND = float(getenv_or_exit("FILTER_PLANT_" + ID + "_WATER_DEMAND", 0.0)) # in m^3
 POWER_DEMAND = float(getenv_or_exit("FILTER_PLANT_" + ID + "_POWER_DEMAND", 0.0)) # in kW
 WATER_SUPPLY = float(getenv_or_exit("FILTER_PLANT_" + ID + "_FILTERED_WATER_MAX_SUPPLY", 0.0)) # in m^3
@@ -40,7 +40,7 @@ def filter_water(water_supplied):
 
     if not POWER_AVAILABLE:
         print("Power Outage! Not enough power to filter the water")
-        return 0
+        #return 0
 
     if water_supplied < WATER_DEMAND:
         filtered_water = water_supplied
@@ -92,7 +92,7 @@ def on_message_tick(client, userdata, msg):
         "timestamp": timestamp
     }
     data_power = {
-        "topic": TOPIC_POWER_RECIEVE, # topic for water pipe to publish the reply on
+        "topic": TOPIC_POWER_RECIEVE, # topic for power sum to publish the reply on
         "powerdemand": POWER_DEMAND, 
         "timestamp": timestamp
     }
