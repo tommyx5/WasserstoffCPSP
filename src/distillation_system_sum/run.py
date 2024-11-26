@@ -64,12 +64,12 @@ def on_message_request(client, userdata, msg):
     payload = json.loads(msg.payload)
     timestamp = payload["timestamp"]
     topic = payload["topic"] # topic to publish the supplied power to
-    demand = payload["filteredwaterdemand"]
+    demand = payload["distilledwaterdemand"]
 
     suplied = calculate_supply(demand)
     
     data = {
-        "filteredwatersupply": suplied, 
+        "distilledwatersupply": suplied, 
         "timestamp": timestamp
     }
 

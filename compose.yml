@@ -144,6 +144,18 @@ services:
     networks:
       - hydroplant
 
+  hydrogen_cell_0:
+    build: ./src/hydrogen_cell
+    container_name: hydrogen_cell_0
+    depends_on:
+      - mqttbroker
+    env_file:
+      - src/.env
+    environment:
+      - ID=0
+    networks:
+      - hydroplant
+
 # Define a shared network for the containers
 networks:
   hydroplant:

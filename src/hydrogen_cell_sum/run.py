@@ -11,13 +11,11 @@ def getenv_or_exit(env_name, default="default"):
         raise SystemExit(f"Environment variable {env_name} not set")
     return value
 
-# MQTT topic for publishing sensor data
-HYDROGEN_CELL_SUM_DATA = getenv_or_exit("TOPIC_HYDROGEN_CELL_SUM_HYDROGEN_CELL_SUM_DATA", "default")
-
 # MQTT topic for receiving tick messages
-COUNT_HYDROGEN_CELL = int(getenv_or_exit("HYDROGEN_CELL_SUM_COUNT_HYDROGEN_CELL", 0))
+COUNT_HYDROGEN_CELL = int(getenv_or_exit("HYDROGEN_SUM_COUNT_HYDROGEN_CELL", 0))
 
-HYDROGEN_CELL_DATA = getenv_or_exit("TOPIC_HYDROGEN_CELL_SUM_HYDROGEN_CELL_DATA", "default")
+HYDROGEN_CELL_SUM_DATA = getenv_or_exit("TOPIC_HYDROGEN_SUM_HYDROGEN_SUM_DATA", "default")
+HYDROGEN_CELL_DATA = getenv_or_exit("TOPIC_HYDROGEN_CELL_HYDROGEN_SUPPLY", "default")
 
 HYDROGEN_CELL_DATA_LIST = []
 for i in range(COUNT_HYDROGEN_CELL):
@@ -52,8 +50,9 @@ def on_message_power(client, userdata, msg):
     global COUNT_HYDROGEN_CELL
 
     payload = json.loads(msg.payload) 
-    hydrogen = payload["hydrogen"]
+    hydrogen = payload["hydrogensupply"]
     timestamp = payload["timestamp"]
+
     if COUNT % COUNT_HYDROGEN_CELL == 0:
         SUM_HYDROGEN = hydrogen
     else:
