@@ -47,22 +47,26 @@ services:
       - hydroplant
 
   wind_power_plant_0:
-    build: ./src/wind_power_plant_0
+    build: ./src/wind_power_plant
     container_name: wind_power_plant_0
     depends_on:  
       - mqttbroker
     env_file: 
       - src/.env
+    environment:
+      - ID=0
     networks:
       - hydroplant
 
   wind_power_plant_1:
-    build: ./src/wind_power_plant_1
+    build: ./src/wind_power_plant
     container_name: wind_power_plant_1
     depends_on:  
       - mqttbroker
     env_file: 
       - src/.env
+    environment:
+      - ID=1
     networks:
       - hydroplant
 
@@ -103,6 +107,18 @@ services:
       - mqttbroker
     env_file: # file with environmental variables
       - src/.env
+    networks:
+      - hydroplant
+
+  filter_plant_0:
+    build: ./src/filter_plant
+    container_name: filter_plant_0
+    depends_on:
+      - mqttbroker
+    env_file:
+      - src/.env
+    environment:
+      - ID=0
     networks:
       - hydroplant
 
