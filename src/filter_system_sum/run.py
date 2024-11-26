@@ -11,13 +11,12 @@ def getenv_or_exit(env_name, default="default"):
         raise SystemExit(f"Environment variable {env_name} not set")
     return value
 
-# MQTT topic for publishing sensor data
-FILTER_SYSTEM_SUM_DATA = getenv_or_exit("TOPIC_FILTER_SYSTEM_SUM_FILTER_SYSTEM_SUM_DATA", "default")
+COUNT_FILTER_SYSTEM = int(getenv_or_exit("FILTER_SUM_COUNT_FILTER", 0))
 
-# MQTT topic for receiving tick messages
-COUNT_FILTER_SYSTEM = int(getenv_or_exit("FILTER_SYSTEM_SUM_COUNT_FILTER_SYSTEM", 0))
-
-FILTER_SYSTEM_DATA = getenv_or_exit("TOPIC_FILTER_SYSTEM_SUM_FILTER_SYSTEM_DATA", "default")
+TICK = getenv_or_exit('TOPIC_TICK_GEN_TICK', 'default')
+FILTER_SYSTEM_SUM_DATA = getenv_or_exit("TOPIC_FILTER_SUM_FILTER_SUM_DATA", "default")
+FILTER_SYSTEM_DATA = getenv_or_exit("TOPIC_FILTER_PLANT_FILTERED_WATER_SUPPLY", "default")
+TOPIC_REQUEST = getenv_or_exit("TOPIC_FILTER_SUM_FILTERED_WATER_REQUEST", "default")
 
 FILTER_SYSTEM_DATA_LIST = []
 for i in range(COUNT_FILTER_SYSTEM):
@@ -32,6 +31,50 @@ COUNT_TICKS = 0
 for i in range(COUNT_TICKS_MAX):
     FWATER_LIST.append(0)
 
+AVAILABLE = 0
+
+def on_message_tick(client, userdata, msg):
+    # reset each tick available power to 0
+    global AVAILABLE
+    AVAILABLE =  0
+
+def calculate_supply(demand):
+    global AVAILABLE
+
+    supplied = 0
+    if(demand < AVAILABLE):
+        supplied = demand
+        AVAILABLE = AVAILABLE - demand
+    else:
+        supplied = AVAILABLE
+        AVAILABLE = 0
+    return supplied
+
+def on_message_request(client, userdata, msg):
+    """
+    Callback function that processes messages from the request topic.
+    It publishes the FILTERED WATER that can be supplied to the received topic
+    
+    Parameters:
+    client (MQTT client): The MQTT client instance
+    msg (MQTTMessage): The message containing the tick timestamp
+    """
+    
+    #extracting the timestamp and other data
+    payload = json.loads(msg.payload)
+    timestamp = payload["timestamp"]
+    topic = payload["topic"] # topic to publish the supplied power to
+    demand = payload["filteredwaterdemand"]
+
+    suplied = calculate_supply(demand)
+    
+    data = {
+        "filteredwatersupply": suplied, 
+        "timestamp": timestamp
+    }
+
+    client.publish(topic, json.dumps(data))
+
 def calc_mean():
     global SUM_FWATER, MEAN_FWATER, FWATER_LIST
     summe = 0
@@ -45,16 +88,19 @@ def calc_mean():
         else:
             MEAN_FWATER = 0
 
-
 def on_message_power(client, userdata, msg):
     global FILTER_SYSTEM_SUM_DATA
     global COUNT, COUNT_TICKS_MAX, COUNT_TICKS
     global SUM_FWATER, MEAN_FWATER, FWATER_LIST
     global COUNT_FILTER_SYSTEM
+    global AVAILABLE
 
     payload = json.loads(msg.payload) 
-    fwater = payload["fwater"]
+    fwater = payload["filteredwatersupply"]
     timestamp = payload["timestamp"]
+
+    AVAILABLE = AVAILABLE + fwater
+
     if COUNT % COUNT_FILTER_SYSTEM == 0:
         SUM_FWATER = fwater
     else:
@@ -79,6 +125,11 @@ def main():
     # Initialize the MQTT client and connect to the broker
     mqtt = MQTTWrapper('mqttbroker', 1883, name='filter_system_sum')
     
+    mqtt.subscribe(TICK)
+    mqtt.subscribe_with_callback(TICK, on_message_tick)
+    mqtt.subscribe(TOPIC_REQUEST)
+    mqtt.subscribe_with_callback(TOPIC_REQUEST, on_message_request)
+
     for topic in FILTER_SYSTEM_DATA_LIST:
         # Subscribe to the tick topic
         mqtt.subscribe(topic)
