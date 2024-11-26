@@ -88,7 +88,7 @@ def main():
     """
     
     # Initialize the MQTT client and connect to the broker
-    mqtt = MQTTWrapper('mqttbroker', 1883, name='wind_power_plant_'+ID)
+    mqtt = MQTTWrapper('mqttbroker', 1883, name='wind_power_plant_' + ID)
     
     # Subscribe to the tick topic
     mqtt.subscribe(CLIMATE_DATA)

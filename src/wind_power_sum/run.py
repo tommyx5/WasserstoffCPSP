@@ -14,8 +14,8 @@ def getenv_or_exit(env_name, default="default"):
 COUNT_POWER_GEN = int(getenv_or_exit("POWER_SUM_COUNT_POWER_GEN", 0))
 
 TICK = getenv_or_exit('TOPIC_TICK_GEN_TICK', 'default')
-WIND_POWER_SUM_DATA = getenv_or_exit("TOPIC_POWER_SUM_WIND_POWER_SUM_DATA", "default")
-WIND_POWER_DATA = getenv_or_exit("TOPIC_POWER_SUM_WIND_POWER_DATA", "default")
+WIND_POWER_SUM_DATA = getenv_or_exit("TOPIC_POWER_SUM_POWER_SUM_DATA", "default")
+WIND_POWER_DATA = getenv_or_exit("TOPIC_POWER_PLANT_POWER_DATA", "default")
 TOPIC_REQUEST = getenv_or_exit("TOPIC_POWER_SUM_POWER_REQUEST", "default")
 
 WIND_POWER_DATA_LIST = []
