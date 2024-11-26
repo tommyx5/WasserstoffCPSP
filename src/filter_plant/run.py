@@ -12,20 +12,36 @@ def getenv_or_exit(env_name, default="default"):
     return value
 
 ID = getenv_or_exit("FILTER_PLANT_0_ID", "default")
-WATER_DEMAND = float(getenv_or_exit("FILTER_PLANT_0_WATER_DEMAND", 0.0)) # in m^3
-POWER_DEMAND = float(getenv_or_exit("FILTER_PLANT_0_POWER_DEMAND", 0.0)) # in kW
-WATER_SUPPLY = float(getenv_or_exit("FILTER_PLANT_0_FILTERED_WATER_MAX_SUPPLY", 0.0)) # in m^3
+WATER_DEMAND = float(getenv_or_exit("FILTER_PLANT_" + ID + "_WATER_DEMAND", 0.0)) # in m^3
+POWER_DEMAND = float(getenv_or_exit("FILTER_PLANT_" + ID + "_POWER_DEMAND", 0.0)) # in kW
+WATER_SUPPLY = float(getenv_or_exit("FILTER_PLANT_" + ID + "_FILTERED_WATER_MAX_SUPPLY", 0.0)) # in m^3
 
 TICK = getenv_or_exit("TOPIC_TICK_GEN_TICK", "default")
-TOPIC_WATER_RECIEVE = getenv_or_exit("TOPIC_FILTER_PLANT_WATER_RECIEVE", "default")+ID # must be followed by filter plant id
-TOPIC_FILTERED_WATER_SUPPLY = getenv_or_exit("TOPIC_FILTER_PLANT_FILTERED_WATER_SUPPLY", "default")+ID # must be followed by filter plant id
-TOPIC_WATER_REQUEST = getenv_or_exit("TOPIC_WATER_PIPE_WATER_REQUEST", "default")
+TOPIC_WATER_REQUEST = getenv_or_exit("TOPIC_WATER_PIPE_WATER_REQUEST", "default") # topic to request water
+TOPIC_WATER_RECIEVE = getenv_or_exit("TOPIC_FILTER_PLANT_WATER_RECIEVE", "default") + ID # must be followed by filter plant id
+TOPIC_POWER_REQUEST = getenv_or_exit("TOPIC_POWER_SUM_POWER_REQUEST", "default") # topic to request power
+TOPIC_POWER_RECIEVE = getenv_or_exit("TOPIC_FILTER_PLANT_POWER_RECIEVE", "default") + ID # must be followed by filter plant id
+TOPIC_FILTERED_WATER_SUPPLY = getenv_or_exit("TOPIC_FILTER_PLANT_FILTERED_WATER_SUPPLY", "default") + ID # must be followed by filter plant id
+
+POWER_AVAILABLE = False
+
+def not_enough_power():
+    global POWER_AVAILABLE
+    POWER_AVAILABLE = False
+
+def enough_power():
+    global POWER_AVAILABLE
+    POWER_AVAILABLE = True
 
 def filter_water(water_supplied):
-    global WATER_DEMAND
-    global WATER_SUPPLY
-    
+    global WATER_DEMAND, WATER_SUPPLY, POWER_AVAILABLE
+
     filtered_water = 0
+
+    if not POWER_AVAILABLE:
+        print("Power Outage! Not enough power to filter the water")
+        return 0
+
     if water_supplied < WATER_DEMAND:
         filtered_water = water_supplied
     else:
@@ -57,27 +73,52 @@ def on_message_water_received(client, userdata, msg):
 def on_message_tick(client, userdata, msg):
     """
     Callback function that processes messages from the tick generator topic.
-    It publishes topic with request for the water pipe
+    It publishes topic with request for water and power
     
     Parameters:
     client (MQTT client): The MQTT client instance
     msg (MQTTMessage): The message containing the tick timestamp
     """
-    global WATER_DEMAND
-    global TOPIC_WATER_REQUEST
-    global TOPIC_WATER_RECIEVE
+    global WATER_DEMAND, TOPIC_WATER_RECIEVE, TOPIC_WATER_REQUEST
+    global POWER_DEMAND, TOPIC_POWER_RECIEVE, TOPIC_POWER_REQUEST
     
     #extracting the timestamp 
     timestamp = msg.payload.decode("utf-8")
 
     #creating the new data
-    data = {
+    data_water = {
         "topic": TOPIC_WATER_RECIEVE, # topic for water pipe to publish the reply on
         "waterdemand": WATER_DEMAND, 
         "timestamp": timestamp
     }
+    data_power = {
+        "topic": TOPIC_POWER_RECIEVE, # topic for water pipe to publish the reply on
+        "powerdemand": POWER_DEMAND, 
+        "timestamp": timestamp
+    }
     
-    client.publish(TOPIC_WATER_REQUEST, json.dumps(data))
+    client.publish(TOPIC_WATER_REQUEST, json.dumps(data_water))
+    client.publish(TOPIC_POWER_REQUEST, json.dumps(data_power))
+
+def on_message_power_received(client, userdata, msg):
+    """
+    Callback function that processes messages from the tick generator topic.
+    It publishes topic with request for water and power
+    
+    Parameters:
+    client (MQTT client): The MQTT client instance
+    msg (MQTTMessage): The message containing the tick timestamp
+    """
+    global POWER_DEMAND
+
+    payload = json.loads(msg.payload)
+    timestamp = payload["timestamp"]
+    power_supply = payload["powersupply"]
+
+    if(power_supply < POWER_DEMAND):
+        not_enough_power()
+    else:
+        enough_power()
 
 def main():
     """
@@ -90,8 +131,10 @@ def main():
     
     mqtt.subscribe(TICK)
     mqtt.subscribe(TOPIC_WATER_RECIEVE)
+    mqtt.subscribe(TOPIC_POWER_RECIEVE)
     mqtt.subscribe_with_callback(TICK, on_message_tick)
     mqtt.subscribe_with_callback(TOPIC_WATER_RECIEVE, on_message_water_received)
+    mqtt.subscribe_with_callback(TOPIC_POWER_RECIEVE, on_message_power_received)
     
     try:
         # Start the MQTT loop to process incoming and outgoing messages

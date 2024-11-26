@@ -93,6 +93,8 @@ services:
       - mqttbroker
     env_file:
       - src/.env
+    environment:
+      - ID=$(FILTER_PLANT_0_ID)
     networks:
       - hydroplant
 

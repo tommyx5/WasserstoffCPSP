@@ -18,7 +18,7 @@ TOPIC_REQUEST = getenv_or_exit('TOPIC_WATER_PIPE_WATER_REQUEST', "default")
 # Water volume (in m^3) that can be supplied by the pipe
 WATER = float(getenv_or_exit('WATER_PIPE_SUPPLY', 0.0))
 
-available_water = WATER # total volume of water that can be supplied
+available_water = 0 # total volume of water that can be supplied
 
 def on_message_tick(client, userdata, msg):
     """
@@ -29,9 +29,7 @@ def on_message_tick(client, userdata, msg):
     client (MQTT client): The MQTT client instance
     msg (MQTTMessage): The message containing the tick timestamp
     """
-    global WATER
-    global TOPIC_WATER
-    global available_water
+    global WATER, TOPIC_WATER, available_water
      
     #extracting the timestamp 
     timestamp = msg.payload.decode("utf-8")
@@ -47,7 +45,7 @@ def on_message_tick(client, userdata, msg):
 
 def calculate_supply(demand):
     global available_water
-    
+
     water_supplied = 0
     if(demand < available_water):
         water_supplied = demand
@@ -59,7 +57,7 @@ def calculate_supply(demand):
 
 def on_message_request(client, userdata, msg):
     """
-    Callback function that processes messages from the tick generator topic.
+    Callback function that processes messages from the request topic.
     It publishes the volume of water that can be supplied by the pipe
     
     Parameters:
