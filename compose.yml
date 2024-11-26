@@ -86,6 +86,16 @@ services:
     networks:
       - hydroplant
 
+  filter_plant:
+    build: ./src/filter_plant
+    container_name: filter_plant
+    depends_on:
+      - mqttbroker
+    env_file:
+      - src/.env
+    networks:
+      - hydroplant
+
 # Define a shared network for the containers
 networks:
   hydroplant:

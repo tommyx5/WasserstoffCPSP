@@ -11,12 +11,14 @@ def getenv_or_exit(env_name, default="default"):
         raise SystemExit(f"Environment variable {env_name} not set")
     return value
 
-# topic for receiving tick messages
 TICK = getenv_or_exit('TOPIC_TICK_GEN_TICK', 'default')
-# topic for publishing water volume
 TOPIC_WATER = getenv_or_exit('TOPIC_WATER_PIPE_SUPPLY', "default")
-# Water volume (in m^3) supplied by the pipe
-WATER_VOLUME = float(getenv_or_exit('WATER_PIPE_SUPPLY', 0.0))
+TOPIC_REQUEST = getenv_or_exit('TOPIC_WATER_PIPE_WATER_REQUEST', "default")
+
+# Water volume (in m^3) that can be supplied by the pipe
+WATER = float(getenv_or_exit('WATER_PIPE_SUPPLY', 0.0))
+
+available_water = WATER # total volume of water that can be supplied
 
 def on_message_tick(client, userdata, msg):
     """
@@ -25,23 +27,60 @@ def on_message_tick(client, userdata, msg):
     
     Parameters:
     client (MQTT client): The MQTT client instance
-    userdata: User-defined data (not used here)
     msg (MQTTMessage): The message containing the tick timestamp
     """
-    global WATER_VOLUME
+    global WATER
     global TOPIC_WATER
-    
+    global available_water
      
     #extracting the timestamp 
     timestamp = msg.payload.decode("utf-8")
 
-    #creating the new data
+    available_water = WATER # update available water
+
     data = {
-        "water_volume": WATER_VOLUME,  # Ensure this is a float, which is JSON serializable
+        "watersupply": available_water,  # Ensure this is a float, which is JSON serializable
         "timestamp": timestamp
     }
     
     client.publish(TOPIC_WATER, json.dumps(data))
+
+def calculate_supply(demand):
+    global available_water
+    
+    water_supplied = 0
+    if(demand < available_water):
+        water_supplied = demand
+        available_water = available_water - demand
+    else:
+        water_supplied = available_water
+        available_water = 0
+    return water_supplied
+
+def on_message_request(client, userdata, msg):
+    """
+    Callback function that processes messages from the tick generator topic.
+    It publishes the volume of water that can be supplied by the pipe
+    
+    Parameters:
+    client (MQTT client): The MQTT client instance
+    msg (MQTTMessage): The message containing the tick timestamp
+    """
+    
+    #extracting the timestamp and other data
+    payload = json.loads(msg.payload)
+    timestamp = payload["timestamp"]
+    topic = payload["topic"] # topic to publish the supplied water to
+    demand = payload["waterdemand"]
+
+    water_suplied = calculate_supply(demand)
+    
+    data = {
+        "watersupply": water_suplied, 
+        "timestamp": timestamp
+    }
+
+    client.publish(topic, json.dumps(data))
 
 def main():
     """
@@ -52,10 +91,10 @@ def main():
     # Initialize the MQTT client and connect to the broker
     mqtt = MQTTWrapper('mqttbroker', 1883, name='water_pipe')
     
-    # Subscribe to the tick topic
     mqtt.subscribe(TICK)
-    # Subscribe with a callback function to handle incoming tick messages
+    mqtt.subscribe(TOPIC_REQUEST)
     mqtt.subscribe_with_callback(TICK, on_message_tick)
+    mqtt.subscribe_with_callback(TOPIC_REQUEST, on_message_request)
     
     try:
         # Start the MQTT loop to process incoming and outgoing messages
