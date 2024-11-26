@@ -11,7 +11,6 @@ def getenv_or_exit(env_name, default="default"):
         raise SystemExit(f"Environment variable {env_name} not set")
     return value
 
-# MQTT topic for receiving tick messages
 COUNT_HYDROGEN_CELL = int(getenv_or_exit("HYDROGEN_SUM_COUNT_HYDROGEN_CELL", 0))
 
 HYDROGEN_CELL_SUM_DATA = getenv_or_exit("TOPIC_HYDROGEN_SUM_HYDROGEN_SUM_DATA", "default")

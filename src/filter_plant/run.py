@@ -2,7 +2,7 @@ import sys
 import json
 import logging
 from mqtt.mqtt_wrapper import MQTTWrapper
-import math
+from statemanager import StateManager  # Import the state manager
 import os
 
 def getenv_or_exit(env_name, default="default"):
@@ -23,24 +23,15 @@ TOPIC_POWER_REQUEST = getenv_or_exit("TOPIC_POWER_SUM_POWER_REQUEST", "default")
 TOPIC_POWER_RECIEVE = getenv_or_exit("TOPIC_FILTER_PLANT_POWER_RECIEVE", "default") + ID # must be followed by filter plant id
 TOPIC_FILTERED_WATER_SUPPLY = getenv_or_exit("TOPIC_FILTER_PLANT_FILTERED_WATER_SUPPLY", "default") + ID # must be followed by filter plant id
 
-POWER_AVAILABLE = False
-
-def not_enough_power():
-    global POWER_AVAILABLE
-    POWER_AVAILABLE = False
-
-def enough_power():
-    global POWER_AVAILABLE
-    POWER_AVAILABLE = True
+# State Manager for handling dependency management
+state_manager = StateManager()
+AVAILABLE = 0 
+TIMESTAMP = 0
 
 def filter_water(water_supplied):
-    global WATER_DEMAND, WATER_SUPPLY, POWER_AVAILABLE
+    global WATER_DEMAND, WATER_SUPPLY
 
     filtered_water = 0
-
-    if not POWER_AVAILABLE:
-        print("Power Outage! Not enough power to filter the water")
-        #return 0
 
     if water_supplied < WATER_DEMAND:
         filtered_water = water_supplied
@@ -55,20 +46,14 @@ def on_message_water_received(client, userdata, msg):
     After that publishes it along with the timestamp.
     """
     global TOPIC_FILTERED_WATER_SUPPLY
+    global AVAILABLE, state_manager
 
     payload = json.loads(msg.payload)
     timestamp = payload["timestamp"]
     water_supply = payload["watersupply"]
-
-    filtered_water_supply = filter_water(water_supply)
-
-    data = { 
-        "filteredwatersupply": filtered_water_supply, 
-        "timestamp": timestamp
-    }
-
-    # Publish the data to the topic in JSON format
-    client.publish(TOPIC_FILTERED_WATER_SUPPLY, json.dumps(data))
+    
+    AVAILABLE = water_supply
+    state_manager.receive_water()  # Mark water as received in state manager
 
 def on_message_tick(client, userdata, msg):
     """
@@ -81,6 +66,7 @@ def on_message_tick(client, userdata, msg):
     """
     global WATER_DEMAND, TOPIC_WATER_RECIEVE, TOPIC_WATER_REQUEST
     global POWER_DEMAND, TOPIC_POWER_RECIEVE, TOPIC_POWER_REQUEST
+    global state_manager, TIMESTAMP, AVAILABLE
     
     #extracting the timestamp 
     timestamp = msg.payload.decode("utf-8")
@@ -96,6 +82,11 @@ def on_message_tick(client, userdata, msg):
         "powerdemand": POWER_DEMAND, 
         "timestamp": timestamp
     }
+
+    state_manager._reset_state_for_next_tick()
+    AVAILABLE = 0
+    TIMESTAMP = timestamp
+    state_manager.receive_tick()  # Mark tick as received in state manager
     
     client.publish(TOPIC_WATER_REQUEST, json.dumps(data_water))
     client.publish(TOPIC_POWER_REQUEST, json.dumps(data_power))
@@ -110,15 +101,17 @@ def on_message_power_received(client, userdata, msg):
     msg (MQTTMessage): The message containing the tick timestamp
     """
     global POWER_DEMAND
+    global state_manager
 
     payload = json.loads(msg.payload)
     timestamp = payload["timestamp"]
     power_supply = payload["powersupply"]
 
-    if(power_supply < POWER_DEMAND):
-        not_enough_power()
+    if power_supply >= POWER_DEMAND:
+        state_manager.receive_energy()  # Mark power as received in state manager
     else:
-        enough_power()
+        print("Insufficient power supply.")
+
 
 def main():
     """
@@ -137,10 +130,25 @@ def main():
     mqtt.subscribe_with_callback(TOPIC_POWER_RECIEVE, on_message_power_received)
     
     try:
-        # Start the MQTT loop to process incoming and outgoing messages
-        mqtt.loop_forever()
+        while True:
+            if state_manager.is_ready_to_process():
+                if state_manager.start_processing():
+                    # Perform processing here
+                    #print("Processing water with sufficient energy and dependencies.")
+                    # filter_water()
+                    filtered_water_supply = filter_water(AVAILABLE)
+                    
+                    data = { 
+                        "filteredwatersupply": filtered_water_supply, 
+                        "timestamp": TIMESTAMP
+                    }
+                    # Publish the data to the topic in JSON format
+                    mqtt.publish(TOPIC_FILTERED_WATER_SUPPLY, json.dumps(data))
+                    
+                    state_manager.complete_processing()
+            
+            mqtt.loop(0.1) # loop every 100ms
     except (KeyboardInterrupt, SystemExit):
-        # Gracefully stop the MQTT client and exit the program on interrupt
         mqtt.stop()
         sys.exit("KeyboardInterrupt -- shutdown gracefully.")
 

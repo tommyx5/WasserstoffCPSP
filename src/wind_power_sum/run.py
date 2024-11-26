@@ -49,7 +49,7 @@ def calc_mean():
 def on_message_tick(client, userdata, msg):
     # reset each tick available power to 0
     global available_power
-    available_power =  0
+    available_power =  1000
 
 def calculate_supply(demand):
     global available_power
