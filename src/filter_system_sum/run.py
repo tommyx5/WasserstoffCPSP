@@ -36,7 +36,7 @@ AVAILABLE = 0
 def on_message_tick(client, userdata, msg):
     # reset each tick available power to 0
     global AVAILABLE
-    AVAILABLE =  0
+    AVAILABLE = 0
 
 def calculate_supply(demand):
     global AVAILABLE
@@ -108,11 +108,11 @@ def on_message_power(client, userdata, msg):
         FWATER_LIST[COUNT_TICKS] = SUM_FWATER
         calc_mean()
         COUNT_TICKS = (COUNT_TICKS + 1) % COUNT_TICKS_MAX
-        if COUNT == COUNT_FILTER_SYSTEM-1:
-            # Extract the timestamp from the tick message and decode it from UTF-8
-            data = {"fwater": SUM_FWATER, "mean_fwater": MEAN_FWATER, "timestamp": timestamp}
-            # Publish the data to the chaos sensor topic in JSON format
-            client.publish(FILTER_SYSTEM_SUM_DATA, json.dumps(data))
+    if COUNT == COUNT_FILTER_SYSTEM-1:
+        # Extract the timestamp from the tick message and decode it from UTF-8
+        data = {"fwater": SUM_FWATER, "mean_fwater": MEAN_FWATER, "timestamp": timestamp}
+        # Publish the data to the chaos sensor topic in JSON format
+        client.publish(FILTER_SYSTEM_SUM_DATA, json.dumps(data))
     COUNT = (COUNT + 1) % COUNT_FILTER_SYSTEM
     
 
