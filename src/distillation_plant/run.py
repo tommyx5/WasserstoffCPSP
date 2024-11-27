@@ -38,8 +38,8 @@ def distill_water(water_supplied):
 
     distilled_water = 0
 
-    if not POWER_AVAILABLE:
-        print("Power Outage! Not enough power to filter the water")
+    #if not POWER_AVAILABLE:
+        #print("Power Outage! Not enough power to filter the water")
         #return 0
 
     if water_supplied < WATER_DEMAND:
