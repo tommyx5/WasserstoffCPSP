@@ -126,11 +126,13 @@ def main():
     # Initialize the MQTT client and connect to the broker
     mqtt = MQTTWrapper('mqttbroker', 1883, name='distillation_system_sum')
     
+    """
     mqtt.subscribe(TICK)
     mqtt.subscribe_with_callback(TICK, on_message_tick)
     mqtt.subscribe(TOPIC_REQUEST)
     mqtt.subscribe_with_callback(TOPIC_REQUEST, on_message_request)
-
+    """
+    
     for topic in DISTILLATION_SYSTEM_DATA_LIST:
         # Subscribe to the tick topic
         mqtt.subscribe(topic)

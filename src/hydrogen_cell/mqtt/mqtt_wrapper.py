@@ -34,6 +34,9 @@ class MQTTWrapper:
     def loop_forever(self):
         self.client.loop_forever()
 
+    def loop(self, time):
+        self.client.loop(time)
+
     def publish(self, topic, message):
         self.log.debug('publish ' + str(message) + ' to topic ' + topic)
         self.client.publish(topic, str(message))

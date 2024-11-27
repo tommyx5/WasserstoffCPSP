@@ -61,7 +61,6 @@ def on_message_water_received(client, userdata, msg):
     It processes how much water is received from water pipe and generates the coresponding volume of filtered volume.
     After that publishes it along with the timestamp.
     """
-    global TOPIC_FILTERED_WATER_SUPPLY
     global AVAILABLE, state_manager, TIMESTAMP
 
     payload = json.loads(msg.payload)
@@ -82,7 +81,7 @@ def on_message_power_received(client, userdata, msg):
     msg (MQTTMessage): The message containing the tick timestamp
     """
     global POWER_DEMAND
-    global state_manager, TIMESTAMP
+    global state_manager, TIMESTAMP, TOPIC_FILTERED_WATER_SUPPLY
 
     payload = json.loads(msg.payload)
     timestamp = payload["timestamp"]

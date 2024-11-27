@@ -4,6 +4,7 @@ import logging
 from mqtt.mqtt_wrapper import MQTTWrapper
 import math
 import os
+from statemanager import StateManager
 
 def getenv_or_exit(env_name, default="default"):
     value = os.getenv(env_name, default)
@@ -23,24 +24,30 @@ TOPIC_POWER_REQUEST = getenv_or_exit("TOPIC_POWER_SUM_POWER_REQUEST", "default")
 TOPIC_POWER_RECIEVE = getenv_or_exit("TOPIC_DISTIL_PLANT_POWER_RECIEVE", "default") + ID # must be followed by filter plant id
 TOPIC_DISTILLED_WATER_SUPPLY = getenv_or_exit("TOPIC_DISTIL_PLANT_DISTILLED_WATER_SUPPLY", "default") + ID # must be followed by filter plant id
 
-POWER_AVAILABLE = False
+TOPIC_FOR_POWER = getenv_or_exit("TOPIC_POWER_SUM_POWER_SUM_DATA", "default")
+TOPIC_FOR_DEP = getenv_or_exit('TOPIC_FILTER_SUM_FILTER_SUM_DATA', "default")
 
-def not_enough_power():
-    global POWER_AVAILABLE
-    POWER_AVAILABLE = False
+state_manager = StateManager()
 
-def enough_power():
-    global POWER_AVAILABLE
-    POWER_AVAILABLE = True
+AVAILABLE = 0 
+TIMESTAMP = 0
+
+def process(client):
+    global AVAILABLE, TOPIC_DISTILLED_WATER_SUPPLY, TIMESTAMP
+    distilled_water_supply = distill_water(AVAILABLE)
+    AVAILABLE = 0
+                    
+    data = { 
+        "distilledwatersupply": distilled_water_supply, 
+        "timestamp": TIMESTAMP
+    }
+    # Publish the data to the topic in JSON format
+    client.publish(TOPIC_DISTILLED_WATER_SUPPLY, json.dumps(data))
 
 def distill_water(water_supplied):
-    global WATER_DEMAND, WATER_SUPPLY, POWER_AVAILABLE
+    global WATER_DEMAND, WATER_SUPPLY
 
     distilled_water = 0
-
-    #if not POWER_AVAILABLE:
-        #print("Power Outage! Not enough power to filter the water")
-        #return 0
 
     if water_supplied < WATER_DEMAND:
         distilled_water = water_supplied
@@ -54,21 +61,45 @@ def on_message_water_received(client, userdata, msg):
     It processes how much water is received from water pipe and generates the coresponding volume of filtered volume.
     After that publishes it along with the timestamp.
     """
-    global TOPIC_DISTILLED_WATER_SUPPLY
+    global AVAILABLE, state_manager, TIMESTAMP
 
     payload = json.loads(msg.payload)
     timestamp = payload["timestamp"]
-    water_supply = payload["filteredwatersupply"]
+    water_supply = payload["fwater"]
+    
+    TIMESTAMP = timestamp
+    AVAILABLE = water_supply
+    state_manager.receive_dependency()  # Mark water as received in state manager
 
-    distilled_water_supply = distill_water(water_supply)
+def on_message_power_received(client, userdata, msg):
+    """
+    Callback function that processes messages from the tick generator topic.
+    It publishes topic with request for water and power
+    
+    Parameters:
+    client (MQTT client): The MQTT client instance
+    msg (MQTTMessage): The message containing the tick timestamp
+    """
+    global POWER_DEMAND
+    global state_manager, TIMESTAMP, TOPIC_DISTILLED_WATER_SUPPLY
 
-    data = { 
-        "distilledwatersupply": distilled_water_supply, 
+    payload = json.loads(msg.payload)
+    timestamp = payload["timestamp"]
+    #power_supply = payload["powersupply"]
+    power_supply = payload["power"]
+    
+    TIMESTAMP = timestamp
+    
+    if power_supply < POWER_DEMAND:
+        # publish zero topic
+        data = { 
+        "distilledwatersupply": 0, 
         "timestamp": timestamp
-    }
-
-    # Publish the data to the topic in JSON format
-    client.publish(TOPIC_DISTILLED_WATER_SUPPLY, json.dumps(data))
+        }
+        client.publish(TOPIC_DISTILLED_WATER_SUPPLY, json.dumps(data))
+    else:
+        state_manager.receive_power()
+    
 
 def on_message_tick(client, userdata, msg):
     """
@@ -100,25 +131,6 @@ def on_message_tick(client, userdata, msg):
     client.publish(TOPIC_WATER_REQUEST, json.dumps(data_water))
     client.publish(TOPIC_POWER_REQUEST, json.dumps(data_power))
 
-def on_message_power_received(client, userdata, msg):
-    """
-    Callback function that processes messages from the tick generator topic.
-    It publishes topic with request for water and power
-    
-    Parameters:
-    client (MQTT client): The MQTT client instance
-    msg (MQTTMessage): The message containing the tick timestamp
-    """
-    global POWER_DEMAND
-
-    payload = json.loads(msg.payload)
-    timestamp = payload["timestamp"]
-    power_supply = payload["powersupply"]
-
-    if(power_supply < POWER_DEMAND):
-        not_enough_power()
-    else:
-        enough_power()
 
 def main():
     """
@@ -127,20 +139,35 @@ def main():
     """
     
     # Initialize the MQTT client and connect to the broker
-    mqtt = MQTTWrapper('mqttbroker', 1883, name='distil_plant_' + ID)
+    mqtt = MQTTWrapper('mqttbroker', 1883, name='filter_plant_' + ID)
     
+    """
     mqtt.subscribe(TICK)
     mqtt.subscribe(TOPIC_WATER_RECIEVE)
     mqtt.subscribe(TOPIC_POWER_RECIEVE)
     mqtt.subscribe_with_callback(TICK, on_message_tick)
     mqtt.subscribe_with_callback(TOPIC_WATER_RECIEVE, on_message_water_received)
     mqtt.subscribe_with_callback(TOPIC_POWER_RECIEVE, on_message_power_received)
+    """
+
+    mqtt.subscribe(TOPIC_FOR_DEP)
+    mqtt.subscribe(TOPIC_FOR_POWER)
+    mqtt.subscribe_with_callback(TOPIC_FOR_DEP, on_message_water_received)
+    mqtt.subscribe_with_callback(TOPIC_FOR_POWER, on_message_power_received)
     
     try:
-        # Start the MQTT loop to process incoming and outgoing messages
-        mqtt.loop_forever()
+        while True:
+            if state_manager.is_ready_to_process():
+                if state_manager.start_processing():
+                    # Perform processing here
+                    #print("Processing water with sufficient energy and dependencies.")
+                    # 
+                    process(mqtt)
+                    
+                    state_manager.complete_processing()
+            
+            mqtt.loop(0.1) # loop every 100ms
     except (KeyboardInterrupt, SystemExit):
-        # Gracefully stop the MQTT client and exit the program on interrupt
         mqtt.stop()
         sys.exit("KeyboardInterrupt -- shutdown gracefully.")
 
