@@ -2,8 +2,8 @@ import sys
 import json
 import logging
 from mqtt.mqtt_wrapper import MQTTWrapper
-from statemanager import StateManager  # Import the state manager
 import os
+from statemanager import StateManager 
 
 def getenv_or_exit(env_name, default="default"):
     value = os.getenv(env_name, default)
@@ -23,13 +23,18 @@ TOPIC_POWER_REQUEST = getenv_or_exit("TOPIC_POWER_SUM_POWER_REQUEST", "default")
 TOPIC_POWER_RECIEVE = getenv_or_exit("TOPIC_FILTER_PLANT_POWER_RECIEVE", "default") + ID # must be followed by filter plant id
 TOPIC_FILTERED_WATER_SUPPLY = getenv_or_exit("TOPIC_FILTER_PLANT_FILTERED_WATER_SUPPLY", "default") + ID # must be followed by filter plant id
 
-# State Manager for handling dependency management
+TOPIC_FOR_POWER = getenv_or_exit("TOPIC_POWER_SUM_POWER_SUM_DATA", "default")
+TOPIC_FOR_DEP = getenv_or_exit('TOPIC_WATER_PIPE_SUPPLY', "default")
+
 state_manager = StateManager()
+
 AVAILABLE = 0 
 TIMESTAMP = 0
 
 def process(client):
+    global AVAILABLE, TOPIC_FILTERED_WATER_SUPPLY, TIMESTAMP
     filtered_water_supply = filter_water(AVAILABLE)
+    AVAILABLE = 0
                     
     data = { 
         "filteredwatersupply": filtered_water_supply, 
@@ -57,14 +62,45 @@ def on_message_water_received(client, userdata, msg):
     After that publishes it along with the timestamp.
     """
     global TOPIC_FILTERED_WATER_SUPPLY
-    global AVAILABLE, state_manager
+    global AVAILABLE, state_manager, TIMESTAMP
 
     payload = json.loads(msg.payload)
     timestamp = payload["timestamp"]
     water_supply = payload["watersupply"]
     
+    TIMESTAMP = timestamp
     AVAILABLE = water_supply
-    state_manager.receive_water()  # Mark water as received in state manager
+    state_manager.receive_dependency()  # Mark water as received in state manager
+
+def on_message_power_received(client, userdata, msg):
+    """
+    Callback function that processes messages from the tick generator topic.
+    It publishes topic with request for water and power
+    
+    Parameters:
+    client (MQTT client): The MQTT client instance
+    msg (MQTTMessage): The message containing the tick timestamp
+    """
+    global POWER_DEMAND
+    global state_manager, TIMESTAMP
+
+    payload = json.loads(msg.payload)
+    timestamp = payload["timestamp"]
+    #power_supply = payload["powersupply"]
+    power_supply = payload["power"]
+    
+    TIMESTAMP = timestamp
+    
+    if power_supply < POWER_DEMAND:
+        # publish zero topic
+        data = { 
+        "filteredwatersupply": 0, 
+        "timestamp": timestamp
+        }
+        client.publish(TOPIC_FILTERED_WATER_SUPPLY, json.dumps(data))
+    else:
+        state_manager.receive_power()
+    
 
 def on_message_tick(client, userdata, msg):
     """
@@ -94,35 +130,11 @@ def on_message_tick(client, userdata, msg):
         "timestamp": timestamp
     }
 
-    state_manager._reset_state_for_next_tick()
     AVAILABLE = 0
     TIMESTAMP = timestamp
-    state_manager.receive_tick()  # Mark tick as received in state manager
     
     client.publish(TOPIC_WATER_REQUEST, json.dumps(data_water))
     client.publish(TOPIC_POWER_REQUEST, json.dumps(data_power))
-
-def on_message_power_received(client, userdata, msg):
-    """
-    Callback function that processes messages from the tick generator topic.
-    It publishes topic with request for water and power
-    
-    Parameters:
-    client (MQTT client): The MQTT client instance
-    msg (MQTTMessage): The message containing the tick timestamp
-    """
-    global POWER_DEMAND
-    global state_manager
-
-    payload = json.loads(msg.payload)
-    timestamp = payload["timestamp"]
-    power_supply = payload["powersupply"]
-
-    if power_supply >= POWER_DEMAND:
-        state_manager.receive_power()  # Mark power as received in state manager
-    else:
-        print("Insufficient power supply.")
-
 
 def main():
     """
@@ -133,12 +145,19 @@ def main():
     # Initialize the MQTT client and connect to the broker
     mqtt = MQTTWrapper('mqttbroker', 1883, name='filter_plant_' + ID)
     
+    """
     mqtt.subscribe(TICK)
     mqtt.subscribe(TOPIC_WATER_RECIEVE)
     mqtt.subscribe(TOPIC_POWER_RECIEVE)
     mqtt.subscribe_with_callback(TICK, on_message_tick)
     mqtt.subscribe_with_callback(TOPIC_WATER_RECIEVE, on_message_water_received)
     mqtt.subscribe_with_callback(TOPIC_POWER_RECIEVE, on_message_power_received)
+    """
+
+    mqtt.subscribe(TOPIC_FOR_DEP)
+    mqtt.subscribe(TOPIC_FOR_POWER)
+    mqtt.subscribe_with_callback(TOPIC_FOR_DEP, on_message_water_received)
+    mqtt.subscribe_with_callback(TOPIC_FOR_POWER, on_message_power_received)
     
     try:
         while True:

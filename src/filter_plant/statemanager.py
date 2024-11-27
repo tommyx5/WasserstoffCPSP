@@ -29,10 +29,7 @@ class StateManager:
     def _update_state(self):
         # Update the container state based on the current conditions
         if self.power_received and self.dependency_received:
-            if self.tick_received:
-                self.state = 'READY_TO_PROCESS'
-            else:
-                self.state = 'WAITING_FOR_TICK'
+            self.state = 'READY_TO_PROCESS'
         elif self.power_received:
             self.state = 'WAITING_FOR_DEPENDENCY'
         else:

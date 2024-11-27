@@ -41,4 +41,4 @@ class StateManager:
                 self.available_ressources -= ressources_supplied
 
                 response = {"powersupply": ressources_supplied, "timestamp": timestamp}
-                mqtt_client.publish(topic, json.dumps(response))
+                #mqtt_client.publish(topic, json.dumps(response))

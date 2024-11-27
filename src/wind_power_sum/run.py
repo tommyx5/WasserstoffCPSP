@@ -4,7 +4,6 @@ import logging
 from random import seed, randint
 from mqtt.mqtt_wrapper import MQTTWrapper
 import os
-from statemanager import StateManager  # Import the state manager
 
 def getenv_or_exit(env_name, default="default"):
     value = os.getenv(env_name, default)
@@ -32,8 +31,7 @@ COUNT_TICKS = 0
 for i in range(COUNT_TICKS_MAX):
     POWER_LIST.append(0)
 
-available_power = 0    
-state_manager = StateManager()
+available_power = 0   
 
 def calc_mean():
     global SUM_POWER, MEAN_POWER, POWER_LIST
@@ -51,10 +49,8 @@ def calc_mean():
 def on_message_tick(client, userdata, msg):
     # reset each tick available power to 0
     global available_power
-    global state_manager
     #available_power =  1000
     available_power =  0
-    state_manager.reset_tick()
 
 def calculate_supply(demand):
     global available_power
@@ -73,14 +69,12 @@ def on_message_power(client, userdata, msg):
     global COUNT, COUNT_TICKS_MAX, COUNT_TICKS
     global SUM_POWER, MEAN_POWER, POWER_LIST, available_power
     global COUNT_POWER_GEN
-    global state_manager
 
     payload = json.loads(msg.payload) 
     power = payload["power"]
     timestamp = payload["timestamp"]
 
     available_power = available_power + power # update available power
-    state_manager.add_power(power)
     
     if COUNT % COUNT_POWER_GEN == 0:
         SUM_POWER = power
@@ -113,7 +107,6 @@ def on_message_request(client, userdata, msg):
     demand = payload["powerdemand"]
 
     power_suplied = calculate_supply(demand)
-    state_manager.add_request(topic, demand, timestamp)
     
     data = {
         "powersupply": power_suplied, 
@@ -153,4 +146,3 @@ def main():
 if __name__ == '__main__':
     # Entry point for the script
     main()
-
