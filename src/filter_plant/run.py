@@ -28,6 +28,17 @@ state_manager = StateManager()
 AVAILABLE = 0 
 TIMESTAMP = 0
 
+def process(client):
+    filtered_water_supply = filter_water(AVAILABLE)
+                    
+    data = { 
+        "filteredwatersupply": filtered_water_supply, 
+        "timestamp": TIMESTAMP
+    }
+    # Publish the data to the topic in JSON format
+    client.publish(TOPIC_FILTERED_WATER_SUPPLY, json.dumps(data))
+
+
 def filter_water(water_supplied):
     global WATER_DEMAND, WATER_SUPPLY
 
@@ -108,7 +119,7 @@ def on_message_power_received(client, userdata, msg):
     power_supply = payload["powersupply"]
 
     if power_supply >= POWER_DEMAND:
-        state_manager.receive_energy()  # Mark power as received in state manager
+        state_manager.receive_power()  # Mark power as received in state manager
     else:
         print("Insufficient power supply.")
 
@@ -135,15 +146,8 @@ def main():
                 if state_manager.start_processing():
                     # Perform processing here
                     #print("Processing water with sufficient energy and dependencies.")
-                    # filter_water()
-                    filtered_water_supply = filter_water(AVAILABLE)
-                    
-                    data = { 
-                        "filteredwatersupply": filtered_water_supply, 
-                        "timestamp": TIMESTAMP
-                    }
-                    # Publish the data to the topic in JSON format
-                    mqtt.publish(TOPIC_FILTERED_WATER_SUPPLY, json.dumps(data))
+                    # 
+                    process(mqtt)
                     
                     state_manager.complete_processing()
             

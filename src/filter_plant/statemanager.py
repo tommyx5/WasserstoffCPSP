@@ -1,24 +1,24 @@
 import threading
 
 class StateManager:
-    STATES = ['WAITING_FOR_POWER', 'WAITING_FOR_WATER', 'WAITING_FOR_TICK', 'READY_TO_PROCESS', 'PROCESSING', 'DONE']
+    STATES = ['WAITING_FOR_POWER', 'WAITING_FOR_DEPENDENCY', 'WAITING_FOR_TICK', 'READY_TO_PROCESS', 'PROCESSING', 'DONE']
 
     def __init__(self, dependencies=None):
         self.state = 'WAITING_FOR_POWER'
         self.lock = threading.Lock()
-        self.energy_received = False
-        self.water_received = False
+        self.power_received = False
+        self.dependency_received = False
         self.tick_received = False
         self.dependencies_met = False
 
-    def receive_energy(self):
+    def receive_power(self):
         with self.lock:
-            self.energy_received = True
+            self.power_received = True
             self._update_state()
 
-    def receive_water(self):
+    def receive_dependency(self):
         with self.lock:
-            self.water_received = True
+            self.dependency_received = True
             self._update_state()
 
     def receive_tick(self):
@@ -28,13 +28,13 @@ class StateManager:
 
     def _update_state(self):
         # Update the container state based on the current conditions
-        if self.energy_received and self.water_received:
+        if self.power_received and self.dependency_received:
             if self.tick_received:
                 self.state = 'READY_TO_PROCESS'
             else:
                 self.state = 'WAITING_FOR_TICK'
-        elif self.energy_received:
-            self.state = 'WAITING_FOR_WATER'
+        elif self.power_received:
+            self.state = 'WAITING_FOR_DEPENDENCY'
         else:
             self.state = 'WAITING_FOR_POWER'
 
@@ -57,6 +57,6 @@ class StateManager:
     def _reset_state_for_next_tick(self):
         # Reset state for the next tick
         self.state = 'WAITING_FOR_POWER'
-        self.energy_received = False
-        self.water_received = False
+        self.power_received = False
+        self.dependency_received = False
         self.tick_received = False
