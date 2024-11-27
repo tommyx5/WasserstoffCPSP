@@ -4,7 +4,7 @@ import logging
 from mqtt.mqtt_wrapper import MQTTWrapper
 import math
 import os
-from statemanager import StateManager
+import threading
 
 def getenv_or_exit(env_name, default="default"):
     value = os.getenv(env_name, default)
@@ -26,6 +26,64 @@ TOPIC_DISTILLED_WATER_SUPPLY = getenv_or_exit("TOPIC_DISTIL_PLANT_DISTILLED_WATE
 
 TOPIC_FOR_POWER = getenv_or_exit("TOPIC_POWER_SUM_POWER_SUM_DATA", "default")
 TOPIC_FOR_DEP = getenv_or_exit('TOPIC_FILTER_SUM_FILTER_SUM_DATA', "default")
+
+class StateManager:
+    STATES = ['WAITING_FOR_POWER', 'WAITING_FOR_DEPENDENCY', 'WAITING_FOR_TICK', 'READY_TO_PROCESS', 'PROCESSING', 'DONE']
+
+    def __init__(self, dependencies=None):
+        self.state = 'WAITING_FOR_POWER'
+        self.lock = threading.Lock()
+        self.power_received = False
+        self.dependency_received = False
+        self.tick_received = False
+        self.dependencies_met = False
+
+    def receive_power(self):
+        with self.lock:
+            self.power_received = True
+            self._update_state()
+
+    def receive_dependency(self):
+        with self.lock:
+            self.dependency_received = True
+            self._update_state()
+
+    def receive_tick(self):
+        with self.lock:
+            self.tick_received = True
+            self._update_state()
+
+    def _update_state(self):
+        # Update the container state based on the current conditions
+        if self.power_received and self.dependency_received:
+            self.state = 'READY_TO_PROCESS'
+        elif self.power_received:
+            self.state = 'WAITING_FOR_DEPENDENCY'
+        else:
+            self.state = 'WAITING_FOR_POWER'
+
+    def is_ready_to_process(self):
+        return self.state == 'READY_TO_PROCESS'
+
+    def start_processing(self):
+        with self.lock:
+            if self.state == 'READY_TO_PROCESS':
+                self.state = 'PROCESSING'
+                return True
+            return False
+
+    def complete_processing(self):
+        with self.lock:
+            if self.state == 'PROCESSING':
+                self.state = 'DONE'
+                self._reset_state_for_next_tick()
+
+    def _reset_state_for_next_tick(self):
+        # Reset state for the next tick
+        self.state = 'WAITING_FOR_POWER'
+        self.power_received = False
+        self.dependency_received = False
+        self.tick_received = False
 
 state_manager = StateManager()
 
@@ -139,7 +197,7 @@ def main():
     """
     
     # Initialize the MQTT client and connect to the broker
-    mqtt = MQTTWrapper('mqttbroker', 1883, name='filter_plant_' + ID)
+    mqtt = MQTTWrapper('mqttbroker', 1883, name='distillation_plant_' + ID)
     
     """
     mqtt.subscribe(TICK)

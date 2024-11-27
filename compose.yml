@@ -125,6 +125,7 @@ services:
     container_name: filter_plant_0
     depends_on:
       - mqttbroker
+      - power_system
     env_file:
       - src/.env
     environment:
@@ -137,6 +138,7 @@ services:
     container_name: distillation_plant_0
     depends_on:
       - mqttbroker
+      - power_system
     env_file:
       - src/.env
     environment:
@@ -149,6 +151,7 @@ services:
     container_name: hydrogen_cell_0
     depends_on:
       - mqttbroker
+      - power_system
     env_file:
       - src/.env
     environment:
