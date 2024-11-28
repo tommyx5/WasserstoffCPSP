@@ -47,28 +47,62 @@ services:
       - hydroplant
 
   wind_power_plant_0:
-    build: ./src/wind_power_plant_0
+    build: ./src/wind_power_plant
     container_name: wind_power_plant_0
     depends_on:  
       - mqttbroker
     env_file: 
       - src/.env
+    environment:
+      - ID=0
     networks:
       - hydroplant
 
   wind_power_plant_1:
-    build: ./src/wind_power_plant_1
+    build: ./src/wind_power_plant
     container_name: wind_power_plant_1
     depends_on:  
       - mqttbroker
     env_file: 
       - src/.env
+    environment:
+      - ID=1
     networks:
       - hydroplant
 
-  wind_power_sum:
+  power_system:
     build: ./src/wind_power_sum
-    container_name: wind_power_sum
+    container_name: power_system
+    depends_on:  
+      - mqttbroker
+    env_file:
+      - src/.env
+    networks:
+      - hydroplant
+
+  filter_system:
+    build: ./src/filter_system_sum
+    container_name: filter_system
+    depends_on:  
+      - mqttbroker
+    env_file:
+      - src/.env
+    networks:
+      - hydroplant
+
+  distillation_system:
+    build: ./src/distillation_system_sum
+    container_name: distillation_system
+    depends_on:  
+      - mqttbroker
+    env_file:
+      - src/.env
+    networks:
+      - hydroplant
+  
+  hydrogen_system:
+    build: ./src/hydrogen_cell_sum
+    container_name: hydrogen_system
     depends_on:  
       - mqttbroker
     env_file:
@@ -83,6 +117,42 @@ services:
       - mqttbroker
     env_file: # file with environmental variables
       - src/.env
+    networks:
+      - hydroplant
+
+  filter_plant_0:
+    build: ./src/filter_plant
+    container_name: filter_plant_0
+    depends_on:
+      - mqttbroker
+    env_file:
+      - src/.env
+    environment:
+      - ID=0
+    networks:
+      - hydroplant
+
+  distillation_plant_0:
+    build: ./src/distillation_plant
+    container_name: distillation_plant_0
+    depends_on:
+      - mqttbroker
+    env_file:
+      - src/.env
+    environment:
+      - ID=0
+    networks:
+      - hydroplant
+
+  hydrogen_cell_0:
+    build: ./src/hydrogen_cell
+    container_name: hydrogen_cell_0
+    depends_on:
+      - mqttbroker
+    env_file:
+      - src/.env
+    environment:
+      - ID=0
     networks:
       - hydroplant
 

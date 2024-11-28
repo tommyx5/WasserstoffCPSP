@@ -3,13 +3,20 @@ import json
 import logging
 from random import seed, randint
 from mqtt.mqtt_wrapper import MQTTWrapper
+import os
 
-# MQTT topic for publishing sensor data
-HYDROGEN_CELL_SUM_DATA = "data/hydrogen/sum"
+def getenv_or_exit(env_name, default="default"):
+    value = os.getenv(env_name, default)
+    if value == default:
+        raise SystemExit(f"Environment variable {env_name} not set")
+    return value
 
 # MQTT topic for receiving tick messages
-COUNT_HYDROGEN_CELL = 10 #?
-HYDROGEN_CELL_DATA = "data/hydrogen/"
+COUNT_HYDROGEN_CELL = int(getenv_or_exit("HYDROGEN_SUM_COUNT_HYDROGEN_CELL", 0))
+
+HYDROGEN_CELL_SUM_DATA = getenv_or_exit("TOPIC_HYDROGEN_SUM_HYDROGEN_SUM_DATA", "default")
+HYDROGEN_CELL_DATA = getenv_or_exit("TOPIC_HYDROGEN_CELL_HYDROGEN_SUPPLY", "default")
+
 HYDROGEN_CELL_DATA_LIST = []
 for i in range(COUNT_HYDROGEN_CELL):
     HYDROGEN_CELL_DATA_LIST.append(HYDROGEN_CELL_DATA+str(i))
@@ -25,9 +32,15 @@ for i in range(COUNT_TICKS_MAX):
 def calc_mean():
     global SUM_HYDROGEN, MEAN_HYDROGEN, HYDROGEN_LIST
     summe = 0
+    count = 0
     for i in range(COUNT_TICKS_MAX):
-        summe += HYDROGEN_LIST[i]
-    MEAN_HYDROGEN = round(summe / COUNT_TICKS_MAX, 2)
+        if HYDROGEN_LIST[i] > 0:
+                summe += HYDROGEN_LIST[i]
+                count += 1
+        if count > 0:
+            MEAN_HYDROGEN = round(summe / count, 2)
+        else:
+            MEAN_HYDROGEN = 0
 
 
 def on_message_power(client, userdata, msg):
@@ -37,8 +50,9 @@ def on_message_power(client, userdata, msg):
     global COUNT_HYDROGEN_CELL
 
     payload = json.loads(msg.payload) 
-    hydrogen = payload["hydrogen"]
+    hydrogen = payload["hydrogensupply"]
     timestamp = payload["timestamp"]
+
     if COUNT % COUNT_HYDROGEN_CELL == 0:
         SUM_HYDROGEN = hydrogen
     else:
