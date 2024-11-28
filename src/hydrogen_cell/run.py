@@ -25,7 +25,8 @@ TOPIC_POWER_RECIEVE = getenv_or_exit("TOPIC_HYDROGEN_CELL_POWER_RECIEVE", "defau
 TOPIC_HYDROGEN_SUPPLY = getenv_or_exit("TOPIC_HYDROGEN_CELL_HYDROGEN_SUPPLY", "default") + ID # must be followed by filter plant id
 
 TOPIC_FOR_POWER = getenv_or_exit("TOPIC_POWER_SUM_POWER_SUM_DATA", "default")
-TOPIC_FOR_DEP = getenv_or_exit('TOPIC_DISTIL_SUM_DISTIL_SUM_DATA', "default")
+#TOPIC_FOR_DEP = getenv_or_exit('TOPIC_DISTIL_SUM_DISTIL_SUM_DATA', "default") # subscribe to distollation data (commented out for making life easier)
+TOPIC_FOR_DEP = getenv_or_exit('TOPIC_FILTER_SUM_FILTER_SUM_DATA', "default")
 
 AVAILABLE = 0 
 TIMESTAMP = 0
@@ -123,7 +124,8 @@ def on_message_water_received(client, userdata, msg):
 
     payload = json.loads(msg.payload)
     timestamp = payload["timestamp"]
-    water_supply = payload["dwater"]
+    #water_supply = payload["dwater"] # supply of distilled water (commented out for easier life)  
+    water_supply = payload["fwater"]
     
     TIMESTAMP = timestamp
     AVAILABLE = water_supply
