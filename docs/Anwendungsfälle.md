@@ -36,7 +36,7 @@ Das System meldet zurück, wenn die Wasserstoffzelle überhitzt ist und die Arbe
 | Bezeichner | UC-02 |
 | Name | zu wenig Strom |
 | Autoren | Alex, Dany, Tommy |
-| Priorität | Wichtigkeit für Systemerfolg "sehr hoch" |
+| Priorität | Wichtigkeit für Systemerfolg "hoch" |
 | Kurzbeschreibung | Produktion muss verringgert werden, aufgrund von zu wenig Strom |
 | Auslösendes Ereignis | Windkraftanlage liefert zu wenig Strom|
 | Akteure | Windkraftanlagen, Abnahmegenerator, Wasserstoffzellen, Filteranlagen, Destillierungsanlagen |
@@ -54,16 +54,14 @@ Das System meldet zurück, wenn die Wasserstoffzelle überhitzt ist und die Arbe
 | Bezeichner | UC-03 |
 | Name | Wasserstoffzelle fällt aus |
 | Autoren | Alex, Dany, Tommy |
-| Priorität | Wichtigkeit für Systemerfolg "sehr hoch" |
-| Kurzbeschreibung | Produktion muss verringgert werden, aufgrund von zu wenig Strom |
-| Auslösendes Ereignis | Windkraftanlage liefert zu wenig Strom|
+| Priorität | Wichtigkeit für Systemerfolg "hoch" |
+| Kurzbeschreibung | Produktion muss angepasst werden, aufgrund von Ausfall von Wasserstoffzelle |
+| Auslösendes Ereignis | Wasserstoff Produktion zu niedrig|
 | Akteure | Windkraftanlagen, Abnahmegenerator, Wasserstoffzellen, Filteranlagen, Destillierungsanlagen |
-| Vorbedingung | Wasser vorhanden, zu wenig Energie vorhanden, Wasserstoffzellen einsatzfähig |
+| Vorbedingung | Wasser vorhanden, Energie vorhanden, Wasserstoffzellen teilweise einsatzfähig |
 | Nachbedingung | Produktion wurde angepasst |
 | Hauptszenario | 1. Wasserstoffzelle wird neu skaliert
-||2. Filteranlage wird neu skaliert
-||3. Destillierungsanlage wird neu skaliert
-||4. Windkraftanlage wird neu skaliert
+
 
 <br>
 
@@ -72,16 +70,14 @@ Das System meldet zurück, wenn die Wasserstoffzelle überhitzt ist und die Arbe
 | Bezeichner | UC-04 |
 | Name | Filteranlage fällt aus |
 | Autoren | Alex, Dany, Tommy |
-| Priorität | Wichtigkeit für Systemerfolg "sehr hoch" |
-| Kurzbeschreibung | Produktion muss verringgert werden, aufgrund von zu wenig Strom |
-| Auslösendes Ereignis | Windkraftanlage liefert zu wenig Strom|
+| Priorität | Wichtigkeit für Systemerfolg "hoch" |
+| Kurzbeschreibung | Produktion muss angepasst werden, aufgrund von Ausfall von Fitleranlage |
+| Auslösendes Ereignis | Produktion gefiltertes Wasser zu niedrig|
 | Akteure | Windkraftanlagen, Abnahmegenerator, Wasserstoffzellen, Filteranlagen, Destillierungsanlagen |
-| Vorbedingung | Wasser vorhanden, zu wenig Energie vorhanden, Wasserstoffzellen einsatzfähig |
+| Vorbedingung | Wasser vorhanden, Energie vorhanden, Filteranlage teilweise einsatzfähig |
 | Nachbedingung | Produktion wurde angepasst |
-| Hauptszenario | 1. Wasserstoffzelle wird neu skaliert
-||2. Filteranlage wird neu skaliert
-||3. Destillierungsanlage wird neu skaliert
-||4. Windkraftanlage wird neu skaliert
+| Hauptszenario | 1. Filteranlage wird neu skaliert
+
 
 <br>
 
@@ -90,16 +86,13 @@ Das System meldet zurück, wenn die Wasserstoffzelle überhitzt ist und die Arbe
 | Bezeichner | UC-05 |
 | Name | Destillierungsanlage fällt aus |
 | Autoren | Alex, Dany, Tommy |
-| Priorität | Wichtigkeit für Systemerfolg "sehr hoch" |
-| Kurzbeschreibung | Produktion muss verringgert werden, aufgrund von zu wenig Strom |
-| Auslösendes Ereignis | Windkraftanlage liefert zu wenig Strom|
+| Priorität | Wichtigkeit für Systemerfolg "hoch" |
+| Kurzbeschreibung | Produktion muss angepasst werden, aufgrund von Ausfall von Destillierungsanlage |
+| Auslösendes Ereignis | Produktion destilliertes Wasser zu niedrig|
 | Akteure | Windkraftanlagen, Abnahmegenerator, Wasserstoffzellen, Filteranlagen, Destillierungsanlagen |
-| Vorbedingung | Wasser vorhanden, zu wenig Energie vorhanden, Wasserstoffzellen einsatzfähig |
+| Vorbedingung | Wasser vorhanden, Energie vorhanden, Destillierungsanlagen teilweise einsatzfähig |
 | Nachbedingung | Produktion wurde angepasst |
-| Hauptszenario | 1. Wasserstoffzelle wird neu skaliert
-||2. Filteranlage wird neu skaliert
-||3. Destillierungsanlage wird neu skaliert
-||4. Windkraftanlage wird neu skaliert
+| Hauptszenario | 1. Destillierungsanlage wird neu skaliert
 
 <br>
 
@@ -108,16 +101,16 @@ Das System meldet zurück, wenn die Wasserstoffzelle überhitzt ist und die Arbe
 | Bezeichner | UC-06 |
 | Name | Windkraftanlage fällt aus |
 | Autoren | Alex, Dany, Tommy |
-| Priorität | Wichtigkeit für Systemerfolg "sehr hoch" |
-| Kurzbeschreibung | Produktion muss verringgert werden, aufgrund von zu wenig Strom |
-| Auslösendes Ereignis | Windkraftanlage liefert zu wenig Strom|
+| Priorität | Wichtigkeit für Systemerfolg "hoch" |
+| Kurzbeschreibung | gesamte Produktion wird gestoppt |
+| Auslösendes Ereignis | Windkraftanlage liefert keinen Strom|
 | Akteure | Windkraftanlagen, Abnahmegenerator, Wasserstoffzellen, Filteranlagen, Destillierungsanlagen |
-| Vorbedingung | Wasser vorhanden, zu wenig Energie vorhanden, Wasserstoffzellen einsatzfähig |
-| Nachbedingung | Produktion wurde angepasst |
-| Hauptszenario | 1. Wasserstoffzelle wird neu skaliert
-||2. Filteranlage wird neu skaliert
-||3. Destillierungsanlage wird neu skaliert
-||4. Windkraftanlage wird neu skaliert
+| Vorbedingung | System vollständig funktionsfähig, kein Strom mehr |
+| Nachbedingung | Produktion wurde gestoppt |
+| Hauptszenario | 1. Wasserstoffzelle wird gestoppt
+||2. Filteranlage wird neu gestoppt
+||3. Destillierungsanlage wird neu gestoppt
+||4. Windkraftanlage wird neu gestoppt
 
 
 
