@@ -97,15 +97,15 @@ services:
     networks:
       - hydroplant
 
-  distillation_system:
-    build: ./src/distillation_system_sum
-    container_name: distillation_system
-    depends_on:  
-      - mqttbroker
-    env_file:
-      - src/.env
-    networks:
-      - hydroplant
+#  distillation_system:
+#    build: ./src/distillation_system_sum
+#    container_name: distillation_system
+#    depends_on:  
+#      - mqttbroker
+#    env_file:
+#      - src/.env
+#    networks:
+#      - hydroplant
   
   hydrogen_system:
     build: ./src/hydrogen_cell_sum
