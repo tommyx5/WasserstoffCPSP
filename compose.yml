@@ -13,6 +13,13 @@ services:
     container_name: tick_gen
     depends_on:  # the service that needs to be started before 
       - mqttbroker
+      - dashboard
+      - climate_gen_hamburg
+      - request_hydrogen_gen
+      - power_system
+      - distillation_system
+      - filter_system
+      - hydrogen_system
     env_file: # file with environmental variables
       - src/.env  
     networks: # network of containers
@@ -132,17 +139,17 @@ services:
     networks:
       - hydroplant
 
-  distillation_plant_0:
-    build: ./src/distillation_plant
-    container_name: distillation_plant_0
-    depends_on:
-      - mqttbroker
-    env_file:
-      - src/.env
-    environment:
-      - ID=0
-    networks:
-      - hydroplant
+#  distillation_plant_0:
+#    build: ./src/distillation_plant
+#    container_name: distillation_plant_0
+#    depends_on:
+#      - mqttbroker
+#    env_file:
+#      - src/.env
+#    environment:
+#      - ID=0
+#    networks:
+#      - hydroplant
 
   hydrogen_cell_0:
     build: ./src/hydrogen_cell

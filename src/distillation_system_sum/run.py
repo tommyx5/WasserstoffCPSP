@@ -109,11 +109,11 @@ def on_message_power(client, userdata, msg):
         DWATER_LIST[COUNT_TICKS] = SUM_DWATER
         calc_mean()
         COUNT_TICKS = (COUNT_TICKS + 1) % COUNT_TICKS_MAX
-        if COUNT == COUNT_DISTILLATION_SYSTEM-1:
-            # Extract the timestamp from the tick message and decode it from UTF-8
-            data = {"dwater": SUM_DWATER, "mean_dwater": MEAN_DWATER, "timestamp": timestamp}
-            # Publish the data to the chaos sensor topic in JSON format
-            client.publish(DISTILLATION_SYSTEM_SUM_DATA, json.dumps(data))
+    if COUNT == COUNT_DISTILLATION_SYSTEM-1:
+        # Extract the timestamp from the tick message and decode it from UTF-8
+        data = {"dwater": SUM_DWATER, "mean_dwater": MEAN_DWATER, "timestamp": timestamp}
+        # Publish the data to the chaos sensor topic in JSON format
+        client.publish(DISTILLATION_SYSTEM_SUM_DATA, json.dumps(data))
     COUNT = (COUNT + 1) % COUNT_DISTILLATION_SYSTEM
     
 
@@ -126,11 +126,13 @@ def main():
     # Initialize the MQTT client and connect to the broker
     mqtt = MQTTWrapper('mqttbroker', 1883, name='distillation_system_sum')
     
+    """
     mqtt.subscribe(TICK)
     mqtt.subscribe_with_callback(TICK, on_message_tick)
     mqtt.subscribe(TOPIC_REQUEST)
     mqtt.subscribe_with_callback(TOPIC_REQUEST, on_message_request)
-
+    """
+    
     for topic in DISTILLATION_SYSTEM_DATA_LIST:
         # Subscribe to the tick topic
         mqtt.subscribe(topic)

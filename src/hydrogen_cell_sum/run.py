@@ -11,7 +11,6 @@ def getenv_or_exit(env_name, default="default"):
         raise SystemExit(f"Environment variable {env_name} not set")
     return value
 
-# MQTT topic for receiving tick messages
 COUNT_HYDROGEN_CELL = int(getenv_or_exit("HYDROGEN_SUM_COUNT_HYDROGEN_CELL", 0))
 
 HYDROGEN_CELL_SUM_DATA = getenv_or_exit("TOPIC_HYDROGEN_SUM_HYDROGEN_SUM_DATA", "default")
@@ -22,6 +21,7 @@ for i in range(COUNT_HYDROGEN_CELL):
     HYDROGEN_CELL_DATA_LIST.append(HYDROGEN_CELL_DATA+str(i))
 
 SUM_HYDROGEN = 0
+MEAN_HYDROGEN = 0
 COUNT = 0
 HYDROGEN_LIST = []
 COUNT_TICKS_MAX = 24*4
@@ -53,19 +53,24 @@ def on_message_power(client, userdata, msg):
     hydrogen = payload["hydrogensupply"]
     timestamp = payload["timestamp"]
 
-    if COUNT % COUNT_HYDROGEN_CELL == 0:
-        SUM_HYDROGEN = hydrogen
-    else:
-        SUM_HYDROGEN += hydrogen
-        HYDROGEN_LIST[COUNT_TICKS] = SUM_HYDROGEN
-        calc_mean()
-        COUNT_TICKS = (COUNT_TICKS + 1) % COUNT_TICKS_MAX
-        if COUNT == COUNT_HYDROGEN_CELL-1:
-            # Extract the timestamp from the tick message and decode it from UTF-8
-            data = {"hydrogen": SUM_HYDROGEN, "mean_hydrogen": MEAN_HYDROGEN, "timestamp": timestamp}
-            # Publish the data to the chaos sensor topic in JSON format
-            client.publish(HYDROGEN_CELL_SUM_DATA, json.dumps(data))
+    #if COUNT % COUNT_HYDROGEN_CELL == 0:
+        #SUM_HYDROGEN = hydrogen
+    #else:
+    SUM_HYDROGEN += hydrogen
+    HYDROGEN_LIST[COUNT_TICKS] = SUM_HYDROGEN
+    calc_mean()
+    COUNT_TICKS = (COUNT_TICKS + 1) % COUNT_TICKS_MAX
+    if COUNT == COUNT_HYDROGEN_CELL-1:
+        # Extract the timestamp from the tick message and decode it from UTF-8
+        data = {"hydrogen": SUM_HYDROGEN, "mean_hydrogen": MEAN_HYDROGEN, "timestamp": timestamp}
+        # Publish the data to the chaos sensor topic in JSON format
+        client.publish(HYDROGEN_CELL_SUM_DATA, json.dumps(data))
+        if COUNT_TICKS == 0:        
+            SUM_HYDROGEN = 0 
+            MEAN_HYDROGEN = 0
+
     COUNT = (COUNT + 1) % COUNT_HYDROGEN_CELL
+
     
 
 def main():

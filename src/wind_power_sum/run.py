@@ -31,7 +31,7 @@ COUNT_TICKS = 0
 for i in range(COUNT_TICKS_MAX):
     POWER_LIST.append(0)
 
-available_power = 0    
+available_power = 0   
 
 def calc_mean():
     global SUM_POWER, MEAN_POWER, POWER_LIST
@@ -49,6 +49,7 @@ def calc_mean():
 def on_message_tick(client, userdata, msg):
     # reset each tick available power to 0
     global available_power
+    #available_power =  1000
     available_power =  0
 
 def calculate_supply(demand):
@@ -82,11 +83,11 @@ def on_message_power(client, userdata, msg):
         POWER_LIST[COUNT_TICKS] = SUM_POWER
         calc_mean()
         COUNT_TICKS = (COUNT_TICKS + 1) % COUNT_TICKS_MAX
-        if COUNT == COUNT_POWER_GEN-1:
-            # Extract the timestamp from the tick message and decode it from UTF-8
-            data = {"power": SUM_POWER, "mean_power": MEAN_POWER, "timestamp": timestamp}
-            # Publish the data to the chaos sensor topic in JSON format
-            client.publish(WIND_POWER_SUM_DATA, json.dumps(data))
+    if COUNT == COUNT_POWER_GEN-1:
+        # Extract the timestamp from the tick message and decode it from UTF-8
+        data = {"power": SUM_POWER, "mean_power": MEAN_POWER, "timestamp": timestamp}
+        # Publish the data to the chaos sensor topic in JSON format
+        client.publish(WIND_POWER_SUM_DATA, json.dumps(data))
     COUNT = (COUNT + 1) % COUNT_POWER_GEN
     
 def on_message_request(client, userdata, msg):
@@ -145,4 +146,3 @@ def main():
 if __name__ == '__main__':
     # Entry point for the script
     main()
-
