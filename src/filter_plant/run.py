@@ -12,9 +12,12 @@ def getenv_or_exit(env_name, default="default"):
     return value
 
 ID = getenv_or_exit("ID", "default")
-WATER_DEMAND = float(getenv_or_exit("FILTER_PLANT_" + ID + "_WATER_DEMAND", 0.0)) # in m^3
-POWER_DEMAND = float(getenv_or_exit("FILTER_PLANT_" + ID + "_POWER_DEMAND", 0.0)) # in kW
-WATER_SUPPLY = float(getenv_or_exit("FILTER_PLANT_" + ID + "_FILTERED_WATER_MAX_SUPPLY", 0.0)) # in m^3
+NOMINAL_WATER_DEMAND = float(getenv_or_exit("FILTER_PLANT_" + ID + "_WATER_DEMAND", 0.0)) # in m^3
+NOMINAL_POWER_DEMAND = float(getenv_or_exit("FILTER_PLANT_" + ID + "_POWER_DEMAND", 0.0)) # in kW
+NOMINAL_WATER_SUPPLY = float(getenv_or_exit("FILTER_PLANT_" + ID + "_FILTERED_WATER_MAX_SUPPLY", 0.0)) # in m^3
+NOMINAL_PERFORMANCE = NOMINAL_WATER_SUPPLY / NOMINAL_POWER_DEMAND # m^3/kW 
+
+PRODUCE_LOSSES = 0.01 # Percent of ressources lost during proccesing 
 
 TICK = getenv_or_exit("TOPIC_TICK_GEN_TICK", "default")
 TOPIC_WATER_REQUEST = getenv_or_exit("TOPIC_WATER_PIPE_WATER_REQUEST", "default") # topic to request water
@@ -25,15 +28,16 @@ TOPIC_FILTERED_WATER_SUPPLY = getenv_or_exit("TOPIC_FILTER_PLANT_FILTERED_WATER_
 TOPIC_KPI = getenv_or_exit("TOPIC_FILTER_PLANT_KPI", "default") + ID # Topic to post kpis
 TOPIC_PLANED_AMOUNT = getenv_or_exit("TOPIC_FILTER_PLANT_PLANED_AMOUNT", "default") + ID # topic to receive produce planed amount for the next tick
 
-PLANED_POWER_DEMAND = POWER_DEMAND
-PLANED_WATER_DEMAND = WATER_DEMAND
-PLANED_WATER_SUPPLY = WATER_SUPPLY
+PLANED_POWER_DEMAND = NOMINAL_POWER_DEMAND
+PLANED_WATER_DEMAND = NOMINAL_WATER_DEMAND
+PLANED_WATER_SUPPLY = NOMINAL_WATER_SUPPLY
 
 POWER_SUPPLIED = 0
 WATER_SUPPLIED = 0
+FILTERED_WATER_PRODUCED = 0
 TIMESTAMP = 0
 
-STATUS = False
+STATUS = True
 EFFICIENCY = 0
 PRODUCTION = 0
 CURRENT_PERFORMANCE = 0
@@ -147,7 +151,21 @@ def produce_on_supplied_water():
     return filtered_water
 
 def calculate_kpis():
+    global EFFICIENCY, PRODUCTION, CURRENT_PERFORMANCE
+    global FILTERED_WATER_PRODUCED, POWER_SUPPLIED, WATER_SUPPLIED, NOMINAL_WATER_SUPPLY
+
+    EFFICIENCY = FILTERED_WATER_PRODUCED / POWER_SUPPLIED
+    PRODUCTION = FILTERED_WATER_PRODUCED / WATER_SUPPLIED
+    CURRENT_PERFORMANCE = FILTERED_WATER_PRODUCED / NOMINAL_WATER_SUPPLY
+
     return False
+
+def calculate_planed_demand():
+    global PLANED_WATER_SUPPLY, PLANED_WATER_DEMAND, PLANED_POWER_DEMAND, PRODUCE_LOSSES, NOMINAL_PERFORMANCE 
+
+    PLANED_WATER_DEMAND = PLANED_WATER_SUPPLY * PRODUCE_LOSSES
+
+    PLANED_POWER_DEMAND = NOMINAL_PERFORMANCE * PLANED_WATER_DEMAND
 
 def on_message_tick(client, userdata, msg):
     global state_manager, TIMESTAMP, TOPIC_POWER_REQUEST, ID, TOPIC_POWER_RECIEVE, PLANED_POWER_DEMAND
@@ -174,9 +192,9 @@ def on_message_power_received(client, userdata, msg):
     payload = json.loads(msg.payload)
     timestamp = payload["timestamp"]
     POWER_SUPPLIED = payload["amount"]
-    # Calculate water demand based on supplied power
-    water_demand = water_demand_on_supplied_power()
 
+    # Calculate water demand based on supplied power and publish water request
+    water_demand = water_demand_on_supplied_power()
     send_request_msg(client, TOPIC_WATER_REQUEST, TIMESTAMP, ID, TOPIC_WATER_RECIEVE, water_demand)
 
     #state_manager.receive_power()
@@ -188,19 +206,31 @@ def on_message_water_received(client, userdata, msg):
     It processes how much water is received from water pipe and generates the coresponding volume of filtered volume.
     After that publishes it along with the timestamp.
     """
-    global state_manager, TIMESTAMP, WATER_SUPPLIED, TOPIC_FILTERED_WATER_SUPPLY, TOPIC_KPI
+    global state_manager, TIMESTAMP, WATER_SUPPLIED, TOPIC_FILTERED_WATER_SUPPLY, TOPIC_KPI, ID, FILTERED_WATER_PRODUCED
+    global STATUS, EFFICIENCY, PRODUCTION, CURRENT_PERFORMANCE
 
     payload = json.loads(msg.payload)
     timestamp = payload["timestamp"]
     WATER_SUPPLIED = payload["amount"]
-    # Calculate the amount of filtered water based on supplied water 
-    filtered_water_supply = produce_on_supplied_water()
-    
-    send_supply_msg(client, TOPIC_FILTERED_WATER_SUPPLY, TIMESTAMP, filtered_water_supply)
 
+    # Calculate the amount of filtered water based on supplied water and publish supply msg 
+    FILTERED_WATER_PRODUCED = produce_on_supplied_water()
+    send_supply_msg(client, TOPIC_FILTERED_WATER_SUPPLY, TIMESTAMP, FILTERED_WATER_PRODUCED)
+
+    # Calculate the current KPIs and publish them
     calculate_kpis()
-    send_kpi_msg(client, TOPIC_KPI)
+    send_kpi_msg(client, TOPIC_KPI, TIMESTAMP, ID, STATUS, EFFICIENCY, PRODUCTION, CURRENT_PERFORMANCE)
+
     #state_manager.receive_dependency()  # Mark water as received in state manager
+
+def on_message_plan(client, userdata, msg):
+    global PLANED_WATER_SUPPLY
+
+    payload = json.loads(msg.payload)
+    timestamp = payload["timestamp"]
+    PLANED_WATER_SUPPLY = payload["amount"]
+
+    calculate_planed_demand()
 
 def main():
     """
@@ -218,7 +248,7 @@ def main():
     mqtt.subscribe_with_callback(TICK, on_message_tick)
     mqtt.subscribe_with_callback(TOPIC_WATER_RECIEVE, on_message_water_received)
     mqtt.subscribe_with_callback(TOPIC_POWER_RECIEVE, on_message_power_received)
-    #mqtt.subscribe_with_callback(TOPIC_PLANED_AMOUNT, on_message_plan)
+    mqtt.subscribe_with_callback(TOPIC_PLANED_AMOUNT, on_message_plan)
     
     try:
         # Start the MQTT loop to process incoming and outgoing messages
