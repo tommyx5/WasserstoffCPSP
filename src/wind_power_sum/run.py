@@ -5,6 +5,10 @@ from random import seed, randint
 from mqtt.mqtt_wrapper import MQTTWrapper
 import os
 
+TEST = False
+TEST_DATA = {"payload": "THIS IS A BASE TEST!"}
+TETS_TOPIC = "data/test"
+
 def getenv_or_exit(env_name, default="default"):
     value = os.getenv(env_name, default)
     if value == default:
@@ -20,6 +24,7 @@ COUNT_FILTER_PLANT = int(getenv_or_exit("COUNT_FILTER_PLANT", 0))
 COUNT_HYDROGEN_PLANT = int(getenv_or_exit("COUNT_HYDROGEN_PLANT", 0))
 
 TICK = getenv_or_exit('TOPIC_TICK_GEN_TICK', 'default')
+TOPIC_ADAPTIVE_MODE = getenv_or_exit('TOPIC_ADAPTIVE_MODE', 'default')
 WIND_POWER_SUM_DATA = getenv_or_exit("TOPIC_POWER_SUM_POWER_SUM_DATA", "default")
 WIND_POWER_DATA = getenv_or_exit("TOPIC_POWER_PLANT_POWER_DATA", "default")
 TOPIC_FILTER_REQUEST = getenv_or_exit("TOPIC_POWER_FILTER_POWER_DATA", "default")
@@ -76,8 +81,9 @@ for i in range(COUNT_TICKS_MAX):
 ADAPTIVE = False
 
 def main():
-    mqtt = MQTTWrapper('mqttbroker', 1883, name='wind_power_sum')
-    
+    mqtt = MQTTWrapper('mqttbroker', 1883, name='wind_power_sum')   
+    mqtt.subscribe(TOPIC_ADAPTIVE_MODE)
+    mqtt.subscribe_with_callback(TOPIC_ADAPTIVE_MODE, on_message_adaptive_mode)
     for topic in WIND_POWER_TOPIC_LIST:
         mqtt.subscribe(topic)
         mqtt.subscribe_with_callback(topic, on_message_power)
@@ -128,13 +134,15 @@ def calculate_supply():
             sum_eff += PLANT_DATA[typ][id]["eff"]
             sum_prod += PLANT_DATA[typ][id]["prod"]
             sum_cper += PLANT_DATA[typ][id]["cper"]
-    for id in PLANT_DATA["filter"].keys():      
+    typ = "filter"
+    for id in PLANT_DATA[typ].keys():
         PLANT_DATA[typ][id]["priority"] = (PLANT_DATA[typ][id]["eff"]/sum_eff+
                                             PLANT_DATA[typ][id]["prod"]/sum_prod+
                                             PLANT_DATA[typ][id]["cper"]/sum_cper)
         result_list.append([PLANT_DATA[typ][id]["priority"],typ,PLANT_DATA[typ][id],PLANT_DATA[typ][id]["amount"],PLANT_DATA[typ][id]["reply_topic"]])
     result_list.sort(key=get_key,reverse=True)
-    for id in PLANT_DATA["hydrogen"].keys():      
+    typ = "hydrogen"
+    for id in PLANT_DATA[typ].keys():      
         PLANT_DATA[typ][id]["priority"] = (PLANT_DATA[typ][id]["eff"]/sum_eff+
                                             PLANT_DATA[typ][id]["prod"]/sum_prod+
                                             PLANT_DATA[typ][id]["cper"]/sum_cper)
@@ -162,6 +170,13 @@ def calculate_supply():
             result_list[i][3] = 0
     return result_list
     
+def on_message_adaptive_mode(client, userdata, msg):
+    global ADAPTIVE
+    ADAPTIVE = bool(msg.payload.decode("utf-8"))
+    if TEST:
+        client.publish(TETS_TOPIC, json.dumps({"payload": "on_message_adaptive_mode"}))
+    
+    
 def on_message_power(client, userdata, msg):
     global WIND_POWER_SUM_DATA
     global COUNT, COUNT_TICKS_MAX, COUNT_TICKS
@@ -186,6 +201,8 @@ def on_message_power(client, userdata, msg):
         client.publish(WIND_POWER_SUM_DATA, json.dumps(data))
         AVAILABLE_POWER = SUM_POWER
     COUNT = (COUNT + 1) % COUNT_POWER_GEN
+    if TEST:
+        client.publish(TETS_TOPIC, json.dumps({"payload": "on_message_power"}))
 
 def on_message_filter_kpi(client, userdata, msg):
     global PLANT_DATA
@@ -197,6 +214,8 @@ def on_message_filter_kpi(client, userdata, msg):
     PLANT_DATA["filter"][plant_id]["eff"] = payload["eff"]
     PLANT_DATA["filter"][plant_id]["prod"] = payload["prod"]
     PLANT_DATA["filter"][plant_id]["cper"] = payload["cper"]
+    if TEST:
+        client.publish(TETS_TOPIC, json.dumps({"payload": "on_message_filter_kpi"}))
 
     
 def on_message_hydrogen_kpi(client, userdata, msg):
@@ -209,13 +228,15 @@ def on_message_hydrogen_kpi(client, userdata, msg):
     PLANT_DATA["hydrogen"][plant_id]["eff"] = payload["eff"]
     PLANT_DATA["hydrogen"][plant_id]["prod"] = payload["prod"]
     PLANT_DATA["hydrogen"][plant_id]["cper"] = payload["cper"]
+    if TEST:
+        client.publish(TETS_TOPIC, json.dumps({"payload": "on_message_hydrogen_kpi"}))
  
 def on_message_request(client, userdata, msg):
     global PLANT_DATA, ADAPTIVE, AVAILABLE_POWER
     #extracting the timestamp and other data
     payload = json.loads(msg.payload)
     plant_id = payload["plant_id"]
-    plant_type = payload["replay_topic"].split("/")[3]
+    plant_type = payload["reply_topic"].split("/")[3]
     ptype = "hydrogen"
     if (plant_type == "filter_plant"):
         ptype = "filter"
@@ -241,6 +262,8 @@ def on_message_request(client, userdata, msg):
                     "amount": e[3]
                 }
                 client.publish(e[4], json.dumps(data))
+            if TEST:
+                client.publish(TETS_TOPIC, json.dumps({"payload": result_list}))
     else: #FIFO
         supplied_power = 0
         if AVAILABLE_POWER - PLANT_DATA[ptype][plant_id]["amount"] > 0:
@@ -250,7 +273,8 @@ def on_message_request(client, userdata, msg):
             "timestamp": payload["timestamp"],
             "amount": supplied_power
         }
-        client.publish(e[4], json.dumps(data))
+        client.publish(payload["reply_topic"], json.dumps(data))
+
 
 if __name__ == '__main__':
     # Entry point for the script
