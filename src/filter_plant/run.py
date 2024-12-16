@@ -19,9 +19,9 @@ PRODUCTION_LOSSES = float(getenv_or_exit("FILTER_PLANT_" + ID + "_PRODUCTION_LOS
 
 TICK = getenv_or_exit("TOPIC_TICK_GEN_TICK", "default")
 TOPIC_WATER_REQUEST = getenv_or_exit("TOPIC_WATER_PIPE_WATER_REQUEST", "default") # topic to request water
-TOPIC_WATER_RECIEVE = getenv_or_exit("TOPIC_FILTER_PLANT_WATER_RECIEVE", "default") + ID # must be followed by filter plant id
+TOPIC_WATER_RECEIVE = getenv_or_exit("TOPIC_FILTER_PLANT_WATER_RECEIVE", "default") + ID # must be followed by filter plant id
 TOPIC_POWER_REQUEST = getenv_or_exit("TOPIC_POWER_SUM_POWER_REQUEST", "default") # topic to request power
-TOPIC_POWER_RECIEVE = getenv_or_exit("TOPIC_FILTER_PLANT_POWER_RECIEVE", "default") + ID # must be followed by filter plant id
+TOPIC_POWER_RECEIVE = getenv_or_exit("TOPIC_FILTER_PLANT_POWER_RECEIVE", "default") + ID # must be followed by filter plant id
 TOPIC_FILTERED_WATER_SUPPLY = getenv_or_exit("TOPIC_FILTER_PLANT_FILTERED_WATER_SUPPLY", "default") + ID # must be followed by filter plant id
 TOPIC_KPI = getenv_or_exit("TOPIC_FILTER_PLANT_KPI", "default") + ID # Topic to post kpis
 TOPIC_PLANED_AMOUNT = getenv_or_exit("TOPIC_FILTER_PLANT_PLANED_AMOUNT", "default") + ID # topic to receive produce planed amount for the next tick
@@ -168,6 +168,10 @@ def calculate_planed_demand():
     PLANED_POWER_DEMAND = NOMINAL_PERFORMANCE * PLANED_WATER_DEMAND
 
 def on_message_tick(client, userdata, msg):
+    """
+    Callback function that processes messages from the tick topic.
+    It send the request msg for the calculated planed power demand from previous tick
+    """
     global state_manager, TIMESTAMP, TOPIC_POWER_REQUEST, ID, TOPIC_POWER_RECIEVE, PLANED_POWER_DEMAND
 
     # get timestamp from tick msg and request power   
@@ -179,12 +183,10 @@ def on_message_tick(client, userdata, msg):
 
 def on_message_power_received(client, userdata, msg):
     """
-    Callback function that processes messages from the tick generator topic.
-    It publishes topic with request for water and power
-    
-    Parameters:
-    client (MQTT client): The MQTT client instance
-    msg (MQTTMessage): The message containing the tick timestamp
+    Callback function that processes messages from the power received topic.
+    It processes how much power is received from power plant and calculates the coresponding volume of water,
+    that can be proccessed with this power / was planed as demand.
+    After that it publishes the water request msg.
     """
     global state_manager, TIMESTAMP
     global TOPIC_WATER_REQUEST, ID, TOPIC_WATER_RECIEVE, POWER_SUPPLIED
@@ -199,12 +201,11 @@ def on_message_power_received(client, userdata, msg):
 
     #state_manager.receive_power()
     
-
 def on_message_water_received(client, userdata, msg):
     """
     Callback function that processes messages from the water received topic.
     It processes how much water is received from water pipe and generates the coresponding volume of filtered volume.
-    After that publishes it along with the timestamp.
+    After that publishes it along with the KPIs.
     """
     global state_manager, TIMESTAMP, WATER_SUPPLIED, TOPIC_FILTERED_WATER_SUPPLY, TOPIC_KPI, ID, FILTERED_WATER_PRODUCED
     global STATUS, EFFICIENCY, PRODUCTION, CURRENT_PERFORMANCE
@@ -224,6 +225,10 @@ def on_message_water_received(client, userdata, msg):
     #state_manager.receive_dependency()  # Mark water as received in state manager
 
 def on_message_plan(client, userdata, msg):
+    """
+    Callback function that processes messages from the planed amount topic.
+    It calculates the planed water and power demands from received planed filtered water for the next tick
+    """
     global PLANED_WATER_SUPPLY
 
     payload = json.loads(msg.payload)

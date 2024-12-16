@@ -4,6 +4,7 @@ import logging
 from mqtt.mqtt_wrapper import MQTTWrapper
 import math
 import os
+from collections import namedtuple
 
 def getenv_or_exit(env_name, default="default"):
     value = os.getenv(env_name, default)
@@ -12,73 +13,93 @@ def getenv_or_exit(env_name, default="default"):
     return value
 
 TICK = getenv_or_exit('TOPIC_TICK_GEN_TICK', 'default')
-TOPIC_WATER = getenv_or_exit('TOPIC_WATER_PIPE_SUPPLY', "default")
-TOPIC_REQUEST = getenv_or_exit('TOPIC_WATER_PIPE_WATER_REQUEST', "default")
+TOPIC_REQUEST = getenv_or_exit('TOPIC_WATER_PIPE_WATER_REQUEST', "default") # Topic to request water from water pipe with
 
-# Water volume (in m^3) that can be supplied by the pipe
-WATER = float(getenv_or_exit('WATER_PIPE_SUPPLY', 0.0))
+WATER_SUPPLY = float(getenv_or_exit('WATER_PIPE_SUPPLY', 0.0)) # Water volume (in m^3) that can be supplied by the pipe
+PLANTS_NUMBER = int(getenv_or_exit('NUMBER_OF_FILTER_PLANTS', 0))
 
-available_water = 0 # total volume of water that can be supplied
+TIMESTAMP = 0
+AVAILABLE_WATER = 0 # total volume of water that can be supplied
+RECEIVED_REQUESTS = 0
+
+REQUEST_LIST = [] # A list to hold all requests
+REQUEST_CLASS = namedtuple("Request", ["plant_id", "reply_topic", "demand"]) # A data structure for requests
+
+def send_reply_msg(client, reply_topic, timestamp, amount):
+    data = {
+        "timestamp": timestamp,  
+        "amount": amount
+    }
+    client.publish(reply_topic, json.dumps(data))
+
+def default_supply_function(available_supply, total_demand, requests):
+    """
+    Default function to calculate supply distribution.
+    """
+    allocation = {}
+    if total_demand <= available_supply:
+        # If total demand can be satisfied, give everyone what they requested
+        for request in requests:
+            allocation[request.plant_id] = request.demand
+    else:
+        # Otherwise, distribute water proportionally to demands
+        for request in requests:
+            share = (request.demand / total_demand) * available_supply
+            allocation[request.plant_id] = round(share, 2)  # Round for simplicity
+    return allocation
+
+
+def calculate_and_publish_supply(client, supply_function=default_supply_function):
+    """
+    Calculates the supply for each requester and publishes the replies.
+    """
+    global REQUEST_LIST, AVAILABLE_WATER, TIMESTAMP
+
+    if not REQUEST_LIST:
+        print("No requests to process.")
+        return
+
+    # Calculate the total demand
+    total_demand = sum(request.demand for request in REQUEST_LIST)
+
+    # Use the supplied supply function to calculate allocation
+    allocation = supply_function(AVAILABLE_WATER, total_demand, REQUEST_LIST)
+
+    # Publish replies (simulate publishing with print statements for now)
+    for request in REQUEST_LIST:
+        supply = allocation.get(request.plant_id, 0)
+
+        send_reply_msg(client, request.reply_topic, TIMESTAMP, supply)
+
+    # Clear the REQUESTS list after processing
+    REQUEST_LIST.clear()
+
+def add_request(plant_id, reply_topic, demand):
+    global RECEIVED_REQUESTS, REQUEST_LIST, REQUEST_CLASS
+
+    REQUEST_LIST.append(REQUEST_CLASS(plant_id, reply_topic, demand))
+    RECEIVED_REQUESTS += 1
 
 def on_message_tick(client, userdata, msg):
-    """
-    Callback function that processes messages from the tick generator topic.
-    It publishes the volume of water that can be supplied by the pipe
-    
-    Parameters:
-    client (MQTT client): The MQTT client instance
-    msg (MQTTMessage): The message containing the tick timestamp
-    """
-    global WATER, TOPIC_WATER, available_water
+    global TIMESTAMP, WATER_SUPPLY, AVAILABLE_WATER, RECEIVED_REQUESTS
      
-    #extracting the timestamp 
-    timestamp = msg.payload.decode("utf-8")
-
-    available_water = WATER # update available water
-
-    data = {
-        "watersupply": available_water,  # Ensure this is a float, which is JSON serializable
-        "timestamp": timestamp
-    }
-    
-    client.publish(TOPIC_WATER, json.dumps(data))
-
-def calculate_supply(demand):
-    global available_water
-
-    water_supplied = 0
-    if(demand < available_water):
-        water_supplied = demand
-        available_water = available_water - demand
-    else:
-        water_supplied = available_water
-        available_water = 0
-    return water_supplied
+    TIMESTAMP = msg.payload.decode("utf-8") # extract the timestamp 
+    AVAILABLE_WATER = WATER_SUPPLY # update available water
+    RECEIVED_REQUESTS = 0 # update reqeust number
 
 def on_message_request(client, userdata, msg):
     """
     Callback function that processes messages from the request topic.
-    It publishes the volume of water that can be supplied by the pipe
-    
-    Parameters:
-    client (MQTT client): The MQTT client instance
-    msg (MQTTMessage): The message containing the tick timestamp
     """
     
     #extracting the timestamp and other data
     payload = json.loads(msg.payload)
     timestamp = payload["timestamp"]
-    topic = payload["topic"] # topic to publish the supplied water to
-    demand = payload["waterdemand"]
+    plant_id = payload["plant_id"]
+    reply_topic = payload["reply_topic"] # topic to publish the supplied water to
+    demand = payload["amount"]
 
-    water_suplied = calculate_supply(demand)
-    
-    data = {
-        "watersupply": water_suplied, 
-        "timestamp": timestamp
-    }
-
-    client.publish(topic, json.dumps(data))
+    add_request(plant_id, reply_topic, demand)
 
 def main():
     """
@@ -96,7 +117,11 @@ def main():
     
     try:
         # Start the MQTT loop to process incoming and outgoing messages
-        mqtt.loop_forever()
+        while True:
+            if RECEIVED_REQUESTS >= PLANTS_NUMBER:
+                calculate_and_publish_supply(mqtt)
+            
+            mqtt.loop(0.05) # loop every 50ms
     except (KeyboardInterrupt, SystemExit):
         # Gracefully stop the MQTT client and exit the program on interrupt
         mqtt.stop()
