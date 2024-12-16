@@ -12,12 +12,10 @@ def getenv_or_exit(env_name, default="default"):
     return value
 
 ID = getenv_or_exit("ID", "default")
-NOMINAL_WATER_DEMAND = float(getenv_or_exit("FILTER_PLANT_" + ID + "_WATER_DEMAND", 0.0)) # in m^3
-NOMINAL_POWER_DEMAND = float(getenv_or_exit("FILTER_PLANT_" + ID + "_POWER_DEMAND", 0.0)) # in kW
-NOMINAL_WATER_SUPPLY = float(getenv_or_exit("FILTER_PLANT_" + ID + "_FILTERED_WATER_MAX_SUPPLY", 0.0)) # in m^3
-NOMINAL_PERFORMANCE = NOMINAL_WATER_SUPPLY / NOMINAL_POWER_DEMAND # m^3/kW 
-
-PRODUCE_LOSSES = 0.01 # Percent of ressources lost during proccesing 
+NOMINAL_WATER_DEMAND = float(getenv_or_exit("FILTER_PLANT_" + ID + "_NOMINAL_WATER_DEMAND", 0.0)) # Water demand at 100% Perfomance (in m^3)
+NOMINAL_POWER_DEMAND = float(getenv_or_exit("FILTER_PLANT_" + ID + "_NOMINAL_POWER_DEMAND", 0.0)) # Power demand at 100% Perfomance (in kW)
+NOMINAL_WATER_SUPPLY = float(getenv_or_exit("FILTER_PLANT_" + ID + "_NOMINAL_FILTERED_WATER_SUPPLY", 0.0)) # Filtered Water supply at 100% Perfomance (in m^3)
+PRODUCTION_LOSSES = float(getenv_or_exit("FILTER_PLANT_" + ID + "_PRODUCTION_LOSSES", 0.0)) # Percent of ressources lost during proccesing 
 
 TICK = getenv_or_exit("TOPIC_TICK_GEN_TICK", "default")
 TOPIC_WATER_REQUEST = getenv_or_exit("TOPIC_WATER_PIPE_WATER_REQUEST", "default") # topic to request water
@@ -27,6 +25,8 @@ TOPIC_POWER_RECIEVE = getenv_or_exit("TOPIC_FILTER_PLANT_POWER_RECIEVE", "defaul
 TOPIC_FILTERED_WATER_SUPPLY = getenv_or_exit("TOPIC_FILTER_PLANT_FILTERED_WATER_SUPPLY", "default") + ID # must be followed by filter plant id
 TOPIC_KPI = getenv_or_exit("TOPIC_FILTER_PLANT_KPI", "default") + ID # Topic to post kpis
 TOPIC_PLANED_AMOUNT = getenv_or_exit("TOPIC_FILTER_PLANT_PLANED_AMOUNT", "default") + ID # topic to receive produce planed amount for the next tick
+
+NOMINAL_PERFORMANCE = NOMINAL_WATER_SUPPLY / NOMINAL_POWER_DEMAND # Performance: m^3 production per kW (in m^3/kW) 
 
 PLANED_POWER_DEMAND = NOMINAL_POWER_DEMAND
 PLANED_WATER_DEMAND = NOMINAL_WATER_DEMAND
@@ -161,9 +161,9 @@ def calculate_kpis():
     return False
 
 def calculate_planed_demand():
-    global PLANED_WATER_SUPPLY, PLANED_WATER_DEMAND, PLANED_POWER_DEMAND, PRODUCE_LOSSES, NOMINAL_PERFORMANCE 
+    global PLANED_WATER_SUPPLY, PLANED_WATER_DEMAND, PLANED_POWER_DEMAND, PRODUCTION_LOSSES, NOMINAL_PERFORMANCE 
 
-    PLANED_WATER_DEMAND = PLANED_WATER_SUPPLY * PRODUCE_LOSSES
+    PLANED_WATER_DEMAND = PLANED_WATER_SUPPLY * PRODUCTION_LOSSES
 
     PLANED_POWER_DEMAND = NOMINAL_PERFORMANCE * PLANED_WATER_DEMAND
 
