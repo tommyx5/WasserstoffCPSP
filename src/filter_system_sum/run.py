@@ -4,6 +4,7 @@ import logging
 from random import seed, randint
 from mqtt.mqtt_wrapper import MQTTWrapper
 import os
+from collections import namedtuple
 
 def getenv_or_exit(env_name, default="default"):
     value = os.getenv(env_name, default)
@@ -11,110 +12,242 @@ def getenv_or_exit(env_name, default="default"):
         raise SystemExit(f"Environment variable {env_name} not set")
     return value
 
-COUNT_FILTER_SYSTEM = int(getenv_or_exit("FILTER_SUM_COUNT_FILTER", 0))
+PLANTS_NUMBER = int(getenv_or_exit("FILTER_SUM_COUNT_FILTER", 0))
 
 TICK = getenv_or_exit('TOPIC_TICK_GEN_TICK', 'default')
-FILTER_SYSTEM_SUM_DATA = getenv_or_exit("TOPIC_FILTER_SUM_FILTER_SUM_DATA", "default")
-FILTER_SYSTEM_DATA = getenv_or_exit("TOPIC_FILTER_PLANT_FILTERED_WATER_SUPPLY", "default")
-TOPIC_REQUEST = getenv_or_exit("TOPIC_FILTER_SUM_FILTERED_WATER_REQUEST", "default")
+TOPIC_REQUEST = getenv_or_exit("TOPIC_FILTER_SUM_FILTERED_WATER_REQUEST", "default") # Topic to receive requests for filtered water from hzdrogen plants
+TOPIC_SUPPLY = getenv_or_exit("TOPIC_FILTER_PLANT_FILTERED_WATER_SUPPLY", "default") # Base topic to receive supply msg from the filter plants (must be followed by Plant ID)
+TOPIC_KPI = getenv_or_exit("TOPIC_FILTER_PLANT_KPI", "default") # Base topic to receive kpis from filter plants (must be followed by Plant ID)
+TOPIC_PLANED_AMOUNT = getenv_or_exit("TOPIC_FILTER_PLANT_PLANED_AMOUNT", "default") # Base topic to publish produce planed amount for the next tick (must be followed by Plant ID)
 
-FILTER_SYSTEM_DATA_LIST = []
-for i in range(COUNT_FILTER_SYSTEM):
-    FILTER_SYSTEM_DATA_LIST.append(FILTER_SYSTEM_DATA+str(i))
+TOPIC_SUPPLY_LIST = []
+TOPIC_KPI_LIST = []
+TOPIC_PLANED_AMOUNT_LIST = []
+for i in range(PLANTS_NUMBER):
+    TOPIC_SUPPLY_LIST.append(TOPIC_SUPPLY+str(i)) # list with all supply topics
+    TOPIC_KPI_LIST.append(TOPIC_KPI+str(i)) # list with all kpi topics
+    TOPIC_PLANED_AMOUNT_LIST.append(TOPIC_PLANED_AMOUNT+str(i)) # list with all planed amount topics
 
-SUM_FWATER = 0
-COUNT = 0
-MEAN_FWATER = 0
-FWATER_LIST = []
-COUNT_TICKS_MAX = 24*4
-COUNT_TICKS = 0
-for i in range(COUNT_TICKS_MAX):
-    FWATER_LIST.append(0)
+TIMESTAMP = 0
+AVAILABLE_WATER = 0 # total volume of water that can be supplied
+RECEIVED_REQUESTS = 0
+RECEIVED_SUPPLIES = 0
 
-AVAILABLE = 0
+RECEIVED_KPI = 0
+TOTAL_PLANED_PER_TICK = 0 # The total amount of filtered water planed for the next tick
+TOTAL_PLANED = 0 # The total amount of filtered water planed for the day
+TOTAL_PRODUCED = 0 # The total amount of water already produced during current day
+
+REQUEST_LIST = [] # A list to hold all requests
+SUPPLY_LIST = [] # A list to hold all supplies
+KPI_LIST = [] # A list to hold all kpis
+
+REQUEST_CLASS = namedtuple("Request", ["plant_id", "reply_topic", "demand"]) # A data structure for requests
+SUPPLY_CLASS = namedtuple("Supply", ["supply"]) # A data structure for supplies
+KPI_CLASS = namedtuple("KPI", ["plant_id", "status", "eff", "prod", "cper"]) # A data structure for kpis
+
+
+TOPIC_FILTER_SYSTEM_SUM_DATA = getenv_or_exit("TOPIC_FILTER_SUM_FILTER_SUM_DATA", "default")
+
+
+def send_reply_msg(client, reply_topic, timestamp, amount):
+    data = {
+        "timestamp": timestamp,  
+        "amount": amount
+    }
+    client.publish(reply_topic, json.dumps(data))
+
+def send_supply_msg(client, supply_topic, timestamp, amount):
+    data = {
+        "timestamp": timestamp,  
+        "amount": amount
+    }
+    client.publish(supply_topic, json.dumps(data))
+
+def send_plan_msg(client, topic, timestamp, amount):
+    data = {
+        "timestamp": timestamp,  
+        "amount": amount
+    }
+    client.publish(topic, json.dumps(data))
+
+def default_supply_function(available_supply, total_demand, requests):
+    """
+    Default function to calculate supply distribution.
+    """
+    allocation = {}
+    if total_demand <= available_supply:
+        # If total demand can be satisfied, give everyone what they requested
+        for request in requests:
+            allocation[request.plant_id] = request.demand
+    else:
+        # Otherwise, distribute water proportionally to demands
+        for request in requests:
+            share = (request.demand / total_demand) * available_supply
+            allocation[request.plant_id] = round(share, 2)  # Round for simplicity
+    return allocation
+
+def calculate_and_publish_replies(client, supply_function=default_supply_function):
+    """
+    Calculates the supply for each requester and publishes the replies.
+    """
+    global REQUEST_LIST, RECEIVED_REQUESTS, AVAILABLE_WATER, TIMESTAMP
+
+    if not REQUEST_LIST:
+        print("No requests to process.")
+        return
+
+    # Calculate the total demand
+    total_demand = sum(request.demand for request in REQUEST_LIST)
+
+    # Use the supplied supply function to calculate allocation
+    allocation = supply_function(AVAILABLE_WATER, total_demand, REQUEST_LIST)
+
+    # Publish replies
+    for request in REQUEST_LIST:
+        supply = allocation.get(request.plant_id, 0)
+
+        send_reply_msg(
+            client=client,
+            reply_topic=request.reply_topic,
+            timestamp=TIMESTAMP, 
+            amount=supply
+        )
+
+    # Clear the REQUESTS list after processing
+    REQUEST_LIST.clear()
+    RECEIVED_REQUESTS = 0
+
+def calculate_supply(client):
+    global AVAILABLE_WATER, SUPPLY_LIST, RECEIVED_SUPPLIES, TOTAL_PRODUCED
+
+    # Calculate the total supply
+    AVAILABLE_WATER = sum(supply.supply for supply in SUPPLY_LIST)
+    TOTAL_PRODUCED += AVAILABLE_WATER
+
+
+    # Publish the data for the dashboard
+    # Maybe delete later
+    global TIMESTAMP, TOPIC_FILTER_SYSTEM_SUM_DATA
+    data = {"fwater": AVAILABLE_WATER, "mean_fwater": round(AVAILABLE_WATER/RECEIVED_SUPPLIES,2), "timestamp": TIMESTAMP}
+    client.publish(TOPIC_FILTER_SYSTEM_SUM_DATA, json.dumps(data))
+
+
+    SUPPLY_LIST.clear()
+    RECEIVED_SUPPLIES = 0
+
+
+def weighted_coefficient_function(kpi):
+    """
+    Replaceable function to calculate the coefficient for allocation.
+    Uses `eff`, `prod`, and `cper` as weights.
+    """
+    eff_weight = 0.5
+    prod_weight = 0.3
+    cper_weight = 0.2
+
+    coefficient = (
+        kpi.eff * eff_weight +
+        kpi.prod * prod_weight +
+        kpi.cper * cper_weight
+    )
+    return max(coefficient, 0)  # Avoid negative coefficients
+
+
+def calculate_and_publish_plan(client, coefficient_function=weighted_coefficient_function):
+    global KPI_LIST, RECEIVED_KPI, TIMESTAMP, TOPIC_KPI_LIST, TOTAL_PLANED_PER_TICK
+
+    # Iterate through the KPIs and send messages
+    for kpi in KPI_LIST:
+        # Find the topic corresponding to the plant's ID
+        topic = next((t for t in TOPIC_KPI_LIST if f"/{kpi.plant_id}" in t), None)
+        if not topic:
+            print(f"No KPI topic found for filter plant ID {kpi.plant_id}, skipping...")
+            continue
+
+        if kpi.status != "online":
+            # Offline plants receive 0 allocation
+            planned_amount = 0
+        else:
+            # Calculate allocation for active plants
+            coefficient = coefficient_function(kpi)
+            planned_amount = coefficient * TOTAL_PLANED_PER_TICK
+
+        # Send the water production plan message
+        send_plan_msg(
+            client=client,
+            topic=topic,
+            timestamp=TIMESTAMP,
+            amount=planned_amount
+        )
+
+    KPI_LIST.clear()
+    RECEIVED_KPI = 0
+
+def add_request(plant_id, reply_topic, demand):
+    global RECEIVED_REQUESTS, REQUEST_LIST, REQUEST_CLASS
+
+    REQUEST_LIST.append(REQUEST_CLASS(plant_id, reply_topic, demand))
+    RECEIVED_REQUESTS += 1
+
+def add_supply(supply):
+    global RECEIVED_SUPPLIES, SUPPLY_LIST, SUPPLY_CLASS
+
+    SUPPLY_LIST.append(SUPPLY_CLASS(supply))
+    RECEIVED_SUPPLIES += 1
+
+def add_kpi(plant_id, status, eff, prod, cper):
+    global RECEIVED_KPI, KPI_LIST, KPI_CLASS
+
+    SUPPLY_LIST.append(SUPPLY_CLASS(plant_id, status, eff, prod, cper))
+    RECEIVED_KPI += 1
 
 def on_message_tick(client, userdata, msg):
-    # reset each tick available power to 0
-    global AVAILABLE
-    AVAILABLE = 0
-
-def calculate_supply(demand):
-    global AVAILABLE
-
-    supplied = 0
-    if(demand < AVAILABLE):
-        supplied = demand
-        AVAILABLE = AVAILABLE - demand
-    else:
-        supplied = AVAILABLE
-        AVAILABLE = 0
-    return supplied
+    global TIMESTAMP, RECEIVED_REQUESTS, RECEIVED_SUPPLIES, RECEIVED_KPI, AVAILABLE_WATER
+     
+    TIMESTAMP = msg.payload.decode("utf-8") # extract the timestamp
+    RECEIVED_REQUESTS = 0 # update request number
+    RECEIVED_SUPPLIES = 0
+    RECEIVED_KPI = 0
+    AVAILABLE_WATER = 0 # reset the available water amount
 
 def on_message_request(client, userdata, msg):
     """
     Callback function that processes messages from the request topic.
-    It publishes the FILTERED WATER that can be supplied to the received topic
-    
-    Parameters:
-    client (MQTT client): The MQTT client instance
-    msg (MQTTMessage): The message containing the tick timestamp
     """
     
     #extracting the timestamp and other data
     payload = json.loads(msg.payload)
     timestamp = payload["timestamp"]
-    topic = payload["topic"] # topic to publish the supplied power to
-    demand = payload["filteredwaterdemand"]
+    plant_id = payload["plant_id"]
+    reply_topic = payload["reply_topic"] # topic to publish the supplied water to
+    demand = payload["amount"]
 
-    suplied = calculate_supply(demand)
+    add_request(plant_id, reply_topic, demand)
+
+def on_message_supply(client, userdata, msg):
+    """
+    Callback function that processes messages from the request topic.
+    """
     
-    data = {
-        "filteredwatersupply": suplied, 
-        "timestamp": timestamp
-    }
-
-    client.publish(topic, json.dumps(data))
-
-def calc_mean():
-    global SUM_FWATER, MEAN_FWATER, FWATER_LIST
-    summe = 0
-    count = 0
-    for i in range(COUNT_TICKS_MAX):
-        if FWATER_LIST[i] > 0:
-                summe += FWATER_LIST[i]
-                count += 1
-        if count > 0:
-            MEAN_FWATER = round(summe / count, 2)
-        else:
-            MEAN_FWATER = 0
-
-def on_message_power(client, userdata, msg):
-    global FILTER_SYSTEM_SUM_DATA
-    global COUNT, COUNT_TICKS_MAX, COUNT_TICKS
-    global SUM_FWATER, MEAN_FWATER, FWATER_LIST
-    global COUNT_FILTER_SYSTEM
-    global AVAILABLE
-
-    payload = json.loads(msg.payload) 
-    fwater = payload["filteredwatersupply"]
+    #extracting the timestamp and other data
+    payload = json.loads(msg.payload)
     timestamp = payload["timestamp"]
+    supply = payload["amount"]
 
-    AVAILABLE = AVAILABLE + fwater
+    add_supply(supply)
 
-    if COUNT % COUNT_FILTER_SYSTEM == 0:
-        SUM_FWATER = fwater
-    else:
-        SUM_FWATER += fwater
-        FWATER_LIST[COUNT_TICKS] = SUM_FWATER
-        calc_mean()
-        COUNT_TICKS = (COUNT_TICKS + 1) % COUNT_TICKS_MAX
-    if COUNT == COUNT_FILTER_SYSTEM-1:
-        # Extract the timestamp from the tick message and decode it from UTF-8
-        data = {"fwater": SUM_FWATER, "mean_fwater": MEAN_FWATER, "timestamp": timestamp}
-        # Publish the data to the chaos sensor topic in JSON format
-        client.publish(FILTER_SYSTEM_SUM_DATA, json.dumps(data))
-    COUNT = (COUNT + 1) % COUNT_FILTER_SYSTEM
-    
+def on_message_kpi(client, userdata, msg):
+    #extracting the timestamp and other data
+    payload = json.loads(msg.payload)
+    timestamp = payload["timestamp"]
+    plant_id = payload["plant_id"]
+    status = payload["status"]
+    eff = payload["eff"]
+    prod = payload["prod"]
+    cper = payload["cper"]
+
+    add_kpi(plant_id, status, eff, prod, cper)
 
 def main():
     """
@@ -124,23 +257,32 @@ def main():
     
     # Initialize the MQTT client and connect to the broker
     mqtt = MQTTWrapper('mqttbroker', 1883, name='filter_system_sum')
-    
-    """
-    mqtt.subscribe(TICK)
-    mqtt.subscribe_with_callback(TICK, on_message_tick)
-    mqtt.subscribe(TOPIC_REQUEST)
-    mqtt.subscribe_with_callback(TOPIC_REQUEST, on_message_request)
-    """
 
-    for topic in FILTER_SYSTEM_DATA_LIST:
-        # Subscribe to the tick topic
+    for topic in TOPIC_SUPPLY_LIST:
         mqtt.subscribe(topic)
-        # Subscribe with a callback function to handle incoming tick messages
-        mqtt.subscribe_with_callback(topic, on_message_power)
+        mqtt.subscribe_with_callback(topic, on_message_supply)
+
+    for topic in TOPIC_KPI_LIST:
+        mqtt.subscribe(topic)
+        mqtt.subscribe_with_callback(topic, on_message_kpi)
+    
+    mqtt.subscribe(TICK)
+    mqtt.subscribe(TOPIC_REQUEST)
+    mqtt.subscribe_with_callback(TICK, on_message_tick)
+    mqtt.subscribe_with_callback(TOPIC_REQUEST, on_message_request)
 
     try:
         # Start the MQTT loop to process incoming and outgoing messages
-        mqtt.loop_forever()
+        while True:
+            if RECEIVED_REQUESTS >= PLANTS_NUMBER:
+                if RECEIVED_SUPPLIES >= PLANTS_NUMBER:
+                    calculate_supply(mqtt)
+                    calculate_and_publish_replies(mqtt)
+
+            if RECEIVED_KPI >= PLANTS_NUMBER:
+                calculate_and_publish_plan(mqtt)
+            
+            mqtt.loop(0.05) # loop every 50ms
     except (KeyboardInterrupt, SystemExit):
         # Gracefully stop the MQTT client and exit the program on interrupt
         mqtt.stop()

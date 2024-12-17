@@ -37,7 +37,7 @@ WATER_SUPPLIED = 0
 FILTERED_WATER_PRODUCED = 0
 TIMESTAMP = 0
 
-STATUS = True
+STATUS = "online"
 EFFICIENCY = 0
 PRODUCTION = 0
 CURRENT_PERFORMANCE = 0
@@ -172,12 +172,12 @@ def on_message_tick(client, userdata, msg):
     Callback function that processes messages from the tick topic.
     It send the request msg for the calculated planed power demand from previous tick
     """
-    global state_manager, TIMESTAMP, TOPIC_POWER_REQUEST, ID, TOPIC_POWER_RECIEVE, PLANED_POWER_DEMAND
+    global state_manager, TIMESTAMP, TOPIC_POWER_REQUEST, ID, TOPIC_POWER_RECEIVE, PLANED_POWER_DEMAND
 
     # get timestamp from tick msg and request power   
     payload = json.loads(msg.payload)
     TIMESTAMP = payload["timestamp"]
-    send_request_msg(client, TOPIC_POWER_REQUEST, TIMESTAMP, ID, TOPIC_POWER_RECIEVE, PLANED_POWER_DEMAND)
+    send_request_msg(client, TOPIC_POWER_REQUEST, TIMESTAMP, ID, TOPIC_POWER_RECEIVE, PLANED_POWER_DEMAND)
 
     #state_manager.receive_tick()
 
@@ -247,12 +247,12 @@ def main():
     mqtt = MQTTWrapper('mqttbroker', 1883, name='filter_plant_' + ID)
     
     mqtt.subscribe(TICK)
-    mqtt.subscribe(TOPIC_POWER_RECIEVE)
-    mqtt.subscribe(TOPIC_WATER_RECIEVE)
+    mqtt.subscribe(TOPIC_POWER_RECEIVE)
+    mqtt.subscribe(TOPIC_WATER_RECEIVE)
     mqtt.subscribe(TOPIC_PLANED_AMOUNT)
     mqtt.subscribe_with_callback(TICK, on_message_tick)
-    mqtt.subscribe_with_callback(TOPIC_WATER_RECIEVE, on_message_water_received)
-    mqtt.subscribe_with_callback(TOPIC_POWER_RECIEVE, on_message_power_received)
+    mqtt.subscribe_with_callback(TOPIC_WATER_RECEIVE, on_message_water_received)
+    mqtt.subscribe_with_callback(TOPIC_POWER_RECEIVE, on_message_power_received)
     mqtt.subscribe_with_callback(TOPIC_PLANED_AMOUNT, on_message_plan)
     
     try:

@@ -49,11 +49,11 @@ def default_supply_function(available_supply, total_demand, requests):
     return allocation
 
 
-def calculate_and_publish_supply(client, supply_function=default_supply_function):
+def calculate_and_publish_replies(client, supply_function=default_supply_function):
     """
     Calculates the supply for each requester and publishes the replies.
     """
-    global REQUEST_LIST, AVAILABLE_WATER, TIMESTAMP
+    global REQUEST_LIST, RECEIVED_REQUESTS, AVAILABLE_WATER, TIMESTAMP
 
     if not REQUEST_LIST:
         print("No requests to process.")
@@ -73,6 +73,7 @@ def calculate_and_publish_supply(client, supply_function=default_supply_function
 
     # Clear the REQUESTS list after processing
     REQUEST_LIST.clear()
+    RECEIVED_REQUESTS = 0
 
 def add_request(plant_id, reply_topic, demand):
     global RECEIVED_REQUESTS, REQUEST_LIST, REQUEST_CLASS
@@ -119,7 +120,7 @@ def main():
         # Start the MQTT loop to process incoming and outgoing messages
         while True:
             if RECEIVED_REQUESTS >= PLANTS_NUMBER:
-                calculate_and_publish_supply(mqtt)
+                calculate_and_publish_replies(mqtt)
             
             mqtt.loop(0.05) # loop every 50ms
     except (KeyboardInterrupt, SystemExit):
