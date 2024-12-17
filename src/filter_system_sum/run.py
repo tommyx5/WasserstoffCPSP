@@ -32,11 +32,12 @@ TIMESTAMP = 0
 AVAILABLE_WATER = 0 # total volume of water that can be supplied
 RECEIVED_REQUESTS = 0
 RECEIVED_SUPPLIES = 0
-
 RECEIVED_KPI = 0
+
 TOTAL_PLANED_PER_TICK = 0 # The total amount of filtered water planed for the next tick
 TOTAL_PLANED = 0 # The total amount of filtered water planed for the day
 TOTAL_PRODUCED = 0 # The total amount of water already produced during current day
+TICK_COUNT = 0
 
 REQUEST_LIST = [] # A list to hold all requests
 SUPPLY_LIST = [] # A list to hold all supplies
@@ -137,6 +138,23 @@ def calculate_supply(client):
     RECEIVED_SUPPLIES = 0
 
 
+def calculate_needed_amount_per_tick():
+    global TOTAL_PLANED_PER_TICK, TOTAL_PRODUCED, TOTAL_PLANED, TICK_COUNT
+
+    # avoid division by 0
+    if TICK_COUNT < 96:
+        plan = round((TOTAL_PLANED - TOTAL_PRODUCED) / (96-TICK_COUNT), 2)
+    else:
+        plan = TOTAL_PLANED - TOTAL_PRODUCED 
+        print("While planing filtered water per tick, tick went to 96 and coused division by 0")
+
+    # avoid planing negative numbers
+    if(plan > 0):
+        TOTAL_PLANED_PER_TICK = plan
+    else:
+        print("Planed filtered water per tick can not be smaller than 0")
+        TOTAL_PLANED_PER_TICK = 0
+
 def weighted_coefficient_function(kpi):
     """
     Replaceable function to calculate the coefficient for allocation.
@@ -153,9 +171,17 @@ def weighted_coefficient_function(kpi):
     )
     return max(coefficient, 0)  # Avoid negative coefficients
 
-
 def calculate_and_publish_plan(client, coefficient_function=weighted_coefficient_function):
     global KPI_LIST, RECEIVED_KPI, TIMESTAMP, TOPIC_KPI_LIST, TOTAL_PLANED_PER_TICK
+
+    # Calculate how much in total needs to be done next tick
+    calculate_needed_amount_per_tick()
+
+    # Calculate total coefficients for all active plants
+    total_coefficient = sum(
+        coefficient_function(kpi)
+        for kpi in KPI_LIST if kpi.status == "online"
+    )
 
     # Iterate through the KPIs and send messages
     for kpi in KPI_LIST:
@@ -171,7 +197,7 @@ def calculate_and_publish_plan(client, coefficient_function=weighted_coefficient
         else:
             # Calculate allocation for active plants
             coefficient = coefficient_function(kpi)
-            planned_amount = coefficient * TOTAL_PLANED_PER_TICK
+            planned_amount = (coefficient/total_coefficient) * TOTAL_PLANED_PER_TICK
 
         # Send the water production plan message
         send_plan_msg(
@@ -203,13 +229,14 @@ def add_kpi(plant_id, status, eff, prod, cper):
     RECEIVED_KPI += 1
 
 def on_message_tick(client, userdata, msg):
-    global TIMESTAMP, RECEIVED_REQUESTS, RECEIVED_SUPPLIES, RECEIVED_KPI, AVAILABLE_WATER
+    global TIMESTAMP, RECEIVED_REQUESTS, RECEIVED_SUPPLIES, RECEIVED_KPI, AVAILABLE_WATER, TICK_COUNT
      
     TIMESTAMP = msg.payload.decode("utf-8") # extract the timestamp
     RECEIVED_REQUESTS = 0 # update request number
     RECEIVED_SUPPLIES = 0
     RECEIVED_KPI = 0
     AVAILABLE_WATER = 0 # reset the available water amount
+    TICK_COUNT += 1
 
 def on_message_request(client, userdata, msg):
     """
@@ -248,6 +275,13 @@ def on_message_kpi(client, userdata, msg):
     cper = payload["cper"]
 
     add_kpi(plant_id, status, eff, prod, cper)
+
+def on_message_daily_need(client, userdata, msg):
+    global TOTAL_PLANED, TOTAL_PRODUCED, TICK_COUNT
+    payload = json.loads(msg.payload)
+    TOTAL_PLANED = payload["amount"]
+    TOTAL_PRODUCED = 0
+    TICK_COUNT = 1
 
 def main():
     """

@@ -158,8 +158,6 @@ def calculate_kpis():
     PRODUCTION = FILTERED_WATER_PRODUCED / WATER_SUPPLIED
     CURRENT_PERFORMANCE = FILTERED_WATER_PRODUCED / NOMINAL_WATER_SUPPLY
 
-    return False
-
 def calculate_planed_demand():
     global PLANED_WATER_SUPPLY, PLANED_WATER_DEMAND, PLANED_POWER_DEMAND, PRODUCTION_LOSSES, NOMINAL_PERFORMANCE 
 
@@ -189,7 +187,7 @@ def on_message_power_received(client, userdata, msg):
     After that it publishes the water request msg.
     """
     global state_manager, TIMESTAMP
-    global TOPIC_WATER_REQUEST, ID, TOPIC_WATER_RECIEVE, POWER_SUPPLIED
+    global TOPIC_WATER_REQUEST, ID, TOPIC_WATER_RECEIVE, POWER_SUPPLIED
 
     payload = json.loads(msg.payload)
     timestamp = payload["timestamp"]
@@ -197,7 +195,7 @@ def on_message_power_received(client, userdata, msg):
 
     # Calculate water demand based on supplied power and publish water request
     water_demand = water_demand_on_supplied_power()
-    send_request_msg(client, TOPIC_WATER_REQUEST, TIMESTAMP, ID, TOPIC_WATER_RECIEVE, water_demand)
+    send_request_msg(client, TOPIC_WATER_REQUEST, TIMESTAMP, ID, TOPIC_WATER_RECEIVE, water_demand)
 
     #state_manager.receive_power()
     
