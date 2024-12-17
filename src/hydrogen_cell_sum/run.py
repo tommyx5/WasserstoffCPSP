@@ -18,7 +18,7 @@ HYDROGEN_REQUEST = getenv_or_exit("TOPIC_HYDROGEN_PIPE_REQUEST", "default")
 HYDROGEN_SUPPLY = float(getenv_or_exit("HYDROGEN_PIPE_SUPPLY", 0.0)) # Hydrogen Volume in kg can be supplied by the pipe
 PLANTS_NUMBER = int(getenv_or_exit("NUMBER_OF_HYDROGEN_PLANTS", 0))
 HYDROGEN_AMOUNT = getenv_or_exit("TOPIC_HYDROGEN_PLANED_AMOUNT","default") + ID
-DAILY_HYDROGEN_AMOUNT = float(getenv_or_exit("HYDROGEN_DEMAND_GEN_DAYLY_DEMAND", 0.0))
+DAILY_HYDROGEN_AMOUNT = getenv_or_exit("TOPIC_HYDROGEN_DEMAND_GEN_HYDROGEN_DEMAND", 'default')
 
 TIMESTAMP = 0
 AVAILABLE_HYDROGEN = 0 # total volume of hydrogen that can be supplied
@@ -110,6 +110,7 @@ def on_message_tick(client, userdata, msg):
     AVAILABLE_HYDROGEN = HYDROGEN_SUPPLY # update available hydrogen
     RECEIVED_KPI_M = 0 # update request number
 
+
 def on_message_request(client, userdata, msg):
     """
     Callback function that processes messages from the request topic.
@@ -126,6 +127,15 @@ def on_message_request(client, userdata, msg):
 
     add_request(timestamp, plant_id, status, eff, prod, cper)
 
+def on_message_daily_hydrogen_amount(client, userdata, msg):
+    """
+    Callback function that processes messages from the daily hydrogen amount topic.
+    """
+    
+    global DAILY_HYDROGEN_AMOUNT
+    payload = json.loads(msg.payload)
+    DAILY_HYDROGEN_AMOUNT = payload["hydrogen"]
+    
 def main():
     """
     Main function to initialize the MQTT client, set up subscriptions, 
@@ -138,8 +148,10 @@ def main():
 
     mqtt.subscribe(TICK)
     mqtt.subscribe(HYDROGEN_REQUEST)
+    mqtt.subscribe(DAILY_HYDROGEN_AMOUNT)
     mqtt.subscribe_with_callback(TICK, on_message_tick)
     mqtt.subscribe_with_callback(HYDROGEN_REQUEST, on_message_request)
+    mqtt.subscribe_with_callback(DAILY_HYDROGEN_AMOUNT, on_message_daily_hydrogen_amount)
 
     try:
         # Start the MQTT loop to process incoming and outgoing messages
