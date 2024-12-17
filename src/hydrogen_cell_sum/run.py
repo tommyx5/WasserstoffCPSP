@@ -18,6 +18,8 @@ HYDROGEN_SUPPLY = float(getenv_or_exit("HYDROGEN_PIPE_SUPPLY", 0.0)) # Hydrogen 
 PLANTS_NUMBER = int(getenv_or_exit("NUMBER_OF_HYDROGEN_PLANTS", 0))
 HYDROGEN_AMOUNT = getenv_or_exit("TOPIC_HYDROGEN_PLANED_AMOUNT","default")
 DAILY_HYDROGEN_AMOUNT = getenv_or_exit("TOPIC_HYDROGEN_DEMAND_GEN_HYDROGEN_DEMAND", 'default')
+FILTERED_WATER_AMOUNT = getenv_or_exit("TOPIC_FILTER_PLANT_PLANED_AMOUNT", 'default')
+
 
 TIMESTAMP = 0
 AVAILABLE_HYDROGEN = 0 # total volume of hydrogen that can be supplied
@@ -87,11 +89,15 @@ def calculate_and_publish_amount(client, supply_function=weighted_supply_functio
 
     # Use the supplied supply function to calculate allocation
     allocation = supply_function(DAILY_HYDROGEN_AMOUNT, KPIS_LIST)
-
+    totalsupply = 0
     # Publish replies (simulate publishing with print statements for now)
     for request in KPIS_LIST:
+        
         supply = allocation.get(request.plant_id, 0)
+        totalsupply += supply
         send_reply_msg(client, HYDROGEN_AMOUNT, TIMESTAMP, supply)
+    
+    send_reply_msg(client, FILTERED_WATER_AMOUNT, TIMESTAMP, totalsupply * 9)  # 1 kg H2O -> 9 kg H2
 
     # Clear the REQUESTS list after processing
     KPIS_LIST.clear()
