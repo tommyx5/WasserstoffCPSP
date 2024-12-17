@@ -12,12 +12,11 @@ def getenv_or_exit(env_name, default="default"):
         raise SystemExit(f"Environment variable {env_name} not set")
     return value
 
-ID = getenv_or_exit("ID", "default")
 TICK = getenv_or_exit('TOPIC_TICK_GEN_TICK', 'default')
 HYDROGEN_REQUEST = getenv_or_exit("TOPIC_HYDROGEN_PIPE_REQUEST", "default")
 HYDROGEN_SUPPLY = float(getenv_or_exit("HYDROGEN_PIPE_SUPPLY", 0.0)) # Hydrogen Volume in kg can be supplied by the pipe
 PLANTS_NUMBER = int(getenv_or_exit("NUMBER_OF_HYDROGEN_PLANTS", 0))
-HYDROGEN_AMOUNT = getenv_or_exit("TOPIC_HYDROGEN_PLANED_AMOUNT","default") + ID
+HYDROGEN_AMOUNT = getenv_or_exit("TOPIC_HYDROGEN_PLANED_AMOUNT","default")
 DAILY_HYDROGEN_AMOUNT = getenv_or_exit("TOPIC_HYDROGEN_DEMAND_GEN_HYDROGEN_DEMAND", 'default')
 
 TIMESTAMP = 0

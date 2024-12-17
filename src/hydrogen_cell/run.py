@@ -18,9 +18,9 @@ NOMINAL_POWER_DEMAND = float(getenv_or_exit("HYDROGEN_CELL_" + ID + "_POWER_DEMA
 NOMINAL_HYDROGEN_SUPPLY = float(getenv_or_exit("HYDROGEN_CELL_" + ID + "_HYDROGEN_MAX_SUPPLY", 0.0)) # in m^3
 
 TICK = getenv_or_exit("TOPIC_TICK_GEN_TICK", "default")
-TOPIC_FILTERED_WATER_REQUEST = getenv_or_exit("TOPIC_FILTERED_WATER_PIPE_FILTERED_WATER_REQUEST", "default") # topic to request water
-TOPIC_FILTERED_WATER_RECEIVE = getenv_or_exit("TOPIC_FILTER_PLANT_FILTERED_WATER_RECEIVE", "default") + ID # must be followed by filter plant id
-TOPIC_POWER_REQUEST = getenv_or_exit("TOPIC_POWER_SUM_POWER_REQUEST", "default") # topic to request power
+TOPIC_FILTERED_WATER_REQUEST = getenv_or_exit("TOPIC_FILTER_SUM_FILTERED_WATER_REQUEST", "default") # topic to request water
+TOPIC_FILTERED_WATER_RECEIVE = getenv_or_exit("TOPIC_HYDROGEN_FILTERED_WATER_RECEIVE", "default") + ID # must be followed by filter plant id
+TOPIC_POWER_REQUEST = getenv_or_exit("TOPIC_POWER_HYDROGEN_POWER_DATA", "default") + ID  # topic to request power (explicit for hydrogen, must be followed by hydrogen plant id)
 TOPIC_POWER_RECEIVE = getenv_or_exit("TOPIC_HYDROGEN_POWER_RECEIVE", "default") + ID # must be followed by filter plant id
 TOPIC_HYDROGEN_SUPPLY = getenv_or_exit("TOPIC_HYDROGEN_HYDROGEN_SUPPLY", "default") + ID # must be followed by filter plant id
 PRODUCTION_LOSSES = float(getenv_or_exit("HYDROGEN_CELL_" + ID + "_PRODUCTION_LOSSES", 0.0)) # Percent of ressources lost during proccesing
@@ -142,8 +142,8 @@ def on_message_tick(client, userdata, msg):
     global state_manager, TIMESTAMP, TOPIC_POWER_REQUEST, ID, TOPIC_POWER_RECEIVE, PLANED_POWER_DEMAND
 
     # get timestamp from tick msg and request power   
-    payload = json.loads(msg.payload)
-    TIMESTAMP = payload["timestamp"]
+    TIMESTAMP = msg.payload.decode("utf-8")
+
     send_request_msg(client, TOPIC_POWER_REQUEST, TIMESTAMP, ID, TOPIC_POWER_RECEIVE, PLANED_POWER_DEMAND)
 
     #state_manager.receive_tick()
@@ -230,8 +230,14 @@ def calculate_kpis():
     global EFFICIENCY, PRODUCTION, CURRENT_PERFORMANCE
     global HYDROGEN_PRODUCED, POWER_SUPPLIED, FILTERED_WATER_SUPPLIED, NOMINAL_HYDROGEN_SUPPLY
 
-    EFFICIENCY = HYDROGEN_PRODUCED / POWER_SUPPLIED
-    PRODUCTION = HYDROGEN_PRODUCED / FILTERED_WATER_SUPPLIED
+    if(POWER_SUPPLIED != 0):
+        EFFICIENCY = HYDROGEN_PRODUCED / POWER_SUPPLIED
+    else:
+        EFFICIENCY = 0
+    if(FILTERED_WATER_SUPPLIED != 0):
+        PRODUCTION = HYDROGEN_PRODUCED / FILTERED_WATER_SUPPLIED
+    else:
+        PRODUCTION = 0
     CURRENT_PERFORMANCE = HYDROGEN_PRODUCED / NOMINAL_HYDROGEN_SUPPLY
 
     return False

@@ -20,7 +20,7 @@ PRODUCTION_LOSSES = float(getenv_or_exit("FILTER_PLANT_" + ID + "_PRODUCTION_LOS
 TICK = getenv_or_exit("TOPIC_TICK_GEN_TICK", "default")
 TOPIC_WATER_REQUEST = getenv_or_exit("TOPIC_WATER_PIPE_WATER_REQUEST", "default") # topic to request water
 TOPIC_WATER_RECEIVE = getenv_or_exit("TOPIC_FILTER_PLANT_WATER_RECEIVE", "default") + ID # must be followed by filter plant id
-TOPIC_POWER_REQUEST = getenv_or_exit("TOPIC_POWER_SUM_POWER_REQUEST", "default") # topic to request power
+TOPIC_POWER_REQUEST = getenv_or_exit("TOPIC_POWER_FILTER_POWER_DATA", "default") + ID  # topic to request power (explicit for filters, must be followed by filter plant id)
 TOPIC_POWER_RECEIVE = getenv_or_exit("TOPIC_FILTER_PLANT_POWER_RECEIVE", "default") + ID # must be followed by filter plant id
 TOPIC_FILTERED_WATER_SUPPLY = getenv_or_exit("TOPIC_FILTER_PLANT_FILTERED_WATER_SUPPLY", "default") + ID # must be followed by filter plant id
 TOPIC_KPI = getenv_or_exit("TOPIC_FILTER_PLANT_KPI", "default") + ID # Topic to post kpis
@@ -120,7 +120,7 @@ def send_supply_msg(client, supply_topic, timestamp, amount):
     client.publish(supply_topic, json.dumps(data))
 
 def send_kpi_msg(client, kpi_topic, timestamp, plant_id, status, eff, prod, cper):
-    data = {
+    data_KPI = {
         "timestamp": timestamp, 
         "plant_id": plant_id,
         "status": status,
@@ -128,7 +128,7 @@ def send_kpi_msg(client, kpi_topic, timestamp, plant_id, status, eff, prod, cper
         "prod": prod, 
         "cper": cper
     }
-    client.publish(kpi_topic, json.dumps(data))
+    client.publish(kpi_topic, json.dumps(data_KPI))
 
 def water_demand_on_supplied_power():
     global POWER_SUPPLIED, PLANED_POWER_DEMAND, PLANED_WATER_DEMAND
@@ -138,6 +138,8 @@ def water_demand_on_supplied_power():
     else:
         water_demand = (POWER_SUPPLIED / PLANED_POWER_DEMAND) * PLANED_WATER_DEMAND
 
+    #HARDCODE
+    water_demand = 10.0
     return water_demand
 
 def produce_on_supplied_water():
@@ -148,14 +150,23 @@ def produce_on_supplied_water():
         filtered_water = WATER_SUPPLIED
     else:
         filtered_water = PLANED_WATER_DEMAND
+
+    #HARDCODE
+    filtered_water = WATER_SUPPLIED
     return filtered_water
 
 def calculate_kpis():
     global EFFICIENCY, PRODUCTION, CURRENT_PERFORMANCE
     global FILTERED_WATER_PRODUCED, POWER_SUPPLIED, WATER_SUPPLIED, NOMINAL_WATER_SUPPLY
-
-    EFFICIENCY = FILTERED_WATER_PRODUCED / POWER_SUPPLIED
-    PRODUCTION = FILTERED_WATER_PRODUCED / WATER_SUPPLIED
+    
+    if(POWER_SUPPLIED != 0):
+        EFFICIENCY = FILTERED_WATER_PRODUCED / POWER_SUPPLIED
+    else:
+        EFFICIENCY = 0
+    if(WATER_SUPPLIED != 0):
+        PRODUCTION = FILTERED_WATER_PRODUCED / WATER_SUPPLIED
+    else:
+        PRODUCTION = 0
     CURRENT_PERFORMANCE = FILTERED_WATER_PRODUCED / NOMINAL_WATER_SUPPLY
 
 def calculate_planed_demand():
@@ -163,7 +174,9 @@ def calculate_planed_demand():
 
     PLANED_WATER_DEMAND = PLANED_WATER_SUPPLY * PRODUCTION_LOSSES
 
-    PLANED_POWER_DEMAND = NOMINAL_PERFORMANCE * PLANED_WATER_DEMAND
+    #HARDCODE
+    PLANED_POWER_DEMAND = NOMINAL_PERFORMANCE
+    #PLANED_POWER_DEMAND = NOMINAL_PERFORMANCE * PLANED_WATER_DEMAND
 
 def on_message_tick(client, userdata, msg):
     """
@@ -172,9 +185,9 @@ def on_message_tick(client, userdata, msg):
     """
     global state_manager, TIMESTAMP, TOPIC_POWER_REQUEST, ID, TOPIC_POWER_RECEIVE, PLANED_POWER_DEMAND
 
-    # get timestamp from tick msg and request power   
-    payload = json.loads(msg.payload)
-    TIMESTAMP = payload["timestamp"]
+    # get timestamp from tick msg and request power
+    TIMESTAMP = msg.payload.decode("utf-8")
+    
     send_request_msg(client, TOPIC_POWER_REQUEST, TIMESTAMP, ID, TOPIC_POWER_RECEIVE, PLANED_POWER_DEMAND)
 
     #state_manager.receive_tick()
@@ -218,7 +231,16 @@ def on_message_water_received(client, userdata, msg):
 
     # Calculate the current KPIs and publish them
     calculate_kpis()
-    send_kpi_msg(client, TOPIC_KPI, TIMESTAMP, ID, STATUS, EFFICIENCY, PRODUCTION, CURRENT_PERFORMANCE)
+    send_kpi_msg(
+        client=client, 
+        kpi_topic=TOPIC_KPI, 
+        timestamp=TIMESTAMP, 
+        plant_id=ID,
+        status=STATUS, 
+        eff=EFFICIENCY, 
+        prod=PRODUCTION, 
+        cper=CURRENT_PERFORMANCE
+    )
 
     #state_manager.receive_dependency()  # Mark water as received in state manager
 

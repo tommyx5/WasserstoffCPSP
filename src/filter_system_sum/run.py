@@ -50,6 +50,8 @@ KPI_CLASS = namedtuple("KPI", ["plant_id", "status", "eff", "prod", "cper"]) # A
 
 TOPIC_FILTER_SYSTEM_SUM_DATA = getenv_or_exit("TOPIC_FILTER_SUM_FILTER_SUM_DATA", "default")
 
+TOPIC_PLANED_AMOUNT = getenv_or_exit("TOPIC_FILTER_PLANT_PLANED_AMOUNT", "default") # topic to receive produce planed amount for the next tick
+
 
 def send_reply_msg(client, reply_topic, timestamp, amount):
     data = {
@@ -169,10 +171,11 @@ def weighted_coefficient_function(kpi):
         kpi.prod * prod_weight +
         kpi.cper * cper_weight
     )
-    return max(coefficient, 0)  # Avoid negative coefficients
+    return max(coefficient, 0.0)  # Avoid negative coefficients
 
 def calculate_and_publish_plan(client, coefficient_function=weighted_coefficient_function):
     global KPI_LIST, RECEIVED_KPI, TIMESTAMP, TOPIC_KPI_LIST, TOTAL_PLANED_PER_TICK
+    global TOPIC_PLANED_AMOUNT 
 
     # Calculate how much in total needs to be done next tick
     calculate_needed_amount_per_tick()
@@ -191,8 +194,11 @@ def calculate_and_publish_plan(client, coefficient_function=weighted_coefficient
             print(f"No KPI topic found for filter plant ID {kpi.plant_id}, skipping...")
             continue
 
-        if kpi.status != "online":
+        if kpi.status != "online" :
             # Offline plants receive 0 allocation
+            planned_amount = 0
+        elif(total_coefficient == 0.0):
+            # later 
             planned_amount = 0
         else:
             # Calculate allocation for active plants
@@ -202,7 +208,8 @@ def calculate_and_publish_plan(client, coefficient_function=weighted_coefficient
         # Send the water production plan message
         send_plan_msg(
             client=client,
-            topic=topic,
+            #HARDCODE weg
+            topic=TOPIC_PLANED_AMOUNT+"0",
             timestamp=TIMESTAMP,
             amount=planned_amount
         )
@@ -225,7 +232,7 @@ def add_supply(supply):
 def add_kpi(plant_id, status, eff, prod, cper):
     global RECEIVED_KPI, KPI_LIST, KPI_CLASS
 
-    SUPPLY_LIST.append(SUPPLY_CLASS(plant_id, status, eff, prod, cper))
+    KPI_LIST.append(KPI_CLASS(plant_id, status, eff, prod, cper))
     RECEIVED_KPI += 1
 
 def on_message_tick(client, userdata, msg):

@@ -17,7 +17,6 @@ services:
       - climate_gen_hamburg
       - request_hydrogen_gen
       - power_system
-      - distillation_system
       - filter_system
       - hydrogen_system
     env_file: # file with environmental variables

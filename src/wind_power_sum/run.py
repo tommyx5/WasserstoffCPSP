@@ -20,8 +20,8 @@ PLANT_DATA["filter"] = {}
 PLANT_DATA["hydrogen"] = {}
 
 COUNT_POWER_GEN = int(getenv_or_exit("POWER_SUM_COUNT_POWER_GEN", 0))
-COUNT_FILTER_PLANT = int(getenv_or_exit("COUNT_FILTER_PLANT", 0))
-COUNT_HYDROGEN_PLANT = int(getenv_or_exit("COUNT_HYDROGEN_PLANT", 0))
+COUNT_FILTER_PLANT = int(getenv_or_exit("NUMBER_OF_FILTER_PLANTS", 0))
+COUNT_HYDROGEN_PLANT = int(getenv_or_exit("NUMBER_OF_HYDROGEN_PLANTS", 0))
 
 TICK = getenv_or_exit('TOPIC_TICK_GEN_TICK', 'default')
 TOPIC_ADAPTIVE_MODE = getenv_or_exit('TOPIC_ADAPTIVE_MODE', 'default')
@@ -41,22 +41,24 @@ FILTER_KPIS_TOPIC_LIST = []
 for i in range(COUNT_FILTER_PLANT):
     FILTER_PLANT_TOPIC_LIST.append(TOPIC_FILTER_REQUEST+str(i))
     FILTER_KPIS_TOPIC_LIST.append(TOPIC_FILTER_KPIS+str(i))
-    PLANT_DATA["filter"][i] = {}
-    PLANT_DATA["filter"][i]["reply_topic"] = ""
-    PLANT_DATA["filter"][i]["amount"] = ""
-    PLANT_DATA["filter"][i]["timestamp"] = 0
-    PLANT_DATA["filter"][i]["status"] = True
-    PLANT_DATA["filter"][i]["eff"] = 0.5
-    PLANT_DATA["filter"][i]["prod"] = 0.5
-    PLANT_DATA["filter"][i]["cper"] = 0.5
-    PLANT_DATA["filter"][i]["powersupply"] = 0
-    PLANT_DATA["filter"][i]["priority"] = 0
+    PLANT_DATA["filter"][str(i)] = {}
+    PLANT_DATA["filter"][str(i)]["reply_topic"] = ""
+    PLANT_DATA["filter"][str(i)]["amount"] = ""
+    PLANT_DATA["filter"][str(i)]["timestamp"] = 0
+    PLANT_DATA["filter"][str(i)]["status"] = True
+    PLANT_DATA["filter"][str(i)]["eff"] = 0.5
+    PLANT_DATA["filter"][str(i)]["prod"] = 0.5
+    PLANT_DATA["filter"][str(i)]["cper"] = 0.5
+    PLANT_DATA["filter"][str(i)]["powersupply"] = 0
+    PLANT_DATA["filter"][str(i)]["priority"] = 0
     
 HYDROGEN_PLANT_TOPIC_LIST = []
 HYDROGEN_KPIS_TOPIC_LIST = []
-for i in range(COUNT_HYDROGEN_PLANT):
+for j in range(COUNT_HYDROGEN_PLANT):
+    i = j
     HYDROGEN_PLANT_TOPIC_LIST.append(TOPIC_HYDROGEN_REQUEST+str(i))
     HYDROGEN_KPIS_TOPIC_LIST.append(TOPIC_FILTER_KPIS+str(i))
+    i = str(j)
     PLANT_DATA["hydrogen"][i] = {}
     PLANT_DATA["hydrogen"][i]["reply_topic"] = ""
     PLANT_DATA["hydrogen"][i]["amount"] = ""
@@ -163,6 +165,7 @@ def calculate_supply():
         calc_factor /= multi
     
     result_list.extend(result_list_hydrogen)
+    result_list.sort(key=get_key,reverse=True)
     for i in range(len(result_list)):
         if AVAILABLE_POWER - result_list[i][3] > 0:
             AVAILABLE_POWER -= result_list[i][3]
@@ -247,12 +250,14 @@ def on_message_request(client, userdata, msg):
     PLANT_DATA[ptype][plant_id]["timestamp"] = payload["timestamp"]
     PLANT_DATA[ptype][plant_id]["powersupply"] = 0
 
+    """
     if ADAPTIVE: #PRIORITY in ratio to eff, prod, cper
         all_request_receiced = True
         for typ in PLANT_DATA.keys():
             for id in PLANT_DATA[typ].keys():
                 all_request_receiced = all_request_receiced and (payload["timestamp"] == PLANT_DATA[typ][id]["timestamp"])
         
+        all_request_receiced = True
         if all_request_receiced:
             print(True)
             result_list = calculate_supply()
@@ -265,15 +270,16 @@ def on_message_request(client, userdata, msg):
             if TEST:
                 client.publish(TETS_TOPIC, json.dumps({"payload": result_list}))
     else: #FIFO
-        supplied_power = 0
-        if AVAILABLE_POWER - PLANT_DATA[ptype][plant_id]["amount"] > 0:
-            AVAILABLE_POWER -= PLANT_DATA[ptype][plant_id]["amount"]
-            supplied_power = PLANT_DATA[ptype][plant_id]["amount"]            
-        data = {
-            "timestamp": payload["timestamp"],
-            "amount": supplied_power
-        }
-        client.publish(payload["reply_topic"], json.dumps(data))
+    """
+    supplied_power = 0
+    if AVAILABLE_POWER - payload["amount"] > 0:
+        AVAILABLE_POWER -= payload["amount"]
+        supplied_power = payload["amount"]            
+    data = {
+        "timestamp": payload["timestamp"],
+        "amount": supplied_power
+    }
+    client.publish(payload["reply_topic"], json.dumps(data))
 
 
 if __name__ == '__main__':
