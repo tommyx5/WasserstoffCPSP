@@ -4,6 +4,7 @@ import logging
 from random import seed, randint
 from mqtt.mqtt_wrapper import MQTTWrapper
 import os
+from collections import namedtuple
 
 def getenv_or_exit(env_name, default="default"):
     value = os.getenv(env_name, default)
@@ -11,67 +12,116 @@ def getenv_or_exit(env_name, default="default"):
         raise SystemExit(f"Environment variable {env_name} not set")
     return value
 
-COUNT_HYDROGEN_CELL = int(getenv_or_exit("HYDROGEN_SUM_COUNT_HYDROGEN_CELL", 0))
+TICK = getenv_or_exit('TOPIC_TICK_GEN_TICK', 'default')
+HYDROGEN_REQUEST = getenv_or_exit("TOPIC_HYDROGEN_PIPE_REQUEST", "default")
+HYDROGEN_SUPPLY = float(getenv_or_exit("HYDROGEN_PIPE_SUPPLY", 0.0)) # Hydrogen Volume in kg can be supplied by the pipe
+PLANTS_NUMBER = int(getenv_or_exit("NUMBER_OF_HYDROGEN_PLANTS", 0))
 
-HYDROGEN_CELL_SUM_DATA = getenv_or_exit("TOPIC_HYDROGEN_SUM_HYDROGEN_SUM_DATA", "default")
-HYDROGEN_CELL_DATA = getenv_or_exit("TOPIC_HYDROGEN_CELL_HYDROGEN_SUPPLY", "default")
+TIMESTAMP = 0
+AVAILABLE_HYDROGEN = 0 # total volume of hydrogen that can be supplied
+RECEIVED_KPI_M = 0
 
-HYDROGEN_CELL_DATA_LIST = []
-for i in range(COUNT_HYDROGEN_CELL):
-    HYDROGEN_CELL_DATA_LIST.append(HYDROGEN_CELL_DATA+str(i))
+KPIS_LIST = [] # A list to hold all requests
+KPIS_CLASS = namedtuple("KPIS", ["timestamp", "plant_id", "status", "eff", "prod", "cper"]) # A data structure for requests
 
-SUM_HYDROGEN = 0
-MEAN_HYDROGEN = 0
-COUNT = 0
-HYDROGEN_LIST = []
-COUNT_TICKS_MAX = 24*4
-COUNT_TICKS = 0
-for i in range(COUNT_TICKS_MAX):
-    HYDROGEN_LIST.append(0)
+def send_reply_msg(client, reply_topic, timestamp, amount):
+    data = {
+        "timestamp": timestamp,  
+        "amount": amount
+    }
+    client.publish(reply_topic, json.dumps(data))
 
-def calc_mean():
-    global SUM_HYDROGEN, MEAN_HYDROGEN, HYDROGEN_LIST
-    summe = 0
-    count = 0
-    for i in range(COUNT_TICKS_MAX):
-        if HYDROGEN_LIST[i] > 0:
-                summe += HYDROGEN_LIST[i]
-                count += 1
-        if count > 0:
-            MEAN_HYDROGEN = round(summe / count, 2)
-        else:
-            MEAN_HYDROGEN = 0
+def weighted_supply_function(available_supply, requests, weights=None):
+    """
+    Calculate supply distribution based on weighted KPIs.
+    :param available_supply: Total available hydrogen supply.
+    :param requests: List of KPIs.
+    :param weights: Dictionary with weights for eff, prod, and cper.
+    """
+    if weights is None:
+        weights = {"eff": 0.4, "prod": 0.35, "cper": 0.25}
+
+    # Step 1: Normalization of KPIs
+    eff_values = [req.eff for req in requests]
+    prod_values = [req.prod for req in requests]
+    cper_values = [req.cper for req in requests]
+
+    max_eff = max(eff_values) if eff_values else 1
+    max_prod = max(prod_values) if prod_values else 1
+    max_cper = max(cper_values) if cper_values else 1
+
+    # Step 2: Calculate weighted score for each plant
+    scores = {}
+    for request in requests:
+        normalized_eff = request.eff / max_eff
+        normalized_prod = request.prod / max_prod
+        normalized_cper = request.cper / max_cper
+
+        # Weighted sum of normalized values
+        score = (normalized_eff * weights["eff"] +
+                 normalized_prod * weights["prod"] +
+                 normalized_cper * weights["cper"])
+        scores[request.plant_id] = score
+
+    # Step 3: Proportional allocation based on scores
+    total_score = sum(scores.values())
+    allocation = {}
+    for request in requests:
+        share = (scores[request.plant_id] / total_score) * available_supply
+        allocation[request.plant_id] = round(share, 2)  # Round for clarity
+
+    return allocation
+
+def calculate_and_publish_amount(client, supply_function=weighted_supply_function):
+    """
+    Calculates the supply for each requester and publishes the replies.
+    """
+    global KPIS_LIST, AVAILABLE_HYDROGEN, TIMESTAMP
+
+    if not KPIS_LIST:
+        print("No requests to process.")
+        return
 
 
-def on_message_power(client, userdata, msg):
-    global HYDROGEN_CELL_SUM_DATA
-    global COUNT, COUNT_TICKS_MAX, COUNT_TICKS
-    global SUM_HYDROGEN, MEAN_HYDROGEN, HYDROGEN_LIST
-    global COUNT_HYDROGEN_CELL
+    # Use the supplied supply function to calculate allocation
+    allocation = supply_function(AVAILABLE_HYDROGEN, KPIS_LIST)
 
-    payload = json.loads(msg.payload) 
-    hydrogen = payload["hydrogensupply"]
-    timestamp = payload["timestamp"]
+    # Publish replies (simulate publishing with print statements for now)
+    for request in KPIS_LIST:
+        supply = allocation.get(request.plant_id, 0)
+        send_reply_msg(client, HYDROGEN_REQUEST, TIMESTAMP, supply)
 
-    #if COUNT % COUNT_HYDROGEN_CELL == 0:
-        #SUM_HYDROGEN = hydrogen
-    #else:
-    SUM_HYDROGEN += hydrogen
-    HYDROGEN_LIST[COUNT_TICKS] = SUM_HYDROGEN
-    calc_mean()
-    COUNT_TICKS = (COUNT_TICKS + 1) % COUNT_TICKS_MAX
-    if COUNT == COUNT_HYDROGEN_CELL-1:
-        # Extract the timestamp from the tick message and decode it from UTF-8
-        data = {"hydrogen": SUM_HYDROGEN, "mean_hydrogen": MEAN_HYDROGEN, "timestamp": timestamp}
-        # Publish the data to the chaos sensor topic in JSON format
-        client.publish(HYDROGEN_CELL_SUM_DATA, json.dumps(data))
-        if COUNT_TICKS == 0:        
-            SUM_HYDROGEN = 0 
-            MEAN_HYDROGEN = 0
+    # Clear the REQUESTS list after processing
+    KPIS_LIST.clear()
 
-    COUNT = (COUNT + 1) % COUNT_HYDROGEN_CELL
+def add_request(timestamp, plant_id, status, eff, prod, cper):
+    global RECEIVED_KPI_M, KPIS_LIST, KPIS_CLASS
 
+    KPIS_LIST.append(KPIS_CLASS(timestamp, plant_id, status, eff, prod, cper))
+    RECEIVED_KPI_M += 1
+
+def on_message_tick(client, userdata, msg):
+    global TIMESTAMP, HYDROGEN_SUPPLY, AVAILABLE_HYDROGEN, RECEIVED_KPI_M
+     
+    TIMESTAMP = msg.payload.decode("utf-8") # extract the timestamp 
+    AVAILABLE_HYDROGEN = HYDROGEN_SUPPLY # update available hydrogen
+    RECEIVED_KPI_M = 0 # update request number
+
+def on_message_request(client, userdata, msg):
+    """
+    Callback function that processes messages from the request topic.
+    """
     
+    #extracting the timestamp and other data
+    payload = json.loads(msg.payload)
+    timestamp = payload["timestamp"]
+    plant_id = payload["plant_id"]
+    status = payload["status"]
+    eff = payload["eff"]
+    prod = payload["prod"]
+    cper = payload["cper"]
+
+    add_request(timestamp, plant_id, status, eff, prod, cper)
 
 def main():
     """
@@ -80,17 +130,21 @@ def main():
     """
     
     # Initialize the MQTT client and connect to the broker
-    mqtt = MQTTWrapper('mqttbroker', 1883, name='hydrogen_cell_sum')
+    mqtt = MQTTWrapper('mqttbroker', 1883, name='hydrogen_pipe')
     
-    for topic in HYDROGEN_CELL_DATA_LIST:
-        # Subscribe to the tick topic
-        mqtt.subscribe(topic)
-        # Subscribe with a callback function to handle incoming tick messages
-        mqtt.subscribe_with_callback(topic, on_message_power)
-    
+
+    mqtt.subscribe(TICK)
+    mqtt.subscribe(HYDROGEN_REQUEST)
+    mqtt.subscribe_with_callback(TICK, on_message_tick)
+    mqtt.subscribe_with_callback(HYDROGEN_REQUEST, on_message_request)
+
     try:
         # Start the MQTT loop to process incoming and outgoing messages
-        mqtt.loop_forever()
+        while True:
+            if RECEIVED_KPI_M >= PLANTS_NUMBER:
+                calculate_and_publish_amount(mqtt)
+            
+            mqtt.loop_forever()
     except (KeyboardInterrupt, SystemExit):
         # Gracefully stop the MQTT client and exit the program on interrupt
         mqtt.stop()
