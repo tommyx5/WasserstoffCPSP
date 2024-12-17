@@ -44,9 +44,6 @@ EFFICIENCY = 0
 PRODUCTION = 0
 CURRENT_PERFORMANCE = 0
 
-AVAILABLE = 0 
-TIMESTAMP = 0
-
 POWER_AVAILABLE = False
 
 
@@ -164,7 +161,7 @@ def on_message_power_received(client, userdata, msg):
     global TOPIC_FILTERED_WATER_REQUEST, ID, TOPIC_FILTERED_WATER_RECEIVE, POWER_SUPPLIED
 
     payload = json.loads(msg.payload)
-    timestamp = payload["timestamp"]
+    TIMESTAMP = payload["timestamp"]
     POWER_SUPPLIED = payload["amount"]
 
     # Calculate filtered water demand based on supplied power and publish filtered water request
@@ -174,11 +171,11 @@ def on_message_power_received(client, userdata, msg):
     #state_manager.receive_power()
 
 def on_message_plan(client, userdata, msg):
-    global PLANED_WATER_SUPPLY
+    global PLANED_HYDROGEN_SUPPLY
 
     payload = json.loads(msg.payload)
     timestamp = payload["timestamp"]
-    PLANED_WATER_SUPPLY = payload["amount"]
+    PLANED_HYDROGEN_SUPPLY = payload["amount"]
 
     calculate_planed_demand()
 
@@ -240,11 +237,11 @@ def calculate_kpis():
     return False
 
 def calculate_planed_demand():
-    global PLANED_HYDROGEN_SUPPLY, PLANED_WATER_DEMAND, PLANED_POWER_DEMAND, PRODUCTION_LOSSES, NOMINAL_PERFORMANCE 
+    global PLANED_HYDROGEN_SUPPLY, PLANED_FILTERED_WATER_DEMAND, PLANED_POWER_DEMAND, PRODUCTION_LOSSES, NOMINAL_PERFORMANCE 
 
-    PLANED_WATER_DEMAND = PLANED_HYDROGEN_SUPPLY * PRODUCTION_LOSSES
+    PLANED_FILTERED_WATER_DEMAND = PLANED_HYDROGEN_SUPPLY * PRODUCTION_LOSSES
 
-    PLANED_POWER_DEMAND = NOMINAL_PERFORMANCE * PLANED_WATER_DEMAND
+    PLANED_POWER_DEMAND = NOMINAL_PERFORMANCE * PLANED_FILTERED_WATER_DEMAND
 
 def main():
     """

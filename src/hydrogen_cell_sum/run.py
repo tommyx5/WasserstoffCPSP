@@ -12,10 +12,13 @@ def getenv_or_exit(env_name, default="default"):
         raise SystemExit(f"Environment variable {env_name} not set")
     return value
 
+ID = getenv_or_exit("ID", "default")
 TICK = getenv_or_exit('TOPIC_TICK_GEN_TICK', 'default')
 HYDROGEN_REQUEST = getenv_or_exit("TOPIC_HYDROGEN_PIPE_REQUEST", "default")
 HYDROGEN_SUPPLY = float(getenv_or_exit("HYDROGEN_PIPE_SUPPLY", 0.0)) # Hydrogen Volume in kg can be supplied by the pipe
 PLANTS_NUMBER = int(getenv_or_exit("NUMBER_OF_HYDROGEN_PLANTS", 0))
+HYDROGEN_AMOUNT = getenv_or_exit("TOPIC_HYDROGEN_PLANED_AMOUNT","default") + ID
+
 
 TIMESTAMP = 0
 AVAILABLE_HYDROGEN = 0 # total volume of hydrogen that can be supplied
@@ -89,7 +92,7 @@ def calculate_and_publish_amount(client, supply_function=weighted_supply_functio
     # Publish replies (simulate publishing with print statements for now)
     for request in KPIS_LIST:
         supply = allocation.get(request.plant_id, 0)
-        send_reply_msg(client, HYDROGEN_REQUEST, TIMESTAMP, supply)
+        send_reply_msg(client, HYDROGEN_AMOUNT, TIMESTAMP, supply)
 
     # Clear the REQUESTS list after processing
     KPIS_LIST.clear()
