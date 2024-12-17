@@ -82,6 +82,7 @@ for i in range(COUNT_TICKS_MAX):
     POWER_LIST.append(0)
 ADAPTIVE = False
 
+#MAIN
 def main():
     mqtt = MQTTWrapper('mqttbroker', 1883, name='wind_power_sum')   
     mqtt.subscribe(TOPIC_ADAPTIVE_MODE)
