@@ -175,7 +175,11 @@ def calculate_supply():
     
 def on_message_adaptive_mode(client, userdata, msg):
     global ADAPTIVE
-    ADAPTIVE = bool(msg.payload.decode("utf-8"))
+    boolean = msg.payload.decode("utf-8")
+    if boolean == "true" or boolean == "1" or boolean == "I love Python" or boolean == "True":
+        ADAPTIVE = True
+    else:
+        ADAPTIVE = False
     if TEST:
         client.publish(TETS_TOPIC, json.dumps({"payload": "on_message_adaptive_mode"}))
     
@@ -250,8 +254,7 @@ def on_message_request(client, userdata, msg):
     PLANT_DATA[ptype][plant_id]["timestamp"] = payload["timestamp"]
     PLANT_DATA[ptype][plant_id]["powersupply"] = 0
 
-    """
-    if ADAPTIVE: #PRIORITY in ratio to eff, prod, cper
+    if ADAPTIVE==True: #PRIORITY in ratio to eff, prod, cper
         all_request_receiced = True
         for typ in PLANT_DATA.keys():
             for id in PLANT_DATA[typ].keys():
@@ -270,16 +273,15 @@ def on_message_request(client, userdata, msg):
             if TEST:
                 client.publish(TETS_TOPIC, json.dumps({"payload": result_list}))
     else: #FIFO
-    """
-    supplied_power = 0
-    if AVAILABLE_POWER - payload["amount"] > 0:
-        AVAILABLE_POWER -= payload["amount"]
-        supplied_power = payload["amount"]            
-    data = {
-        "timestamp": payload["timestamp"],
-        "amount": supplied_power
-    }
-    client.publish(payload["reply_topic"], json.dumps(data))
+        supplied_power = 0
+        if AVAILABLE_POWER - payload["amount"] > 0:
+            AVAILABLE_POWER -= payload["amount"]
+            supplied_power = payload["amount"]            
+        data = {
+            "timestamp": payload["timestamp"],
+            "amount": supplied_power
+        }
+        client.publish(payload["reply_topic"], json.dumps(data))
 
 
 if __name__ == '__main__':
