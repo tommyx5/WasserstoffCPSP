@@ -18,7 +18,7 @@ HYDROGEN_REQUEST = getenv_or_exit("TOPIC_HYDROGEN_PIPE_REQUEST", "default")
 HYDROGEN_SUPPLY = float(getenv_or_exit("HYDROGEN_PIPE_SUPPLY", 0.0)) # Hydrogen Volume in kg can be supplied by the pipe
 PLANTS_NUMBER = int(getenv_or_exit("NUMBER_OF_HYDROGEN_PLANTS", 0))
 HYDROGEN_AMOUNT = getenv_or_exit("TOPIC_HYDROGEN_PLANED_AMOUNT","default") + ID
-
+DAILY_HYDROGEN_AMOUNT = float(getenv_or_exit("HYDROGEN_DEMAND_GEN_DAYLY_DEMAND", 0.0))
 
 TIMESTAMP = 0
 AVAILABLE_HYDROGEN = 0 # total volume of hydrogen that can be supplied
@@ -34,7 +34,7 @@ def send_reply_msg(client, reply_topic, timestamp, amount):
     }
     client.publish(reply_topic, json.dumps(data))
 
-def weighted_supply_function(available_supply, requests, weights=None):
+def weighted_supply_function(daily_goal, requests, weights=None):
     """
     Calculate supply distribution based on weighted KPIs.
     :param available_supply: Total available hydrogen supply.
@@ -70,7 +70,7 @@ def weighted_supply_function(available_supply, requests, weights=None):
     total_score = sum(scores.values())
     allocation = {}
     for request in requests:
-        share = (scores[request.plant_id] / total_score) * available_supply
+        share = (scores[request.plant_id] / total_score) * (daily_goal/24 * 4)  # 24 * 4 ticks per day
         allocation[request.plant_id] = round(share, 2)  # Round for clarity
 
     return allocation
@@ -79,7 +79,7 @@ def calculate_and_publish_amount(client, supply_function=weighted_supply_functio
     """
     Calculates the supply for each requester and publishes the replies.
     """
-    global KPIS_LIST, AVAILABLE_HYDROGEN, TIMESTAMP
+    global KPIS_LIST, DAILY_HYDROGEN_AMOUNT, TIMESTAMP
 
     if not KPIS_LIST:
         print("No requests to process.")
@@ -87,7 +87,7 @@ def calculate_and_publish_amount(client, supply_function=weighted_supply_functio
 
 
     # Use the supplied supply function to calculate allocation
-    allocation = supply_function(AVAILABLE_HYDROGEN, KPIS_LIST)
+    allocation = supply_function(DAILY_HYDROGEN_AMOUNT, KPIS_LIST)
 
     # Publish replies (simulate publishing with print statements for now)
     for request in KPIS_LIST:
