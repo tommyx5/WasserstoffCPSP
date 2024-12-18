@@ -15,7 +15,8 @@ def getenv_or_exit(env_name, default="default"):
 PLANTS_NUMBER = int(getenv_or_exit("FILTER_SUM_COUNT_FILTER", 0))
 
 TICK = getenv_or_exit('TOPIC_TICK_GEN_TICK', 'default')
-TOPIC_REQUEST = getenv_or_exit("TOPIC_FILTER_SUM_FILTERED_WATER_REQUEST", "default") # Topic to receive requests for filtered water from hzdrogen plants
+TOPIC_REQUEST = getenv_or_exit("TOPIC_FILTER_SUM_FILTERED_WATER_REQUEST", "default") # Topic to receive requests for filtered water from hydrogen plants
+TOPIC_FILTERED_WATER_REQEUST = getenv_or_exit("TOPIC_FILTER_PLANT_FILTERED_WATER_REQUEST", "default") # Topic to send requests for filtered water to filter plants (must be followed by Plant ID)
 TOPIC_SUPPLY = getenv_or_exit("TOPIC_FILTER_PLANT_FILTERED_WATER_SUPPLY", "default") # Base topic to receive supply msg from the filter plants (must be followed by Plant ID)
 TOPIC_KPI = getenv_or_exit("TOPIC_FILTER_PLANT_KPI", "default") # Base topic to receive kpis from filter plants (must be followed by Plant ID)
 TOPIC_PLANED_AMOUNT = getenv_or_exit("TOPIC_FILTER_PLANT_PLANED_AMOUNT", "default") # Base topic to publish produce planed amount for the next tick (must be followed by Plant ID)
@@ -23,10 +24,14 @@ TOPIC_PLANED_AMOUNT = getenv_or_exit("TOPIC_FILTER_PLANT_PLANED_AMOUNT", "defaul
 TOPIC_SUPPLY_LIST = []
 TOPIC_KPI_LIST = []
 TOPIC_PLANED_AMOUNT_LIST = []
+TOPIC_FILTERED_WATER_REQEUST_LIST = []
 for i in range(PLANTS_NUMBER):
+    TOPIC_FILTERED_WATER_REQEUST_LIST.append(TOPIC_FILTERED_WATER_REQEUST+str(i))
     TOPIC_SUPPLY_LIST.append(TOPIC_SUPPLY+str(i)) # list with all supply topics
     TOPIC_KPI_LIST.append(TOPIC_KPI+str(i)) # list with all kpi topics
     TOPIC_PLANED_AMOUNT_LIST.append(TOPIC_PLANED_AMOUNT+str(i)) # list with all planed amount topics
+
+ADAPTABLE = False
 
 TIMESTAMP = 0
 AVAILABLE_WATER = 0 # total volume of water that can be supplied
@@ -96,6 +101,9 @@ def calculate_and_publish_replies(client, supply_function=default_supply_functio
     """
     global REQUEST_LIST, RECEIVED_REQUESTS, AVAILABLE_WATER, TIMESTAMP
 
+    # calculate the total supply from the plants
+    calculate_supply(client)
+
     if not REQUEST_LIST:
         print("No requests to process.")
         return
@@ -139,24 +147,6 @@ def calculate_supply(client):
     SUPPLY_LIST.clear()
     RECEIVED_SUPPLIES = 0
 
-
-def calculate_needed_amount_per_tick():
-    global TOTAL_PLANED_PER_TICK, TOTAL_PRODUCED, TOTAL_PLANED, TICK_COUNT
-
-    # avoid division by 0
-    if TICK_COUNT < 96:
-        plan = round((TOTAL_PLANED - TOTAL_PRODUCED) / (96-TICK_COUNT), 2)
-    else:
-        plan = TOTAL_PLANED - TOTAL_PRODUCED 
-        print("While planing filtered water per tick, tick went to 96 and coused division by 0")
-
-    # avoid planing negative numbers
-    if(plan > 0):
-        TOTAL_PLANED_PER_TICK = plan
-    else:
-        print("Planed filtered water per tick can not be smaller than 0")
-        TOTAL_PLANED_PER_TICK = 0
-
 def weighted_coefficient_function(kpi):
     """
     Replaceable function to calculate the coefficient for allocation.
@@ -167,14 +157,16 @@ def weighted_coefficient_function(kpi):
     cper_weight = 0.2
 
     coefficient = (
+        1.0 +
         kpi.eff * eff_weight +
         kpi.prod * prod_weight +
         kpi.cper * cper_weight
     )
     return max(coefficient, 0.0)  # Avoid negative coefficients
 
+"""
 def calculate_and_publish_plan(client, coefficient_function=weighted_coefficient_function):
-    global KPI_LIST, RECEIVED_KPI, TIMESTAMP, TOPIC_KPI_LIST, TOTAL_PLANED_PER_TICK
+    global KPI_LIST, RECEIVED_KPI, TIMESTAMP, TOPIC_KPI_LIST, TOTAL_PLANED_PER_TICK, TOPIC_PLANED_AMOUNT_LIST
     global TOPIC_PLANED_AMOUNT 
 
     # Calculate how much in total needs to be done next tick
@@ -189,16 +181,13 @@ def calculate_and_publish_plan(client, coefficient_function=weighted_coefficient
     # Iterate through the KPIs and send messages
     for kpi in KPI_LIST:
         # Find the topic corresponding to the plant's ID
-        topic = next((t for t in TOPIC_KPI_LIST if f"/{kpi.plant_id}" in t), None)
-        if not topic:
+        planed_topic = next((t for t in TOPIC_PLANED_AMOUNT_LIST if f"/{kpi.plant_id}" in t), None)
+        if not planed_topic:
             print(f"No KPI topic found for filter plant ID {kpi.plant_id}, skipping...")
             continue
 
         if kpi.status != "online" :
             # Offline plants receive 0 allocation
-            planned_amount = 0
-        elif(total_coefficient == 0.0):
-            # later 
             planned_amount = 0
         else:
             # Calculate allocation for active plants
@@ -208,8 +197,7 @@ def calculate_and_publish_plan(client, coefficient_function=weighted_coefficient
         # Send the water production plan message
         send_plan_msg(
             client=client,
-            #HARDCODE weg
-            topic=TOPIC_PLANED_AMOUNT+"0",
+            topic=planed_topic,
             timestamp=TIMESTAMP,
             amount=planned_amount
         )
@@ -217,6 +205,90 @@ def calculate_and_publish_plan(client, coefficient_function=weighted_coefficient
     KPI_LIST.clear()
     RECEIVED_KPI = 0
 
+def calculate_needed_amount_per_tick():
+    global TOTAL_PLANED_PER_TICK, TOTAL_PRODUCED, TOTAL_PLANED, TICK_COUNT
+
+    # avoid division by 0
+    if TICK_COUNT < 96:
+        plan = round((TOTAL_PLANED - TOTAL_PRODUCED) / (96-TICK_COUNT), 2)
+    else:
+        plan = TOTAL_PLANED - TOTAL_PRODUCED 
+        print("While planing filtered water per tick, tick went to 96 and coused division by 0")
+
+    # avoid planing negative numbers
+    if(plan >= 0):
+        TOTAL_PLANED_PER_TICK = plan
+    else:
+        print("Planed filtered water per tick can not be smaller than 0")
+        TOTAL_PLANED_PER_TICK = 0
+"""
+
+def calculate_and_publish_requests(client, coefficient_function=weighted_coefficient_function):
+    global TIMESTAMP, REQUEST_LIST, ADAPTABLE, PLANTS_NUMBER, TOPIC_FILTERED_WATER_REQEUST_LIST, RECEIVED_REQUESTS
+    global KPI_LIST, RECEIVED_KPI
+
+    if not REQUEST_LIST:
+        print("No requests to process.")
+        return
+
+    # Calculate the total demand for this tick
+    total_demand = sum(request.demand for request in REQUEST_LIST)
+
+    if ADAPTABLE:
+        print("ADAPTABLE FILTERED WATER PIPE NOT IMPLEMENTED YET")
+
+        # If first iteration and kpi list is not there yet
+        if not KPI_LIST:
+            partial_demand = round (total_demand / PLANTS_NUMBER, 2)
+            for request_topic in TOPIC_FILTERED_WATER_REQEUST_LIST:
+                send_plan_msg(
+                    client=client,
+                    topic=request_topic,
+                    timestamp=TIMESTAMP,
+                    amount=partial_demand
+                )
+        else:    
+            total_coefficient = sum(
+                coefficient_function(kpi)
+                for kpi in KPI_LIST if kpi.status == "online"
+            )
+
+            for kpi in KPI_LIST:
+                # Find the topic corresponding to the plant's ID
+                request_topic = next((t for t in TOPIC_FILTERED_WATER_REQEUST_LIST if f"/{kpi.plant_id}" in t), None)
+                if not request_topic:
+                    print(f"No request topic found for filter plant ID {kpi.plant_id}, skipping...")
+                    continue
+
+                if kpi.status != "online" :
+                    # Offline plants receive 0 allocation
+                    request_amount = 0
+                else:
+                    # Calculate allocation for active plants
+                    coefficient = coefficient_function(kpi)
+                    request_amount = (coefficient/total_coefficient) * total_demand
+
+                # Send the water production request message
+                send_plan_msg(
+                    client=client,
+                    topic=request_topic,
+                    timestamp=TIMESTAMP,
+                    amount=request_amount
+                )
+    else:
+        partial_demand = round (total_demand / PLANTS_NUMBER, 2)
+        for request_topic in TOPIC_FILTERED_WATER_REQEUST_LIST:
+            send_plan_msg(
+                client=client,
+                topic=request_topic,
+                timestamp=TIMESTAMP,
+                amount=partial_demand
+            )
+
+    RECEIVED_REQUESTS = 0
+    RECEIVED_KPI = 0
+    KPI_LIST .clear()
+   
 def add_request(plant_id, reply_topic, demand):
     global RECEIVED_REQUESTS, REQUEST_LIST, REQUEST_CLASS
 
@@ -244,6 +316,13 @@ def on_message_tick(client, userdata, msg):
     RECEIVED_KPI = 0
     AVAILABLE_WATER = 0 # reset the available water amount
     TICK_COUNT += 1
+
+    #Hardcode for daily messages
+    global TOTAL_PRODUCED, TOTAL_PLANED
+    if(TICK_COUNT % 96 == 0):
+        TOTAL_PLANED = 1000
+        TOTAL_PRODUCED = 0
+        TICK_COUNT = 1
 
 def on_message_request(client, userdata, msg):
     """
@@ -316,12 +395,14 @@ def main():
         # Start the MQTT loop to process incoming and outgoing messages
         while True:
             if RECEIVED_REQUESTS >= PLANTS_NUMBER:
-                if RECEIVED_SUPPLIES >= PLANTS_NUMBER:
-                    calculate_supply(mqtt)
-                    calculate_and_publish_replies(mqtt)
+                calculate_and_publish_requests(mqtt)
 
-            if RECEIVED_KPI >= PLANTS_NUMBER:
-                calculate_and_publish_plan(mqtt)
+            if RECEIVED_SUPPLIES >= PLANTS_NUMBER:
+                calculate_and_publish_replies(mqtt)
+
+            #ignore for now
+            #if RECEIVED_KPI >= PLANTS_NUMBER:
+                #calculate_and_publish_plan(mqtt)
             
             mqtt.loop(0.05) # loop every 50ms
     except (KeyboardInterrupt, SystemExit):
