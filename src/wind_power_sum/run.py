@@ -139,16 +139,22 @@ def calculate_supply(client):
             sum_cper += PLANT_DATA[typ][id]["cper"]
     typ = "filter"
     for id in PLANT_DATA[typ].keys():
-        PLANT_DATA[typ][id]["priority"] = (PLANT_DATA[typ][id]["eff"]/sum_eff+
-                                            PLANT_DATA[typ][id]["prod"]/sum_prod+
-                                            PLANT_DATA[typ][id]["cper"]/sum_cper)
+        if sum_eff > 0 and sum_prod > 0 and sum_cper > 0:
+            PLANT_DATA[typ][id]["priority"] = (PLANT_DATA[typ][id]["eff"]/sum_eff+
+                                                PLANT_DATA[typ][id]["prod"]/sum_prod+
+                                                PLANT_DATA[typ][id]["cper"]/sum_cper)
+        else:
+            PLANT_DATA[typ][id]["priority"] = 0
         result_list.append([PLANT_DATA[typ][id]["priority"],typ,id,PLANT_DATA[typ][id]["amount"],PLANT_DATA[typ][id]["reply_topic"]])
     result_list.sort(key=get_key,reverse=True)
     typ = "hydrogen"
-    for id in PLANT_DATA[typ].keys():      
-        PLANT_DATA[typ][id]["priority"] = (PLANT_DATA[typ][id]["eff"]/sum_eff+
-                                            PLANT_DATA[typ][id]["prod"]/sum_prod+
-                                            PLANT_DATA[typ][id]["cper"]/sum_cper)
+    for id in PLANT_DATA[typ].keys():
+        if sum_eff > 0 and sum_prod > 0 and sum_cper > 0:   
+            PLANT_DATA[typ][id]["priority"] = (PLANT_DATA[typ][id]["eff"]/sum_eff+
+                                                PLANT_DATA[typ][id]["prod"]/sum_prod+
+                                                PLANT_DATA[typ][id]["cper"]/sum_cper)
+        else:
+            PLANT_DATA[typ][id]["priority"] = 0
         result_list_hydrogen.append([PLANT_DATA[typ][id]["priority"],typ,id,PLANT_DATA[typ][id]["amount"],PLANT_DATA[typ][id]["reply_topic"]])
     result_list_hydrogen.sort(key=get_key,reverse=True)
     
