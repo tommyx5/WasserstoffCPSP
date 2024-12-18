@@ -28,6 +28,8 @@ RECEIVED_KPI_M = 0
 KPIS_LIST = [] # A list to hold all requests
 KPIS_CLASS = namedtuple("KPIS", ["timestamp", "plant_id", "status", "eff", "prod", "cper"]) # A data structure for requests
 
+ADAPTIVE = False
+
 def send_reply_msg(client, reply_topic, timestamp, amount):
     data = {
         "timestamp": timestamp,  
@@ -76,7 +78,17 @@ def weighted_supply_function(daily_goal, requests, weights=None):
 
     return allocation
 
-def calculate_and_publish_amount(client, supply_function=weighted_supply_function):
+def no_addaptive_supply_function(daily_goal, requests):
+
+    allocation = {}
+    amount_plants = request.len()
+    for request in requests:
+            allocation[request.plant_id] = (daily_goal/24 * 4) / amount_plants
+
+    return allocation
+
+def calculate_and_publish_amount(client):
+
     """
     Calculates the supply for each requester and publishes the replies.
     """
@@ -86,9 +98,11 @@ def calculate_and_publish_amount(client, supply_function=weighted_supply_functio
         print("No requests to process.")
         return
 
-
+    if ADAPTIVE == True:
     # Use the supplied supply function to calculate allocation
-    allocation = supply_function(DAILY_HYDROGEN_AMOUNT, KPIS_LIST)
+        allocation = weighted_supply_function(DAILY_HYDROGEN_AMOUNT, KPIS_LIST)
+    else:
+        allocation = no_addaptive_supply_function(DAILY_HYDROGEN_AMOUNT, KPIS_LIST)
     totalsupply = 0
     # Publish replies (simulate publishing with print statements for now)
     for request in KPIS_LIST:
@@ -162,8 +176,9 @@ def main():
         # Start the MQTT loop to process incoming and outgoing messages
         while True:
             if RECEIVED_KPI_M >= PLANTS_NUMBER:
+                
                 calculate_and_publish_amount(mqtt)
-            
+                
             mqtt.loop_forever()
     except (KeyboardInterrupt, SystemExit):
         # Gracefully stop the MQTT client and exit the program on interrupt
