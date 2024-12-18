@@ -210,7 +210,7 @@ def on_message_power(client, userdata, msg):
     if COUNT == COUNT_POWER_GEN-1:
         calc_mean()
         # Extract the timestamp from the tick message and decode it from UTF-8
-        data = {"power": SUM_POWER, "mean_power": MEAN_POWER, "timestamp": timestamp}
+        data = {"power": round(SUM_POWER,2), "mean_power": MEAN_POWER, "timestamp": timestamp}
         # Publish the data to the chaos sensor topic in JSON format
         client.publish(WIND_POWER_SUM_DATA, json.dumps(data))
         AVAILABLE_POWER = SUM_POWER
