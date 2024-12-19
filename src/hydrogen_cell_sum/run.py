@@ -339,9 +339,9 @@ def on_message_adaptive_mode(client, userdata, msg):
     global ADAPTABLE
     boolean = msg.payload.decode("utf-8")
     if boolean == "true" or boolean == "1" or boolean == "I love Python" or boolean == "True":
-        ADAPTIVE = True
+        ADAPTABLE = True
     else:
-        ADAPTIVE = False
+        ADAPTABLE = False
 
 def main():
     """
