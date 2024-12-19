@@ -81,6 +81,7 @@ COUNT_TICKS = 0
 for i in range(COUNT_TICKS_MAX):
     POWER_LIST.append(0)
 ADAPTIVE = False
+DICTONARY_BACKLOCK = {}
 
 #MAIN
 def main():
@@ -246,7 +247,7 @@ def on_message_hydrogen_kpi(client, userdata, msg):
         client.publish(TETS_TOPIC, json.dumps({"payload": "on_message_hydrogen_kpi"}))
  
 def on_message_request(client, userdata, msg):
-    global PLANT_DATA, ADAPTIVE, AVAILABLE_POWER
+    global PLANT_DATA, ADAPTIVE, AVAILABLE_POWER, DICTONARY_BACKLOCK
     #extracting the timestamp and other data
     payload = json.loads(msg.payload)
     plant_id = payload["plant_id"]
@@ -260,17 +261,23 @@ def on_message_request(client, userdata, msg):
     PLANT_DATA[ptype][plant_id]["amount"] = payload["amount"]
     PLANT_DATA[ptype][plant_id]["timestamp"] = payload["timestamp"]
     PLANT_DATA[ptype][plant_id]["powersupply"] = 0
-
+    
+    '''
+    if payload["timestamp"] in DICTONARY_BACKLOCK:
+        DICTONARY_BACKLOCK[payload["timestamp"]] = DICTONARY_BACKLOCK[payload["timestamp"]]+1
+    else:
+        DICTONARY_BACKLOCK[payload["timestamp"]] = 0
+    '''
+    
     if ADAPTIVE==True: #PRIORITY in ratio to eff, prod, cper
         all_request_receiced = True
         for typ in PLANT_DATA.keys():
             for id in PLANT_DATA[typ].keys():
                 all_request_receiced = all_request_receiced and (payload["timestamp"] == PLANT_DATA[typ][id]["timestamp"])
-        
-        all_request_receiced = True
+        #client.publish(TETS_TOPIC, json.dumps({"all_request_receiced": all_request_receiced}))
         if all_request_receiced:
-            print(True)
             result_list = calculate_supply(client)
+            #client.publish(TETS_TOPIC, json.dumps({"result_list": result_list}))
             for e in result_list:
                 if e[4] != "":
                     data = {
@@ -278,6 +285,7 @@ def on_message_request(client, userdata, msg):
                         "amount": e[3]
                     }
                     client.publish(e[4], json.dumps(data))
+                    PLANT_DATA[e[1]][e[2]]["timestamp"] = 0
             if TEST:
                 client.publish(TETS_TOPIC, json.dumps({"payload": result_list}))
     else: #FIFO
