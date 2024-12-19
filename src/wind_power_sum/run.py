@@ -277,7 +277,7 @@ def on_message_request(client, userdata, msg):
         #client.publish(TETS_TOPIC, json.dumps({"all_request_receiced": all_request_receiced}))
         if all_request_receiced:
             result_list = calculate_supply(client)
-            #client.publish(TETS_TOPIC, json.dumps({"result_list": result_list}))
+            client.publish(TETS_TOPIC, json.dumps({"result_list": result_list}))
             for e in result_list:
                 if e[4] != "":
                     data = {
