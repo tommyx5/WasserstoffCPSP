@@ -199,7 +199,7 @@ def calculate_hydrogen_demand_for_tick():
     else:
         demand_for_tick = 0
 
-    TICK_COUNT =+ 1 
+    TICK_COUNT += 1 
     return demand_for_tick
 
 def weighted_coefficient_function(kpi):
