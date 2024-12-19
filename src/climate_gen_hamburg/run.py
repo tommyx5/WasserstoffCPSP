@@ -72,17 +72,21 @@ def on_message_tick(client, userdata, msg):
     # Node Red is designed for real-time or historical messages, so discrepancies 
     # in timestamps can cause errors in the display.
     alpha = (COUNT%DIVIDE)/DIVIDE
-    density = round((DATA[0][POS] * (1 - alpha) + DATA[0][(POS + 1) % LENGTH] * alpha),2)
-    temperature = round((DATA[1][POS] * (1 - alpha) + DATA[1][(POS + 1) % LENGTH] * alpha),2)
-    windspeed = round((DATA[2][POS] * (1 - alpha) + DATA[2][(POS + 1) % LENGTH] * alpha),2)
-
+    #density = round((DATA[0][POS] * (1 - alpha) + DATA[0][(POS + 1) % LENGTH] * alpha),2)
+    #temperature = round((DATA[1][POS] * (1 - alpha) + DATA[1][(POS + 1) % LENGTH] * alpha),2)
+    #windspeed = round((DATA[2][POS] * (1 - alpha) + DATA[2][(POS + 1) % LENGTH] * alpha),2)
+    
+    density = DATA[0][POS]
+    temperature = DATA[1][POS]
+    windspeed = DATA[2][POS]
+    POS = (POS + 1) % LENGTH
     data = {"density": density, "temperature": temperature, "windspeed": windspeed, "timestamp": ts_iso}
     # Publish the data to the chaos sensor topic in JSON format
     client.publish(CLIMATE_DATA, json.dumps(data))
-    COUNT += 1
-    if (COUNT%DIVIDE) == 0:
-        POS = (POS + 1) % LENGTH
-        COUNT = 0
+    #COUNT += 1
+    #if (COUNT%DIVIDE) == 0:
+    #    POS = (POS + 1) % LENGTH
+    #    COUNT = 0
 
 def main():
     """
