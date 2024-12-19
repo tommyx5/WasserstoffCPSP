@@ -26,7 +26,9 @@ TOPIC_FILTERED_WATER_SUPPLY = getenv_or_exit("TOPIC_FILTER_PLANT_FILTERED_WATER_
 TOPIC_KPI = getenv_or_exit("TOPIC_FILTER_PLANT_KPI", "default") + ID # Topic to post kpis
 TOPIC_PLANED_AMOUNT = getenv_or_exit("TOPIC_FILTER_PLANT_PLANED_AMOUNT", "default") + ID # topic to receive produce planed amount for the next tick
 
-NOMINAL_PERFORMANCE = NOMINAL_WATER_SUPPLY / NOMINAL_POWER_DEMAND # Performance: m^3 production per kW (in m^3/kW) 
+TOPIC_FILTERED_WATER_REQUEST = getenv_or_exit("TOPIC_FILTER_PLANT_FILTERED_WATER_REQUEST", "default") + ID # topic to receive requests from filtered water pipe (must be followed by filter plant id)
+
+NOMINAL_PERFORMANCE = NOMINAL_POWER_DEMAND / NOMINAL_WATER_SUPPLY# Performance: kW production per m^3 (in kW/m^3) 
 
 PLANED_POWER_DEMAND = NOMINAL_POWER_DEMAND
 PLANED_WATER_DEMAND = NOMINAL_WATER_DEMAND
@@ -41,67 +43,6 @@ STATUS = "online"
 EFFICIENCY = 0
 PRODUCTION = 0
 CURRENT_PERFORMANCE = 0
-
-
-class StateManager:
-    STATES = ['WAITING_FOR_POWER', 'WAITING_FOR_DEPENDENCY', 'WAITING_FOR_TICK', 'READY_TO_PROCESS', 'PROCESSING', 'DONE']
-
-    def __init__(self, dependencies=None):
-        self.state = 'WAITING_FOR_POWER'
-        self.lock = threading.Lock()
-        self.power_received = False
-        self.dependency_received = False
-        self.tick_received = False
-        self.dependencies_met = False
-
-    def receive_power(self):
-        with self.lock:
-            self.power_received = True
-            self._update_state()
-
-    def receive_dependency(self):
-        with self.lock:
-            self.dependency_received = True
-            self._update_state()
-
-    def receive_tick(self):
-        with self.lock:
-            self.tick_received = True
-            self._update_state()
-
-    def _update_state(self):
-        # Update the container state based on the current conditions
-        if self.power_received and self.dependency_received:
-            self.state = 'READY_TO_PROCESS'
-        elif self.power_received:
-            self.state = 'WAITING_FOR_DEPENDENCY'
-        else:
-            self.state = 'WAITING_FOR_POWER'
-
-    def is_ready_to_process(self):
-        return self.state == 'READY_TO_PROCESS'
-
-    def start_processing(self):
-        with self.lock:
-            if self.state == 'READY_TO_PROCESS':
-                self.state = 'PROCESSING'
-                return True
-            return False
-
-    def complete_processing(self):
-        with self.lock:
-            if self.state == 'PROCESSING':
-                self.state = 'DONE'
-                self._reset_state_for_next_tick()
-
-    def _reset_state_for_next_tick(self):
-        # Reset state for the next tick
-        self.state = 'WAITING_FOR_POWER'
-        self.power_received = False
-        self.dependency_received = False
-        self.tick_received = False
-
-state_manager = StateManager()
 
 def send_request_msg(client, request_topic, timestamp, plant_id, reply_topic, amount):
     data = {
@@ -135,24 +76,22 @@ def water_demand_on_supplied_power():
 
     if POWER_SUPPLIED >= PLANED_POWER_DEMAND:
         water_demand = PLANED_WATER_DEMAND
+    elif(PLANED_POWER_DEMAND <= 0):
+        water_demand = 0
     else:
         water_demand = (POWER_SUPPLIED / PLANED_POWER_DEMAND) * PLANED_WATER_DEMAND
 
-    #HARDCODE
-    water_demand = 10.0
     return water_demand
 
 def produce_on_supplied_water():
-    global WATER_SUPPLIED, PLANED_WATER_DEMAND, PLANED_WATER_SUPPLY
+    global WATER_SUPPLIED, PLANED_WATER_DEMAND, PLANED_WATER_SUPPLY, PRODUCTION_LOSSES, NOMINAL_WATER_DEMAND, NOMINAL_WATER_SUPPLY
     filtered_water = 0
 
     if WATER_SUPPLIED < PLANED_WATER_DEMAND:
-        filtered_water = WATER_SUPPLIED
+        filtered_water = (WATER_SUPPLIED * (NOMINAL_WATER_DEMAND / NOMINAL_WATER_SUPPLY)) / PRODUCTION_LOSSES
     else:
-        filtered_water = PLANED_WATER_DEMAND
+        filtered_water = PLANED_WATER_SUPPLY
 
-    #HARDCODE
-    filtered_water = WATER_SUPPLIED
     return filtered_water
 
 def calculate_kpis():
@@ -169,28 +108,24 @@ def calculate_kpis():
         PRODUCTION = 0
     CURRENT_PERFORMANCE = FILTERED_WATER_PRODUCED / NOMINAL_WATER_SUPPLY
 
-def calculate_planed_demand():
-    global PLANED_WATER_SUPPLY, PLANED_WATER_DEMAND, PLANED_POWER_DEMAND, PRODUCTION_LOSSES, NOMINAL_PERFORMANCE 
+def calculate_demand():
+    global PLANED_WATER_SUPPLY, PLANED_WATER_DEMAND, PLANED_POWER_DEMAND, PRODUCTION_LOSSES, NOMINAL_PERFORMANCE, NOMINAL_WATER_SUPPLY, NOMINAL_WATER_DEMAND 
 
-    PLANED_WATER_DEMAND = PLANED_WATER_SUPPLY * PRODUCTION_LOSSES
+    PLANED_WATER_DEMAND = round((PLANED_WATER_SUPPLY * (NOMINAL_WATER_DEMAND/NOMINAL_WATER_SUPPLY) * PRODUCTION_LOSSES),2)
 
-    #HARDCODE
-    PLANED_POWER_DEMAND = NOMINAL_PERFORMANCE
-    #PLANED_POWER_DEMAND = NOMINAL_PERFORMANCE * PLANED_WATER_DEMAND
+    PLANED_POWER_DEMAND = NOMINAL_PERFORMANCE * PLANED_WATER_SUPPLY
 
 def on_message_tick(client, userdata, msg):
     """
     Callback function that processes messages from the tick topic.
     It send the request msg for the calculated planed power demand from previous tick
     """
-    global state_manager, TIMESTAMP, TOPIC_POWER_REQUEST, ID, TOPIC_POWER_RECEIVE, PLANED_POWER_DEMAND
+    global TIMESTAMP, TOPIC_POWER_REQUEST, ID, TOPIC_POWER_RECEIVE, PLANED_POWER_DEMAND
 
     # get timestamp from tick msg and request power
     TIMESTAMP = msg.payload.decode("utf-8")
     
-    send_request_msg(client, TOPIC_POWER_REQUEST, TIMESTAMP, ID, TOPIC_POWER_RECEIVE, PLANED_POWER_DEMAND)
-
-    #state_manager.receive_tick()
+    #send_request_msg(client, TOPIC_POWER_REQUEST, TIMESTAMP, ID, TOPIC_POWER_RECEIVE, PLANED_POWER_DEMAND)
 
 def on_message_power_received(client, userdata, msg):
     """
@@ -199,7 +134,7 @@ def on_message_power_received(client, userdata, msg):
     that can be proccessed with this power / was planed as demand.
     After that it publishes the water request msg.
     """
-    global state_manager, TIMESTAMP
+    global TIMESTAMP
     global TOPIC_WATER_REQUEST, ID, TOPIC_WATER_RECEIVE, POWER_SUPPLIED
 
     payload = json.loads(msg.payload)
@@ -210,15 +145,13 @@ def on_message_power_received(client, userdata, msg):
     water_demand = water_demand_on_supplied_power()
     send_request_msg(client, TOPIC_WATER_REQUEST, TIMESTAMP, ID, TOPIC_WATER_RECEIVE, water_demand)
 
-    #state_manager.receive_power()
-    
 def on_message_water_received(client, userdata, msg):
     """
     Callback function that processes messages from the water received topic.
     It processes how much water is received from water pipe and generates the coresponding volume of filtered volume.
     After that publishes it along with the KPIs.
     """
-    global state_manager, TIMESTAMP, WATER_SUPPLIED, TOPIC_FILTERED_WATER_SUPPLY, TOPIC_KPI, ID, FILTERED_WATER_PRODUCED
+    global TIMESTAMP, WATER_SUPPLIED, TOPIC_FILTERED_WATER_SUPPLY, TOPIC_KPI, ID, FILTERED_WATER_PRODUCED
     global STATUS, EFFICIENCY, PRODUCTION, CURRENT_PERFORMANCE
 
     payload = json.loads(msg.payload)
@@ -242,8 +175,6 @@ def on_message_water_received(client, userdata, msg):
         cper=CURRENT_PERFORMANCE
     )
 
-    #state_manager.receive_dependency()  # Mark water as received in state manager
-
 def on_message_plan(client, userdata, msg):
     """
     Callback function that processes messages from the planed amount topic.
@@ -255,7 +186,18 @@ def on_message_plan(client, userdata, msg):
     timestamp = payload["timestamp"]
     PLANED_WATER_SUPPLY = payload["amount"]
 
-    calculate_planed_demand()
+    calculate_demand()
+
+def on_message_filtered_water_request(client, userdata, msg):
+    global TIMESTAMP, TOPIC_POWER_REQUEST, ID, TOPIC_POWER_RECEIVE, PLANED_POWER_DEMAND, PLANED_WATER_SUPPLY
+
+    payload = json.loads(msg.payload)
+    timestamp = payload["timestamp"]
+    PLANED_WATER_SUPPLY = payload["amount"]
+
+    calculate_demand()
+    
+    send_request_msg(client, TOPIC_POWER_REQUEST, TIMESTAMP, ID, TOPIC_POWER_RECEIVE, PLANED_POWER_DEMAND)
 
 def main():
     """
@@ -270,10 +212,12 @@ def main():
     mqtt.subscribe(TOPIC_POWER_RECEIVE)
     mqtt.subscribe(TOPIC_WATER_RECEIVE)
     mqtt.subscribe(TOPIC_PLANED_AMOUNT)
+    mqtt.subscribe(TOPIC_FILTERED_WATER_REQUEST)
     mqtt.subscribe_with_callback(TICK, on_message_tick)
     mqtt.subscribe_with_callback(TOPIC_WATER_RECEIVE, on_message_water_received)
     mqtt.subscribe_with_callback(TOPIC_POWER_RECEIVE, on_message_power_received)
-    mqtt.subscribe_with_callback(TOPIC_PLANED_AMOUNT, on_message_plan)
+    #mqtt.subscribe_with_callback(TOPIC_PLANED_AMOUNT, on_message_plan)
+    mqtt.subscribe_with_callback(TOPIC_FILTERED_WATER_REQUEST, on_message_filtered_water_request)
     
     try:
         # Start the MQTT loop to process incoming and outgoing messages
