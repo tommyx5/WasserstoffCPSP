@@ -12,7 +12,7 @@ def getenv_or_exit(env_name, default="default"):
         raise SystemExit(f"Environment variable {env_name} not set")
     return value
 
-PLANTS_NUMBER = int(getenv_or_exit("FILTER_SUM_COUNT_FILTER", 0))
+PLANTS_NUMBER = int(getenv_or_exit("NUMBER_OF_FILTER_PLANTS", 0))
 
 TICK = getenv_or_exit('TOPIC_TICK_GEN_TICK', 'default')
 TOPIC_REQUEST = getenv_or_exit("TOPIC_FILTER_SUM_FILTERED_WATER_REQUEST", "default") # Topic to receive requests for filtered water from hydrogen plants
@@ -139,8 +139,10 @@ def calculate_supply(client):
 
     # Publish the data for the dashboard
     # Maybe delete later
-    global TIMESTAMP, TOPIC_FILTER_SYSTEM_SUM_DATA
-    data = {"fwater": AVAILABLE_WATER, "mean_fwater": round(AVAILABLE_WATER/RECEIVED_SUPPLIES,2), "timestamp": TIMESTAMP}
+    global TIMESTAMP, TOPIC_FILTER_SYSTEM_SUM_DATA, TICK_COUNT
+    if TICK_COUNT == 0: tick = 1 
+    else: tick = TICK_COUNT
+    data = {"fwater": TOTAL_PRODUCED, "mean_fwater": round(TOTAL_PRODUCED/tick,2), "timestamp": TIMESTAMP}
     client.publish(TOPIC_FILTER_SYSTEM_SUM_DATA, json.dumps(data))
 
 
@@ -235,7 +237,6 @@ def calculate_and_publish_requests(client, coefficient_function=weighted_coeffic
     total_demand = sum(request.demand for request in REQUEST_LIST)
 
     if ADAPTABLE:
-        print("ADAPTABLE FILTERED WATER PIPE NOT IMPLEMENTED YET")
 
         # If first iteration and kpi list is not there yet
         if not KPI_LIST:
