@@ -84,21 +84,6 @@ Das System meldet zurück, wenn die Wasserstoffzelle überhitzt ist und die Arbe
 | Abschnitt | Inhalt |
 | ----------- | ----------- |
 | Bezeichner | UC-05 |
-| Name | Destillierungsanlage fällt aus |
-| Autoren | Alex, Dany, Tommy |
-| Priorität | Wichtigkeit für Systemerfolg "hoch" |
-| Kurzbeschreibung | Produktion muss angepasst werden, aufgrund von Ausfall von Destillierungsanlage |
-| Auslösendes Ereignis | Produktion destilliertes Wasser zu niedrig|
-| Akteure | Windkraftanlagen, Abnahmegenerator, Wasserstoffzellen, Filteranlagen, Destillierungsanlagen |
-| Vorbedingung | Wasser vorhanden, Energie vorhanden, Destillierungsanlagen teilweise einsatzfähig |
-| Nachbedingung | Produktion wurde angepasst |
-| Hauptszenario | 1. Destillierungsanlage wird neu skaliert
-
-<br>
-
-| Abschnitt | Inhalt |
-| ----------- | ----------- |
-| Bezeichner | UC-06 |
 | Name | Windkraftanlage fällt aus |
 | Autoren | Alex, Dany, Tommy |
 | Priorität | Wichtigkeit für Systemerfolg "hoch" |

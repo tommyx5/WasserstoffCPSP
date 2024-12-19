@@ -20,6 +20,7 @@ TOPIC_FILTERED_WATER_REQEUST = getenv_or_exit("TOPIC_FILTER_PLANT_FILTERED_WATER
 TOPIC_SUPPLY = getenv_or_exit("TOPIC_FILTER_PLANT_FILTERED_WATER_SUPPLY", "default") # Base topic to receive supply msg from the filter plants (must be followed by Plant ID)
 TOPIC_KPI = getenv_or_exit("TOPIC_FILTER_PLANT_KPI", "default") # Base topic to receive kpis from filter plants (must be followed by Plant ID)
 TOPIC_PLANED_AMOUNT = getenv_or_exit("TOPIC_FILTER_PLANT_PLANED_AMOUNT", "default") # Base topic to publish produce planed amount for the next tick (must be followed by Plant ID)
+TOPIC_ADAPTIVE_MODE = getenv_or_exit('TOPIC_ADAPTIVE_MODE', 'default')
 
 TOPIC_SUPPLY_LIST = []
 TOPIC_KPI_LIST = []
@@ -288,7 +289,7 @@ def calculate_and_publish_requests(client, coefficient_function=weighted_coeffic
 
     RECEIVED_REQUESTS = 0
     RECEIVED_KPI = 0
-    KPI_LIST .clear()
+    KPI_LIST.clear()
    
 def add_request(plant_id, reply_topic, demand):
     global RECEIVED_REQUESTS, REQUEST_LIST, REQUEST_CLASS
@@ -370,6 +371,14 @@ def on_message_daily_need(client, userdata, msg):
     TOTAL_PRODUCED = 0
     TICK_COUNT = 1
 
+def on_message_adaptive_mode(client, userdata, msg):
+    global ADAPTABLE
+    boolean = msg.payload.decode("utf-8")
+    if boolean == "true" or boolean == "1" or boolean == "I love Python" or boolean == "True":
+        ADAPTABLE = True
+    else:
+        ADAPTABLE = False
+
 def main():
     """
     Main function to initialize the MQTT client, set up subscriptions, 
@@ -386,11 +395,13 @@ def main():
     for topic in TOPIC_KPI_LIST:
         mqtt.subscribe(topic)
         mqtt.subscribe_with_callback(topic, on_message_kpi)
-    
+
     mqtt.subscribe(TICK)
     mqtt.subscribe(TOPIC_REQUEST)
+    mqtt.subscribe(TOPIC_ADAPTIVE_MODE)
     mqtt.subscribe_with_callback(TICK, on_message_tick)
     mqtt.subscribe_with_callback(TOPIC_REQUEST, on_message_request)
+    mqtt.subscribe_with_callback(TOPIC_ADAPTIVE_MODE, on_message_adaptive_mode)
 
     try:
         # Start the MQTT loop to process incoming and outgoing messages
