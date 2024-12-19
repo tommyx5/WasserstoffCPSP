@@ -4,6 +4,7 @@ import logging
 from mqtt.mqtt_wrapper import MQTTWrapper
 import math
 import os
+from random import seed, randint
 
 def getenv_or_exit(env_name, default="default"):
     value = os.getenv(env_name, default)
@@ -21,6 +22,7 @@ WATT_IN_KILOWATT = 1000
 PERCENT = 100
 POW2 = 2
 POW3 = 3
+SEED = 42
 
 CP = [0.0, 0.12,0.29,0.4,0.43,0.46,0.48,0.49,0.5,0.49,0.44,0.39,0.35,0.3,0.26,0.22,0.19,0.16,0.14,0.12,0.1,0.09,0.08,0.07,0.06]
 
@@ -73,10 +75,10 @@ def on_message_weather(client, userdata, msg):
     # Important: Always send your data with the timestamp from the Tick message.
     # Node Red is designed for real-time or historical messages, so discrepancies 
     # in timestamps can cause errors in the display.
-    power = round(calc_power(AREA, density, windspeed),2)
-    if power >= RATED_POWER*1.02:
+    power = round(calc_power(AREA, density, windspeed),2)+randint(0, 100)
+    if power > RATED_POWER:
         print(f"Actual power output {power} exceeds rated power output {RATED_POWER}")
-        power = RATED_POWER
+        power = RATED_POWER-randint(0, 100)
     data = {"id": ID, "power": power, "timestamp": timestamp}
     # Publish the data to the chaos sensor topic in JSON format
     client.publish(TOPIC_WIND_POWER_DATA, json.dumps(data))

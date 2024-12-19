@@ -43,9 +43,9 @@ for i in range(COUNT_FILTER_PLANT):
     FILTER_KPIS_TOPIC_LIST.append(TOPIC_FILTER_KPIS+str(i))
     PLANT_DATA["filter"][str(i)] = {}
     PLANT_DATA["filter"][str(i)]["reply_topic"] = ""
-    PLANT_DATA["filter"][str(i)]["amount"] = ""
+    PLANT_DATA["filter"][str(i)]["amount"] = 0
     PLANT_DATA["filter"][str(i)]["timestamp"] = 0
-    PLANT_DATA["filter"][str(i)]["status"] = True
+    PLANT_DATA["filter"][str(i)]["status"] = "offline"
     PLANT_DATA["filter"][str(i)]["eff"] = 0.5
     PLANT_DATA["filter"][str(i)]["prod"] = 0.5
     PLANT_DATA["filter"][str(i)]["cper"] = 0.5
@@ -61,9 +61,9 @@ for j in range(COUNT_HYDROGEN_PLANT):
     i = str(j)
     PLANT_DATA["hydrogen"][i] = {}
     PLANT_DATA["hydrogen"][i]["reply_topic"] = ""
-    PLANT_DATA["hydrogen"][i]["amount"] = ""
+    PLANT_DATA["hydrogen"][i]["amount"] = 0
     PLANT_DATA["hydrogen"][i]["timestamp"] = 0
-    PLANT_DATA["hydrogen"][i]["status"] = True
+    PLANT_DATA["hydrogen"][i]["status"] = "offline"
     PLANT_DATA["hydrogen"][i]["eff"] = 0.5
     PLANT_DATA["hydrogen"][i]["prod"] = 0.5
     PLANT_DATA["hydrogen"][i]["cper"] = 0.5
@@ -82,6 +82,7 @@ for i in range(COUNT_TICKS_MAX):
     POWER_LIST.append(0)
 ADAPTIVE = False
 
+#MAIN
 def main():
     mqtt = MQTTWrapper('mqttbroker', 1883, name='wind_power_sum')   
     mqtt.subscribe(TOPIC_ADAPTIVE_MODE)
@@ -124,7 +125,7 @@ def calc_mean():
 def get_key(liste):
     return liste[0]
 
-def calculate_supply():
+def calculate_supply(client):
     global SUM_POWER, MEAN_POWER, AVAILABLE_POWER, PLANT_DATA
     sum_eff = 0
     sum_prod = 0
@@ -138,17 +139,23 @@ def calculate_supply():
             sum_cper += PLANT_DATA[typ][id]["cper"]
     typ = "filter"
     for id in PLANT_DATA[typ].keys():
-        PLANT_DATA[typ][id]["priority"] = (PLANT_DATA[typ][id]["eff"]/sum_eff+
-                                            PLANT_DATA[typ][id]["prod"]/sum_prod+
-                                            PLANT_DATA[typ][id]["cper"]/sum_cper)
-        result_list.append([PLANT_DATA[typ][id]["priority"],typ,PLANT_DATA[typ][id],PLANT_DATA[typ][id]["amount"],PLANT_DATA[typ][id]["reply_topic"]])
+        if sum_eff > 0 and sum_prod > 0 and sum_cper > 0:
+            PLANT_DATA[typ][id]["priority"] = (PLANT_DATA[typ][id]["eff"]/sum_eff+
+                                                PLANT_DATA[typ][id]["prod"]/sum_prod+
+                                                PLANT_DATA[typ][id]["cper"]/sum_cper)
+        else:
+            PLANT_DATA[typ][id]["priority"] = 0
+        result_list.append([PLANT_DATA[typ][id]["priority"],typ,id,PLANT_DATA[typ][id]["amount"],PLANT_DATA[typ][id]["reply_topic"]])
     result_list.sort(key=get_key,reverse=True)
     typ = "hydrogen"
-    for id in PLANT_DATA[typ].keys():      
-        PLANT_DATA[typ][id]["priority"] = (PLANT_DATA[typ][id]["eff"]/sum_eff+
-                                            PLANT_DATA[typ][id]["prod"]/sum_prod+
-                                            PLANT_DATA[typ][id]["cper"]/sum_cper)
-        result_list_hydrogen.append([PLANT_DATA[typ][id]["priority"],typ,PLANT_DATA[typ][id],PLANT_DATA[typ][id]["amount"],PLANT_DATA[typ][id]["reply_topic"]])
+    for id in PLANT_DATA[typ].keys():
+        if sum_eff > 0 and sum_prod > 0 and sum_cper > 0:   
+            PLANT_DATA[typ][id]["priority"] = (PLANT_DATA[typ][id]["eff"]/sum_eff+
+                                                PLANT_DATA[typ][id]["prod"]/sum_prod+
+                                                PLANT_DATA[typ][id]["cper"]/sum_cper)
+        else:
+            PLANT_DATA[typ][id]["priority"] = 0
+        result_list_hydrogen.append([PLANT_DATA[typ][id]["priority"],typ,id,PLANT_DATA[typ][id]["amount"],PLANT_DATA[typ][id]["reply_topic"]])
     result_list_hydrogen.sort(key=get_key,reverse=True)
     
     factor = 1
@@ -203,7 +210,7 @@ def on_message_power(client, userdata, msg):
     if COUNT == COUNT_POWER_GEN-1:
         calc_mean()
         # Extract the timestamp from the tick message and decode it from UTF-8
-        data = {"power": SUM_POWER, "mean_power": MEAN_POWER, "timestamp": timestamp}
+        data = {"power": round(SUM_POWER,2), "mean_power": MEAN_POWER, "timestamp": timestamp}
         # Publish the data to the chaos sensor topic in JSON format
         client.publish(WIND_POWER_SUM_DATA, json.dumps(data))
         AVAILABLE_POWER = SUM_POWER
@@ -263,13 +270,14 @@ def on_message_request(client, userdata, msg):
         all_request_receiced = True
         if all_request_receiced:
             print(True)
-            result_list = calculate_supply()
+            result_list = calculate_supply(client)
             for e in result_list:
-                data = {
-                    "timestamp": payload["timestamp"],
-                    "amount": e[3]
-                }
-                client.publish(e[4], json.dumps(data))
+                if e[4] != "":
+                    data = {
+                        "timestamp": payload["timestamp"],
+                        "amount": e[3]
+                    }
+                    client.publish(e[4], json.dumps(data))
             if TEST:
                 client.publish(TETS_TOPIC, json.dumps({"payload": result_list}))
     else: #FIFO

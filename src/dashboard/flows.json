@@ -1,1 +1,2475 @@
-[{"id":"5992b366.f9457c","type":"tab","label":"Flow 1","disabled":false,"info":""},{"id":"3686d445.ae6fac","type":"mqtt in","z":"5992b366.f9457c","name":"","topic":"tickgen/tick","qos":"2","datatype":"auto","broker":"3b931ee9.0688c2","x":260,"y":100,"wires":[["a0ca5b1b.242ed8"]]},{"id":"a0ca5b1b.242ed8","type":"ui_text","z":"5992b366.f9457c","group":"675fff50.e5e07","order":1,"width":8,"height":1,"name":"","label":"Simulationszeit","format":"{{msg.payload}}","layout":"row-spread","x":440,"y":100,"wires":[]},{"id":"e09fa76.8c40d58","type":"ui_slider","z":"5992b366.f9457c","name":"","label":"Simulationsgeschwindigkeit","tooltip":"","group":"675fff50.e5e07","order":5,"width":16,"height":1,"passthru":true,"outs":"end","topic":"topic","topicType":"msg","min":"0.25","max":"60","step":"0.25","x":480,"y":360,"wires":[["4a655145.b57"]]},{"id":"94f5375.5e92cc8","type":"mqtt in","z":"5992b366.f9457c","name":"","topic":"tickgen/speed_factor","qos":"2","datatype":"auto","broker":"3b931ee9.0688c2","x":230,"y":160,"wires":[["a52df976.ba8f88"]]},{"id":"a52df976.ba8f88","type":"ui_text","z":"5992b366.f9457c","group":"675fff50.e5e07","order":2,"width":8,"height":1,"name":"","label":"Simulationsgeschwindigkeit","format":"{{msg.payload}}x","layout":"row-spread","x":480,"y":160,"wires":[]},{"id":"4a655145.b57","type":"mqtt out","z":"5992b366.f9457c","name":"","topic":"tickgen/speed_factor","qos":"","retain":"","broker":"3b931ee9.0688c2","x":860,"y":360,"wires":[]},{"id":"5c7ef2e5.7d6d5c","type":"ui_switch","z":"5992b366.f9457c","name":"","label":"Enable Adaptive Mode","tooltip":"","group":"675fff50.e5e07","order":6,"width":8,"height":1,"passthru":true,"decouple":"false","topic":"topic","topicType":"msg","style":"","onvalue":"true","onvalueType":"bool","onicon":"","oncolor":"","offvalue":"false","offvalueType":"bool","officon":"","offcolor":"","animate":false,"x":460,"y":300,"wires":[["93931a65.57e558"]]},{"id":"93931a65.57e558","type":"mqtt out","z":"5992b366.f9457c","name":"","topic":"mgmt/adaptive_mode","qos":"","retain":"","broker":"3b931ee9.0688c2","x":860,"y":300,"wires":[]},{"id":"9e297410.dadd68","type":"mqtt in","z":"5992b366.f9457c","name":"","topic":"mgmt/adaptive_mode","qos":"2","datatype":"auto","broker":"3b931ee9.0688c2","x":220,"y":220,"wires":[["8e0c7bef.ddd488"]]},{"id":"8e0c7bef.ddd488","type":"ui_text","z":"5992b366.f9457c","group":"675fff50.e5e07","order":3,"width":8,"height":1,"name":"","label":"Adaptive Mode","format":"{{msg.payload}}","layout":"row-spread","x":440,"y":220,"wires":[]},{"id":"fd591594.eb76d8","type":"change","z":"5992b366.f9457c","name":"density","rules":[{"t":"set","p":"payload","pt":"msg","to":"payload.density","tot":"msg"},{"t":"set","p":"timestamp","pt":"msg","to":"payload.timestamp","tot":"msg"}],"action":"","property":"","from":"","to":"","reg":false,"x":680,"y":500,"wires":[["9b9b81e2.eb0ef"]]},{"id":"88e16359.77529","type":"inject","z":"5992b366.f9457c","name":"","props":[{"p":"payload"},{"p":"topic","vt":"str"}],"repeat":"","crontab":"","once":true,"onceDelay":0.1,"topic":"tick_gen/speed_factor","payload":"10","payloadType":"num","x":210,"y":360,"wires":[["e09fa76.8c40d58"]]},{"id":"7b1f9b6f.3e0bd4","type":"inject","z":"5992b366.f9457c","name":"","props":[{"p":"payload"},{"p":"topic","vt":"str"}],"repeat":"","crontab":"","once":true,"onceDelay":0.1,"topic":"mgmt/adaptive_mode","payload":"false","payloadType":"bool","x":200,"y":300,"wires":[["5c7ef2e5.7d6d5c"]]},{"id":"4ddb5646.e6bc08","type":"inject","z":"5992b366.f9457c","name":"","props":[{"p":"payload"},{"p":"topic","vt":"str"}],"repeat":"","crontab":"","once":true,"onceDelay":0.1,"topic":"tickgen/tick","payload":"0","payloadType":"num","x":250,"y":60,"wires":[["a0ca5b1b.242ed8"]]},{"id":"9b9b81e2.eb0ef","type":"ui_gauge","z":"5992b366.f9457c","name":"","group":"a7c03f91.8126","order":2,"width":8,"height":8,"gtype":"gage","title":"current density","label":"[kg/m³]","format":"{{value}}","min":"1.0","max":"1.5","colors":["#e6e600","#00b500","#e6e600"],"seg1":"1.2","seg2":"1.3","x":860,"y":500,"wires":[]},{"id":"8ce67cc3.41b7e8","type":"change","z":"5992b366.f9457c","name":"temperature","rules":[{"t":"set","p":"payload","pt":"msg","to":"payload.temperature","tot":"msg"},{"t":"set","p":"timestamp","pt":"msg","to":"payload.timestamp","tot":"msg"}],"action":"","property":"","from":"","to":"","reg":false,"x":690,"y":540,"wires":[["7f03daf6.a2b184"]]},{"id":"7f03daf6.a2b184","type":"ui_gauge","z":"5992b366.f9457c","name":"","group":"a7c03f91.8126","order":2,"width":8,"height":8,"gtype":"gage","title":"current temperature","label":"[°C]","format":"{{value}}","min":"-50","max":"50","colors":["#e6e600","#00b500","#e6e600"],"seg1":"-10","seg2":"30","x":890,"y":540,"wires":[]},{"id":"3337e12e.8b5926","type":"change","z":"5992b366.f9457c","name":"windspeed","rules":[{"t":"set","p":"payload","pt":"msg","to":"payload.windspeed","tot":"msg"},{"t":"set","p":"timestamp","pt":"msg","to":"payload.timestamp","tot":"msg"}],"action":"","property":"","from":"","to":"","reg":false,"x":690,"y":580,"wires":[["126ee38c.af219c"]]},{"id":"126ee38c.af219c","type":"ui_gauge","z":"5992b366.f9457c","name":"","group":"a7c03f91.8126","order":2,"width":8,"height":8,"gtype":"gage","title":"current windspeed","label":"[m/s]","format":"{{value}}","min":0,"max":"50","colors":["#00b500","#e6e600","#d13a3c"],"seg1":"28","seg2":"34","x":890,"y":580,"wires":[]},{"id":"72cc9a58.819d44","type":"mqtt in","z":"5992b366.f9457c","name":"","topic":"data/weather/","qos":"2","datatype":"auto","broker":"3b931ee9.0688c2","x":190,"y":500,"wires":[["2410de71.e9c3b2"]]},{"id":"2410de71.e9c3b2","type":"json","z":"5992b366.f9457c","name":"","property":"payload","action":"","pretty":false,"x":490,"y":500,"wires":[["3337e12e.8b5926","8ce67cc3.41b7e8","fd591594.eb76d8"]]},{"id":"dbe6e05c.5d5df","type":"mqtt in","z":"5992b366.f9457c","name":"","topic":"data/power/supply/sum","qos":"2","datatype":"auto","broker":"3b931ee9.0688c2","x":220,"y":640,"wires":[["6c1dda80.f86294"]]},{"id":"6c1dda80.f86294","type":"json","z":"5992b366.f9457c","name":"","property":"payload","action":"","pretty":false,"x":430,"y":640,"wires":[["bf643606.92d9b","7894321b.25e71c"]]},{"id":"bf643606.92d9b","type":"change","z":"5992b366.f9457c","name":"power sum","rules":[{"t":"set","p":"payload","pt":"msg","to":"payload.power","tot":"msg"},{"t":"set","p":"timestamp","pt":"msg","to":"payload.timestamp","tot":"msg"}],"action":"","property":"","from":"","to":"","reg":false,"x":590,"y":640,"wires":[["9409d1b8.6644b8"]]},{"id":"9409d1b8.6644b8","type":"ui_gauge","z":"5992b366.f9457c","name":"","group":"a7c03f91.8126","order":2,"width":8,"height":8,"gtype":"gage","title":"current power sum","label":"[kW]","format":"{{value}}","min":"0","max":"16500","colors":["#00b500","#e6e600","#d13a3c"],"seg1":"14000","seg2":"15000","x":810,"y":640,"wires":[]},{"id":"7894321b.25e71c","type":"change","z":"5992b366.f9457c","name":"power mean","rules":[{"t":"set","p":"payload","pt":"msg","to":"payload.mean_power","tot":"msg"},{"t":"set","p":"timestamp","pt":"msg","to":"payload.timestamp","tot":"msg"}],"action":"","property":"","from":"","to":"","reg":false,"x":590,"y":700,"wires":[["212415d1.705a12"]]},{"id":"212415d1.705a12","type":"ui_gauge","z":"5992b366.f9457c","name":"","group":"a7c03f91.8126","order":2,"width":8,"height":8,"gtype":"gage","title":"current power mean","label":"[kW]","format":"{{value}}","min":"0","max":"16500","colors":["#00b500","#e6e600","#d13a3c"],"seg1":"14000","seg2":"15000","x":820,"y":700,"wires":[]},{"id":"cbe006ad.e2bc88","type":"mqtt in","z":"5992b366.f9457c","name":"","topic":"data/hydrogen/request","qos":"2","datatype":"auto","broker":"3b931ee9.0688c2","x":220,"y":760,"wires":[["340d4656.15c6fa"]]},{"id":"340d4656.15c6fa","type":"json","z":"5992b366.f9457c","name":"","property":"payload","action":"","pretty":false,"x":410,"y":760,"wires":[["eff408e9.49c6e"]]},{"id":"eff408e9.49c6e","type":"change","z":"5992b366.f9457c","name":"hydrogen","rules":[{"t":"set","p":"payload","pt":"msg","to":"payload.hydrogen","tot":"msg"},{"t":"set","p":"timestamp","pt":"msg","to":"payload.timestamp","tot":"msg"}],"action":"","property":"","from":"","to":"","reg":false,"x":560,"y":760,"wires":[["6f234645.9406d"]]},{"id":"6f234645.9406d","type":"ui_gauge","z":"5992b366.f9457c","name":"","group":"a7c03f91.8126","order":2,"width":8,"height":8,"gtype":"gage","title":"requested hydrogen [kg]","label":"[kg]","format":"{{value}}","min":"300","max":"600","colors":["#00b500","#e6e600","#d13a3c"],"seg1":"450","seg2":"500","x":790,"y":760,"wires":[]},{"id":"1d4bf94a.738157","type":"mqtt in","z":"5992b366.f9457c","name":"","topic":"data/water/supply/water_pipe","qos":"2","datatype":"auto","broker":"3b931ee9.0688c2","x":240,"y":860,"wires":[["443b8704.6f5b98"]]},{"id":"443b8704.6f5b98","type":"json","z":"5992b366.f9457c","name":"","property":"payload","action":"","pretty":false,"x":450,"y":860,"wires":[["a4e537fb.85e4f8"]]},{"id":"a4e537fb.85e4f8","type":"change","z":"5992b366.f9457c","name":"water","rules":[{"t":"set","p":"payload","pt":"msg","to":"payload.watersupply","tot":"msg"},{"t":"set","p":"timestamp","pt":"msg","to":"payload.timestamp","tot":"msg"}],"action":"","property":"","from":"","to":"","reg":false,"x":590,"y":860,"wires":[["5cf5e778.f95998"]]},{"id":"5cf5e778.f95998","type":"ui_gauge","z":"5992b366.f9457c","name":"","group":"a7c03f91.8126","order":2,"width":8,"height":8,"gtype":"gage","title":"available water [m³]","label":"[m³]","format":"{{value}}","min":"500","max":"1500","colors":["#00b500","#e6e600","#d13a3c"],"seg1":"450","seg2":"500","x":810,"y":860,"wires":[]},{"id":"3e15c358.ddd1dc","type":"mqtt in","z":"5992b366.f9457c","name":"","topic":"data/filtered_water/supply/sum","qos":"2","datatype":"auto","broker":"3b931ee9.0688c2","x":240,"y":960,"wires":[["363ca3b1.5dff8c"]]},{"id":"363ca3b1.5dff8c","type":"json","z":"5992b366.f9457c","name":"","property":"payload","action":"","pretty":false,"x":450,"y":960,"wires":[["9a81a125.b70a"]]},{"id":"9a81a125.b70a","type":"change","z":"5992b366.f9457c","name":"filtered water","rules":[{"t":"set","p":"payload","pt":"msg","to":"payload.fwater","tot":"msg"},{"t":"set","p":"timestamp","pt":"msg","to":"payload.timestamp","tot":"msg"}],"action":"","property":"","from":"","to":"","reg":false,"x":610,"y":960,"wires":[["97b4c076.7b747"]]},{"id":"97b4c076.7b747","type":"ui_gauge","z":"5992b366.f9457c","name":"","group":"a7c03f91.8126","order":2,"width":8,"height":8,"gtype":"gage","title":"filtered water [m³]","label":"[m³]","format":"{{value}}","min":"500","max":"1500","colors":["#00b500","#e6e600","#d13a3c"],"seg1":"450","seg2":"500","x":810,"y":960,"wires":[]},{"id":"bf746d71.4f811","type":"mqtt in","z":"5992b366.f9457c","name":"","topic":"data/distilled_water/supply/sum","qos":"2","datatype":"auto","broker":"3b931ee9.0688c2","x":250,"y":1060,"wires":[["469dfc2b.21e5a4"]]},{"id":"469dfc2b.21e5a4","type":"json","z":"5992b366.f9457c","name":"","property":"payload","action":"","pretty":false,"x":450,"y":1060,"wires":[["a9ebc6a0.5a6a68"]]},{"id":"a9ebc6a0.5a6a68","type":"change","z":"5992b366.f9457c","name":"filtered water","rules":[{"t":"set","p":"payload","pt":"msg","to":"payload.dwater","tot":"msg"},{"t":"set","p":"timestamp","pt":"msg","to":"payload.timestamp","tot":"msg"}],"action":"","property":"","from":"","to":"","reg":false,"x":610,"y":1060,"wires":[["9cc19ce.6add86"]]},{"id":"9cc19ce.6add86","type":"ui_gauge","z":"5992b366.f9457c","name":"","group":"a7c03f91.8126","order":2,"width":8,"height":8,"gtype":"gage","title":"destilated water [m³]","label":"[m³]","format":"{{value}}","min":"500","max":"1500","colors":["#00b500","#e6e600","#d13a3c"],"seg1":"450","seg2":"500","x":820,"y":1060,"wires":[]},{"id":"2d5d4673.402b5a","type":"mqtt in","z":"5992b366.f9457c","name":"","topic":"data/hydrogen/supply/sum","qos":"2","datatype":"auto","broker":"3b931ee9.0688c2","x":230,"y":1160,"wires":[["c9009c8.500986"]]},{"id":"c9009c8.500986","type":"json","z":"5992b366.f9457c","name":"","property":"payload","action":"","pretty":false,"x":450,"y":1160,"wires":[["4c9e42db.599ccc"]]},{"id":"4c9e42db.599ccc","type":"change","z":"5992b366.f9457c","name":"produced hydrogen","rules":[{"t":"set","p":"payload","pt":"msg","to":"payload.hydrogen","tot":"msg"},{"t":"set","p":"timestamp","pt":"msg","to":"payload.timestamp","tot":"msg"}],"action":"","property":"","from":"","to":"","reg":false,"x":630,"y":1160,"wires":[["7679306d.783d9"]]},{"id":"7679306d.783d9","type":"ui_gauge","z":"5992b366.f9457c","name":"","group":"a7c03f91.8126","order":2,"width":8,"height":8,"gtype":"gage","title":"hydrogen [kg]","label":"[kg]","format":"{{value}}","min":"0","max":"1500","colors":["#00b500","#e6e600","#d13a3c"],"seg1":"450","seg2":"500","x":840,"y":1160,"wires":[]},{"id":"3b931ee9.0688c2","type":"mqtt-broker","name":"","broker":"mqttbroker","port":"1883","clientid":"","usetls":false,"compatmode":false,"keepalive":"60","cleansession":true,"birthTopic":"","birthQos":"0","birthPayload":"","closeTopic":"","closeQos":"0","closePayload":"","willTopic":"","willQos":"0","willPayload":""},{"id":"675fff50.e5e07","type":"ui_group","name":"Configuration","tab":"8d5b248b.b32978","order":1,"disp":true,"width":"24","collapse":true},{"id":"a7c03f91.8126","type":"ui_group","name":"Chaos Sensor","tab":"8d5b248b.b32978","order":2,"disp":true,"width":"24","collapse":false},{"id":"8d5b248b.b32978","type":"ui_tab","name":"Home","icon":"dashboard","disabled":false,"hidden":false}]
+[
+    {
+        "id": "5992b366.f9457c",
+        "type": "tab",
+        "label": "Flow 1",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "3686d445.ae6fac",
+        "type": "mqtt in",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "tickgen/tick",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "3b931ee9.0688c2",
+        "x": 260,
+        "y": 100,
+        "wires": [
+            [
+                "a0ca5b1b.242ed8"
+            ]
+        ]
+    },
+    {
+        "id": "a0ca5b1b.242ed8",
+        "type": "ui_text",
+        "z": "5992b366.f9457c",
+        "group": "675fff50.e5e07",
+        "order": 1,
+        "width": 8,
+        "height": 1,
+        "name": "",
+        "label": "Simulationszeit",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 440,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "e09fa76.8c40d58",
+        "type": "ui_slider",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "label": "Simulationsgeschwindigkeit",
+        "tooltip": "",
+        "group": "675fff50.e5e07",
+        "order": 5,
+        "width": 16,
+        "height": 1,
+        "passthru": true,
+        "outs": "end",
+        "topic": "topic",
+        "topicType": "msg",
+        "min": "1",
+        "max": "60",
+        "step": "0.25",
+        "x": 480,
+        "y": 360,
+        "wires": [
+            [
+                "4a655145.b57"
+            ]
+        ]
+    },
+    {
+        "id": "94f5375.5e92cc8",
+        "type": "mqtt in",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "tickgen/speed_factor",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "3b931ee9.0688c2",
+        "x": 230,
+        "y": 160,
+        "wires": [
+            [
+                "a52df976.ba8f88"
+            ]
+        ]
+    },
+    {
+        "id": "a52df976.ba8f88",
+        "type": "ui_text",
+        "z": "5992b366.f9457c",
+        "group": "675fff50.e5e07",
+        "order": 2,
+        "width": 8,
+        "height": 1,
+        "name": "",
+        "label": "Simulationsgeschwindigkeit",
+        "format": "{{msg.payload}}x",
+        "layout": "row-spread",
+        "x": 480,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "4a655145.b57",
+        "type": "mqtt out",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "tickgen/speed_factor",
+        "qos": "",
+        "retain": "",
+        "broker": "3b931ee9.0688c2",
+        "x": 860,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "5c7ef2e5.7d6d5c",
+        "type": "ui_switch",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "label": "Enable Adaptive Mode",
+        "tooltip": "",
+        "group": "675fff50.e5e07",
+        "order": 6,
+        "width": 8,
+        "height": 1,
+        "passthru": true,
+        "decouple": "false",
+        "topic": "topic",
+        "topicType": "msg",
+        "style": "",
+        "onvalue": "true",
+        "onvalueType": "bool",
+        "onicon": "",
+        "oncolor": "",
+        "offvalue": "false",
+        "offvalueType": "bool",
+        "officon": "",
+        "offcolor": "",
+        "animate": false,
+        "x": 460,
+        "y": 300,
+        "wires": [
+            [
+                "93931a65.57e558"
+            ]
+        ]
+    },
+    {
+        "id": "93931a65.57e558",
+        "type": "mqtt out",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "mgmt/adaptive_mode",
+        "qos": "2",
+        "retain": "",
+        "broker": "3b931ee9.0688c2",
+        "x": 860,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "9e297410.dadd68",
+        "type": "mqtt in",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "mgmt/adaptive_mode",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "3b931ee9.0688c2",
+        "x": 220,
+        "y": 220,
+        "wires": [
+            [
+                "8e0c7bef.ddd488"
+            ]
+        ]
+    },
+    {
+        "id": "8e0c7bef.ddd488",
+        "type": "ui_text",
+        "z": "5992b366.f9457c",
+        "group": "675fff50.e5e07",
+        "order": 3,
+        "width": 8,
+        "height": 1,
+        "name": "",
+        "label": "Adaptive Mode",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 440,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "88e16359.77529",
+        "type": "inject",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "tick_gen/speed_factor",
+        "payload": "30",
+        "payloadType": "num",
+        "x": 210,
+        "y": 360,
+        "wires": [
+            [
+                "e09fa76.8c40d58"
+            ]
+        ]
+    },
+    {
+        "id": "7b1f9b6f.3e0bd4",
+        "type": "inject",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "mgmt/adaptive_mode",
+        "payload": "false",
+        "payloadType": "bool",
+        "x": 200,
+        "y": 300,
+        "wires": [
+            [
+                "5c7ef2e5.7d6d5c"
+            ]
+        ]
+    },
+    {
+        "id": "4ddb5646.e6bc08",
+        "type": "inject",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "tickgen/tick",
+        "payload": "0",
+        "payloadType": "num",
+        "x": 250,
+        "y": 60,
+        "wires": [
+            [
+                "a0ca5b1b.242ed8"
+            ]
+        ]
+    },
+    {
+        "id": "16c9ef9e.44dd9",
+        "type": "mqtt in",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "data/kpi/status/filter_plant/0",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "3b931ee9.0688c2",
+        "x": 190,
+        "y": 460,
+        "wires": [
+            [
+                "e86f42ec.82341"
+            ]
+        ]
+    },
+    {
+        "id": "2b2a8d28.d142b2",
+        "type": "ui_text",
+        "z": "5992b366.f9457c",
+        "group": "675fff50.e5e07",
+        "order": 3,
+        "width": 8,
+        "height": 1,
+        "name": "",
+        "label": "STATUS FILTER PLANT ID:0",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 860,
+        "y": 460,
+        "wires": []
+    },
+    {
+        "id": "8aa9eebc.26c8c",
+        "type": "change",
+        "z": "5992b366.f9457c",
+        "name": "status",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.status",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "timestamp",
+                "pt": "msg",
+                "to": "payload.timestamp",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 610,
+        "y": 460,
+        "wires": [
+            [
+                "2b2a8d28.d142b2"
+            ]
+        ]
+    },
+    {
+        "id": "e86f42ec.82341",
+        "type": "json",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 430,
+        "y": 460,
+        "wires": [
+            [
+                "8aa9eebc.26c8c"
+            ]
+        ]
+    },
+    {
+        "id": "6bb6c4c4.748b8c",
+        "type": "mqtt in",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "data/kpi/status/filter_plant/1",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "3b931ee9.0688c2",
+        "x": 190,
+        "y": 520,
+        "wires": [
+            [
+                "eeb63cba.9c5db"
+            ]
+        ]
+    },
+    {
+        "id": "5a506731.7e6138",
+        "type": "ui_text",
+        "z": "5992b366.f9457c",
+        "group": "675fff50.e5e07",
+        "order": 3,
+        "width": 8,
+        "height": 1,
+        "name": "",
+        "label": "STATUS FILTER PLANT ID:1",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 860,
+        "y": 520,
+        "wires": []
+    },
+    {
+        "id": "e9a38bb0.a0bdb8",
+        "type": "change",
+        "z": "5992b366.f9457c",
+        "name": "status",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.status",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "timestamp",
+                "pt": "msg",
+                "to": "payload.timestamp",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 610,
+        "y": 520,
+        "wires": [
+            [
+                "5a506731.7e6138"
+            ]
+        ]
+    },
+    {
+        "id": "eeb63cba.9c5db",
+        "type": "json",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 430,
+        "y": 520,
+        "wires": [
+            [
+                "e9a38bb0.a0bdb8"
+            ]
+        ]
+    },
+    {
+        "id": "505a24af.4ec5fc",
+        "type": "mqtt in",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "data/kpi/status/filter_plant/2",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "3b931ee9.0688c2",
+        "x": 190,
+        "y": 580,
+        "wires": [
+            [
+                "4aa6e3fa.c8bdbc"
+            ]
+        ]
+    },
+    {
+        "id": "7d740787.b30dd8",
+        "type": "ui_text",
+        "z": "5992b366.f9457c",
+        "group": "675fff50.e5e07",
+        "order": 3,
+        "width": 8,
+        "height": 1,
+        "name": "",
+        "label": "STATUS FILTER PLANT ID:2",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 860,
+        "y": 580,
+        "wires": []
+    },
+    {
+        "id": "cadb0dd0.1f95c",
+        "type": "change",
+        "z": "5992b366.f9457c",
+        "name": "status",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.status",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "timestamp",
+                "pt": "msg",
+                "to": "payload.timestamp",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 610,
+        "y": 580,
+        "wires": [
+            [
+                "7d740787.b30dd8"
+            ]
+        ]
+    },
+    {
+        "id": "4aa6e3fa.c8bdbc",
+        "type": "json",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 430,
+        "y": 580,
+        "wires": [
+            [
+                "cadb0dd0.1f95c"
+            ]
+        ]
+    },
+    {
+        "id": "9f01be3f.591e8",
+        "type": "mqtt in",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "data/kpi/status/hydrogen_plant/0",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "3b931ee9.0688c2",
+        "x": 210,
+        "y": 640,
+        "wires": [
+            [
+                "2e77b6d.0eb054a"
+            ]
+        ]
+    },
+    {
+        "id": "8052aeac.6ae08",
+        "type": "ui_text",
+        "z": "5992b366.f9457c",
+        "group": "675fff50.e5e07",
+        "order": 3,
+        "width": 8,
+        "height": 1,
+        "name": "",
+        "label": "STATUS HYDDROGEN PLANT ID:0",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 890,
+        "y": 640,
+        "wires": []
+    },
+    {
+        "id": "34bd4458.a7f94c",
+        "type": "change",
+        "z": "5992b366.f9457c",
+        "name": "status",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.status",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "timestamp",
+                "pt": "msg",
+                "to": "payload.timestamp",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 610,
+        "y": 640,
+        "wires": [
+            [
+                "8052aeac.6ae08"
+            ]
+        ]
+    },
+    {
+        "id": "2e77b6d.0eb054a",
+        "type": "json",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 430,
+        "y": 640,
+        "wires": [
+            [
+                "34bd4458.a7f94c"
+            ]
+        ]
+    },
+    {
+        "id": "17b41e44.c4c082",
+        "type": "mqtt in",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "data/kpi/status/hydrogen_plant/1",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "3b931ee9.0688c2",
+        "x": 210,
+        "y": 700,
+        "wires": [
+            [
+                "1d62f25a.e4a33e"
+            ]
+        ]
+    },
+    {
+        "id": "9df47d11.b030a",
+        "type": "ui_text",
+        "z": "5992b366.f9457c",
+        "group": "675fff50.e5e07",
+        "order": 3,
+        "width": 8,
+        "height": 1,
+        "name": "",
+        "label": "STATUS HYDDROGEN PLANT ID:1",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 890,
+        "y": 700,
+        "wires": []
+    },
+    {
+        "id": "ad979450.01cc98",
+        "type": "change",
+        "z": "5992b366.f9457c",
+        "name": "status",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.status",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "timestamp",
+                "pt": "msg",
+                "to": "payload.timestamp",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 610,
+        "y": 700,
+        "wires": [
+            [
+                "9df47d11.b030a"
+            ]
+        ]
+    },
+    {
+        "id": "1d62f25a.e4a33e",
+        "type": "json",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 430,
+        "y": 700,
+        "wires": [
+            [
+                "ad979450.01cc98"
+            ]
+        ]
+    },
+    {
+        "id": "2e2b8b3e.8f3f14",
+        "type": "mqtt in",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "data/kpi/status/hydrogen_plant/2",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "3b931ee9.0688c2",
+        "x": 210,
+        "y": 760,
+        "wires": [
+            [
+                "62feb234.d7834c"
+            ]
+        ]
+    },
+    {
+        "id": "d1b9d5c6.0fb038",
+        "type": "ui_text",
+        "z": "5992b366.f9457c",
+        "group": "675fff50.e5e07",
+        "order": 3,
+        "width": 8,
+        "height": 1,
+        "name": "",
+        "label": "STATUS HYDDROGEN PLANT ID:2",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 890,
+        "y": 760,
+        "wires": []
+    },
+    {
+        "id": "a95a1aad.e71d38",
+        "type": "change",
+        "z": "5992b366.f9457c",
+        "name": "status",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.status",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "timestamp",
+                "pt": "msg",
+                "to": "payload.timestamp",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 610,
+        "y": 760,
+        "wires": [
+            [
+                "d1b9d5c6.0fb038"
+            ]
+        ]
+    },
+    {
+        "id": "62feb234.d7834c",
+        "type": "json",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 430,
+        "y": 760,
+        "wires": [
+            [
+                "a95a1aad.e71d38"
+            ]
+        ]
+    },
+    {
+        "id": "378f5130.e6a7ce",
+        "type": "change",
+        "z": "5992b366.f9457c",
+        "name": "density",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.density",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "timestamp",
+                "pt": "msg",
+                "to": "payload.timestamp",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 640,
+        "y": 860,
+        "wires": [
+            [
+                "c6471f84.8576b"
+            ]
+        ]
+    },
+    {
+        "id": "4d297afe.ebb414",
+        "type": "change",
+        "z": "5992b366.f9457c",
+        "name": "temperature",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.temperature",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "timestamp",
+                "pt": "msg",
+                "to": "payload.timestamp",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 650,
+        "y": 900,
+        "wires": [
+            [
+                "2f336a30.c280b6"
+            ]
+        ]
+    },
+    {
+        "id": "f28d6f10.6465c",
+        "type": "change",
+        "z": "5992b366.f9457c",
+        "name": "windspeed",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.windspeed",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "timestamp",
+                "pt": "msg",
+                "to": "payload.timestamp",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 650,
+        "y": 940,
+        "wires": [
+            [
+                "f78c2e3d.f8d21"
+            ]
+        ]
+    },
+    {
+        "id": "faee708a.9986a",
+        "type": "mqtt in",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "data/weather/",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "3b931ee9.0688c2",
+        "x": 150,
+        "y": 860,
+        "wires": [
+            [
+                "fe8cb3ed.e0c44"
+            ]
+        ]
+    },
+    {
+        "id": "fe8cb3ed.e0c44",
+        "type": "json",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 450,
+        "y": 860,
+        "wires": [
+            [
+                "f28d6f10.6465c",
+                "4d297afe.ebb414",
+                "378f5130.e6a7ce"
+            ]
+        ]
+    },
+    {
+        "id": "c6471f84.8576b",
+        "type": "ui_text",
+        "z": "5992b366.f9457c",
+        "group": "675fff50.e5e07",
+        "order": 3,
+        "width": 8,
+        "height": 1,
+        "name": "",
+        "label": "current density [kg/m³]",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 860,
+        "y": 860,
+        "wires": []
+    },
+    {
+        "id": "2f336a30.c280b6",
+        "type": "ui_text",
+        "z": "5992b366.f9457c",
+        "group": "675fff50.e5e07",
+        "order": 3,
+        "width": 8,
+        "height": 1,
+        "name": "",
+        "label": "current temperature [°C]",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 870,
+        "y": 900,
+        "wires": []
+    },
+    {
+        "id": "f78c2e3d.f8d21",
+        "type": "ui_text",
+        "z": "5992b366.f9457c",
+        "group": "675fff50.e5e07",
+        "order": 3,
+        "width": 8,
+        "height": 1,
+        "name": "",
+        "label": "current windspeed [m/s]",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 870,
+        "y": 940,
+        "wires": []
+    },
+    {
+        "id": "35ff551f.b0c39a",
+        "type": "mqtt in",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "data/hydrogen/supply/sum",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "3b931ee9.0688c2",
+        "x": 190,
+        "y": 1300,
+        "wires": [
+            [
+                "2f81daae.df8406"
+            ]
+        ]
+    },
+    {
+        "id": "2f81daae.df8406",
+        "type": "json",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 410,
+        "y": 1300,
+        "wires": [
+            [
+                "beb63b49.d2bd58"
+            ]
+        ]
+    },
+    {
+        "id": "beb63b49.d2bd58",
+        "type": "change",
+        "z": "5992b366.f9457c",
+        "name": "produced hydrogen",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.hydrogen",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "timestamp",
+                "pt": "msg",
+                "to": "payload.timestamp",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 590,
+        "y": 1300,
+        "wires": [
+            [
+                "6ca881fb.d1a8d",
+                "2e443d87.c39a62"
+            ]
+        ]
+    },
+    {
+        "id": "6ca881fb.d1a8d",
+        "type": "ui_gauge",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "group": "82589263.04fb3",
+        "order": 2,
+        "width": 8,
+        "height": 8,
+        "gtype": "gage",
+        "title": "produced hydrogen [kg]",
+        "label": "[kg]",
+        "format": "{{value}}",
+        "min": "0",
+        "max": "500",
+        "colors": [
+            "#ff0000",
+            "#e6e600",
+            "#00ff00"
+        ],
+        "seg1": "300",
+        "seg2": "400",
+        "x": 830,
+        "y": 1300,
+        "wires": []
+    },
+    {
+        "id": "71c13b48.4e1084",
+        "type": "mqtt in",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "data/filtered_water/supply/sum",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "3b931ee9.0688c2",
+        "x": 200,
+        "y": 1460,
+        "wires": [
+            [
+                "2ba1640.a48a39c"
+            ]
+        ]
+    },
+    {
+        "id": "2ba1640.a48a39c",
+        "type": "json",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 410,
+        "y": 1460,
+        "wires": [
+            [
+                "b0feed87.5af39"
+            ]
+        ]
+    },
+    {
+        "id": "b0feed87.5af39",
+        "type": "change",
+        "z": "5992b366.f9457c",
+        "name": "filtered water",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.fwater",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "timestamp",
+                "pt": "msg",
+                "to": "payload.timestamp",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 570,
+        "y": 1460,
+        "wires": [
+            [
+                "5dc249df.b01488",
+                "5525aa4d.f2aa04"
+            ]
+        ]
+    },
+    {
+        "id": "5dc249df.b01488",
+        "type": "ui_gauge",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "group": "a64e0f17.85ccc",
+        "order": 2,
+        "width": 8,
+        "height": 8,
+        "gtype": "gage",
+        "title": "filtered water [m³]",
+        "label": "[m³]",
+        "format": "{{value}}",
+        "min": "0",
+        "max": "1500",
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#d13a3c"
+        ],
+        "seg1": "450",
+        "seg2": "500",
+        "x": 770,
+        "y": 1460,
+        "wires": []
+    },
+    {
+        "id": "5525aa4d.f2aa04",
+        "type": "ui_chart",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "group": "a64e0f17.85ccc",
+        "order": 14,
+        "width": "16",
+        "height": "8",
+        "label": "filtered water [m³]",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm",
+        "interpolate": "cubic",
+        "nodata": "",
+        "dot": true,
+        "ymin": "0",
+        "ymax": "500",
+        "removeOlder": "24",
+        "removeOlderPoints": "96",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "x": 770,
+        "y": 1400,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "68184c27.8bb444",
+        "type": "mqtt in",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "data/power/supply/sum",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "3b931ee9.0688c2",
+        "x": 180,
+        "y": 1080,
+        "wires": [
+            [
+                "ab53cb2d.3113b8"
+            ]
+        ]
+    },
+    {
+        "id": "ab53cb2d.3113b8",
+        "type": "json",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 390,
+        "y": 1080,
+        "wires": [
+            [
+                "57a4ab2a.86f6a4"
+            ]
+        ]
+    },
+    {
+        "id": "57a4ab2a.86f6a4",
+        "type": "change",
+        "z": "5992b366.f9457c",
+        "name": "power sum",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.power",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "timestamp",
+                "pt": "msg",
+                "to": "payload.timestamp",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 550,
+        "y": 1080,
+        "wires": [
+            [
+                "20e6afb9.027cf"
+            ]
+        ]
+    },
+    {
+        "id": "20e6afb9.027cf",
+        "type": "ui_gauge",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "group": "a7c03f91.8126",
+        "order": 2,
+        "width": 8,
+        "height": 8,
+        "gtype": "gage",
+        "title": "current power sum",
+        "label": "[kW]",
+        "format": "{{value}}",
+        "min": "0",
+        "max": "16500",
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#d13a3c"
+        ],
+        "seg1": "14000",
+        "seg2": "15000",
+        "x": 770,
+        "y": 1080,
+        "wires": []
+    },
+    {
+        "id": "341c9887.8932d8",
+        "type": "mqtt in",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "data/hydrogen/demand",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "3b931ee9.0688c2",
+        "x": 180,
+        "y": 1140,
+        "wires": [
+            [
+                "ddb72b92.bc7688"
+            ]
+        ]
+    },
+    {
+        "id": "ddb72b92.bc7688",
+        "type": "json",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 370,
+        "y": 1140,
+        "wires": [
+            [
+                "cfc12e4d.06124"
+            ]
+        ]
+    },
+    {
+        "id": "cfc12e4d.06124",
+        "type": "change",
+        "z": "5992b366.f9457c",
+        "name": "hydrogen",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.hydrogen",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "timestamp",
+                "pt": "msg",
+                "to": "payload.timestamp",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 520,
+        "y": 1140,
+        "wires": [
+            [
+                "f9ece3d7.3bf12"
+            ]
+        ]
+    },
+    {
+        "id": "f9ece3d7.3bf12",
+        "type": "ui_gauge",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "group": "a7c03f91.8126",
+        "order": 2,
+        "width": 8,
+        "height": 8,
+        "gtype": "gage",
+        "title": "requested hydrogen [kg]",
+        "label": "[kg]",
+        "format": "{{value}}",
+        "min": "0",
+        "max": "600",
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#d13a3c"
+        ],
+        "seg1": "300",
+        "seg2": "500",
+        "x": 750,
+        "y": 1140,
+        "wires": []
+    },
+    {
+        "id": "611360af.1c58d",
+        "type": "mqtt in",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "data/water/supply/water_pipe",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "3b931ee9.0688c2",
+        "x": 200,
+        "y": 1200,
+        "wires": [
+            [
+                "4e51fdae.0e1364"
+            ]
+        ]
+    },
+    {
+        "id": "4e51fdae.0e1364",
+        "type": "json",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 410,
+        "y": 1200,
+        "wires": [
+            [
+                "c437ddd7.2676e"
+            ]
+        ]
+    },
+    {
+        "id": "c437ddd7.2676e",
+        "type": "change",
+        "z": "5992b366.f9457c",
+        "name": "water",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.watersupply",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "timestamp",
+                "pt": "msg",
+                "to": "payload.timestamp",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 550,
+        "y": 1200,
+        "wires": [
+            [
+                "30aaa576.68d56a"
+            ]
+        ]
+    },
+    {
+        "id": "30aaa576.68d56a",
+        "type": "ui_gauge",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "group": "a7c03f91.8126",
+        "order": 2,
+        "width": 8,
+        "height": 8,
+        "gtype": "gage",
+        "title": "available water [m³]",
+        "label": "[m³]",
+        "format": "{{value}}",
+        "min": "0",
+        "max": "1500",
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#d13a3c"
+        ],
+        "seg1": "450",
+        "seg2": "500",
+        "x": 770,
+        "y": 1200,
+        "wires": []
+    },
+    {
+        "id": "2e443d87.c39a62",
+        "type": "ui_chart",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "group": "82589263.04fb3",
+        "order": 14,
+        "width": "16",
+        "height": "8",
+        "label": "produced hydrogen [kg]",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm",
+        "interpolate": "cubic",
+        "nodata": "",
+        "dot": true,
+        "ymin": "0",
+        "ymax": "500",
+        "removeOlder": "24",
+        "removeOlderPoints": "96",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "x": 830,
+        "y": 1260,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "2442c685.c1a8ea",
+        "type": "mqtt in",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "data/hydrogen/supply/hydrogen_plant/0",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "3b931ee9.0688c2",
+        "x": 230,
+        "y": 1920,
+        "wires": [
+            [
+                "456d1d39.bbe3b4"
+            ]
+        ]
+    },
+    {
+        "id": "456d1d39.bbe3b4",
+        "type": "json",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 470,
+        "y": 1920,
+        "wires": [
+            [
+                "9db69bf9.952ae8"
+            ]
+        ]
+    },
+    {
+        "id": "9db69bf9.952ae8",
+        "type": "change",
+        "z": "5992b366.f9457c",
+        "name": "produced hydrogen",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.amount",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "timestamp",
+                "pt": "msg",
+                "to": "payload.timestamp",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 650,
+        "y": 1920,
+        "wires": [
+            [
+                "227943f6.22d9ac",
+                "cfd0b8f.a055948"
+            ]
+        ]
+    },
+    {
+        "id": "227943f6.22d9ac",
+        "type": "ui_gauge",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "group": "210d4dd0.319092",
+        "order": 2,
+        "width": 8,
+        "height": 8,
+        "gtype": "gage",
+        "title": "produced hydrogen [kg]",
+        "label": "[kg]",
+        "format": "{{value}}",
+        "min": "0",
+        "max": "500",
+        "colors": [
+            "#ff0000",
+            "#e6e600",
+            "#00ff00"
+        ],
+        "seg1": "300",
+        "seg2": "400",
+        "x": 890,
+        "y": 1920,
+        "wires": []
+    },
+    {
+        "id": "cfd0b8f.a055948",
+        "type": "ui_chart",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "group": "210d4dd0.319092",
+        "order": 14,
+        "width": "16",
+        "height": "8",
+        "label": "produced hydrogen [kg]",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "0",
+        "ymax": "500",
+        "removeOlder": "24",
+        "removeOlderPoints": "96",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "x": 890,
+        "y": 1880,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "b34402cb.8f314",
+        "type": "mqtt in",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "data/hydrogen/supply/hydrogen_plant/1",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "3b931ee9.0688c2",
+        "x": 230,
+        "y": 2040,
+        "wires": [
+            [
+                "2fc97ad.68cef86"
+            ]
+        ]
+    },
+    {
+        "id": "2fc97ad.68cef86",
+        "type": "json",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 470,
+        "y": 2040,
+        "wires": [
+            [
+                "de262edf.5fa09"
+            ]
+        ]
+    },
+    {
+        "id": "de262edf.5fa09",
+        "type": "change",
+        "z": "5992b366.f9457c",
+        "name": "produced hydrogen",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.amount",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "timestamp",
+                "pt": "msg",
+                "to": "payload.timestamp",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 650,
+        "y": 2040,
+        "wires": [
+            [
+                "c4b01e31.10e21",
+                "b6f33159.13266"
+            ]
+        ]
+    },
+    {
+        "id": "c4b01e31.10e21",
+        "type": "ui_gauge",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "group": "4bee3804.109978",
+        "order": 2,
+        "width": 8,
+        "height": 8,
+        "gtype": "gage",
+        "title": "produced hydrogen [kg]",
+        "label": "[kg]",
+        "format": "{{value}}",
+        "min": "0",
+        "max": "500",
+        "colors": [
+            "#ff0000",
+            "#e6e600",
+            "#00ff00"
+        ],
+        "seg1": "300",
+        "seg2": "400",
+        "x": 890,
+        "y": 2040,
+        "wires": []
+    },
+    {
+        "id": "b6f33159.13266",
+        "type": "ui_chart",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "group": "4bee3804.109978",
+        "order": 14,
+        "width": "16",
+        "height": "8",
+        "label": "produced hydrogen [kg]",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "0",
+        "ymax": "500",
+        "removeOlder": "24",
+        "removeOlderPoints": "96",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "x": 890,
+        "y": 2000,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "901b5cb5.bb5d2",
+        "type": "mqtt in",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "data/hydrogen/supply/hydrogen_plant/2",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "3b931ee9.0688c2",
+        "x": 230,
+        "y": 2180,
+        "wires": [
+            [
+                "67fb8d5d.0f3924"
+            ]
+        ]
+    },
+    {
+        "id": "67fb8d5d.0f3924",
+        "type": "json",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 470,
+        "y": 2180,
+        "wires": [
+            [
+                "3c817d97.872da2"
+            ]
+        ]
+    },
+    {
+        "id": "3c817d97.872da2",
+        "type": "change",
+        "z": "5992b366.f9457c",
+        "name": "produced hydrogen",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.amount",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "timestamp",
+                "pt": "msg",
+                "to": "payload.timestamp",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 650,
+        "y": 2180,
+        "wires": [
+            [
+                "c478213e.41806",
+                "d8ed3640.4f4008"
+            ]
+        ]
+    },
+    {
+        "id": "c478213e.41806",
+        "type": "ui_gauge",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "group": "47d801f0.676f6",
+        "order": 2,
+        "width": 8,
+        "height": 8,
+        "gtype": "gage",
+        "title": "produced hydrogen [kg]",
+        "label": "[kg]",
+        "format": "{{value}}",
+        "min": "0",
+        "max": "500",
+        "colors": [
+            "#ff0000",
+            "#e6e600",
+            "#00ff00"
+        ],
+        "seg1": "300",
+        "seg2": "400",
+        "x": 890,
+        "y": 2180,
+        "wires": []
+    },
+    {
+        "id": "d8ed3640.4f4008",
+        "type": "ui_chart",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "group": "47d801f0.676f6",
+        "order": 14,
+        "width": "16",
+        "height": "8",
+        "label": "produced hydrogen [kg]",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "0",
+        "ymax": "500",
+        "removeOlder": "24",
+        "removeOlderPoints": "96",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "x": 890,
+        "y": 2140,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "3f4760eb.4237",
+        "type": "mqtt in",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "data/filtered_water/supply/filter/0",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "3b931ee9.0688c2",
+        "x": 210,
+        "y": 2320,
+        "wires": [
+            [
+                "867a24f5.b4cff8"
+            ]
+        ]
+    },
+    {
+        "id": "867a24f5.b4cff8",
+        "type": "json",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 410,
+        "y": 2320,
+        "wires": [
+            [
+                "a1e2ae32.1d8a7"
+            ]
+        ]
+    },
+    {
+        "id": "a1e2ae32.1d8a7",
+        "type": "change",
+        "z": "5992b366.f9457c",
+        "name": "filtered water",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.amount",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "timestamp",
+                "pt": "msg",
+                "to": "payload.timestamp",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 570,
+        "y": 2320,
+        "wires": [
+            [
+                "83009749.ad1c38",
+                "15ff486f.24c138"
+            ]
+        ]
+    },
+    {
+        "id": "83009749.ad1c38",
+        "type": "ui_gauge",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "group": "8f7d479f.b374f8",
+        "order": 2,
+        "width": 8,
+        "height": 8,
+        "gtype": "gage",
+        "title": "filtered water [m³]",
+        "label": "[m³]",
+        "format": "{{value}}",
+        "min": "0",
+        "max": "1500",
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#d13a3c"
+        ],
+        "seg1": "450",
+        "seg2": "500",
+        "x": 770,
+        "y": 2320,
+        "wires": []
+    },
+    {
+        "id": "15ff486f.24c138",
+        "type": "ui_chart",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "group": "8f7d479f.b374f8",
+        "order": 14,
+        "width": "16",
+        "height": "8",
+        "label": "filtered water [m³]",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "0",
+        "ymax": "500",
+        "removeOlder": "24",
+        "removeOlderPoints": "96",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "x": 770,
+        "y": 2260,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "9e574411.b34948",
+        "type": "mqtt in",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "data/filtered_water/supply/filter/1",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "3b931ee9.0688c2",
+        "x": 210,
+        "y": 2440,
+        "wires": [
+            [
+                "92593234.509e4"
+            ]
+        ]
+    },
+    {
+        "id": "92593234.509e4",
+        "type": "json",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 410,
+        "y": 2440,
+        "wires": [
+            [
+                "f5f6bdf3.fba52"
+            ]
+        ]
+    },
+    {
+        "id": "f5f6bdf3.fba52",
+        "type": "change",
+        "z": "5992b366.f9457c",
+        "name": "filtered water",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.amount",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "timestamp",
+                "pt": "msg",
+                "to": "payload.timestamp",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 570,
+        "y": 2440,
+        "wires": [
+            [
+                "dd381775.521e98",
+                "bbb66f27.35ed7"
+            ]
+        ]
+    },
+    {
+        "id": "dd381775.521e98",
+        "type": "ui_gauge",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "group": "e5acd9ea.fce8d8",
+        "order": 2,
+        "width": 8,
+        "height": 8,
+        "gtype": "gage",
+        "title": "filtered water [m³]",
+        "label": "[m³]",
+        "format": "{{value}}",
+        "min": "0",
+        "max": "1500",
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#d13a3c"
+        ],
+        "seg1": "450",
+        "seg2": "500",
+        "x": 770,
+        "y": 2440,
+        "wires": []
+    },
+    {
+        "id": "bbb66f27.35ed7",
+        "type": "ui_chart",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "group": "e5acd9ea.fce8d8",
+        "order": 14,
+        "width": "16",
+        "height": "8",
+        "label": "filtered water [m³]",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "0",
+        "ymax": "500",
+        "removeOlder": "24",
+        "removeOlderPoints": "96",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "x": 770,
+        "y": 2380,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "1ce4b2f5.b90edd",
+        "type": "mqtt in",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "data/filtered_water/supply/filter/2",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "3b931ee9.0688c2",
+        "x": 210,
+        "y": 2560,
+        "wires": [
+            [
+                "22042f0b.8b3eb"
+            ]
+        ]
+    },
+    {
+        "id": "22042f0b.8b3eb",
+        "type": "json",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 410,
+        "y": 2560,
+        "wires": [
+            [
+                "6133e72.e166a18"
+            ]
+        ]
+    },
+    {
+        "id": "6133e72.e166a18",
+        "type": "change",
+        "z": "5992b366.f9457c",
+        "name": "filtered water",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.amount",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "timestamp",
+                "pt": "msg",
+                "to": "payload.timestamp",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 570,
+        "y": 2560,
+        "wires": [
+            [
+                "9293256d.75b908",
+                "7853127.033b7ec"
+            ]
+        ]
+    },
+    {
+        "id": "9293256d.75b908",
+        "type": "ui_gauge",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "group": "b271485f.0eb428",
+        "order": 2,
+        "width": 8,
+        "height": 8,
+        "gtype": "gage",
+        "title": "filtered water [m³]",
+        "label": "[m³]",
+        "format": "{{value}}",
+        "min": "0",
+        "max": "1500",
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#d13a3c"
+        ],
+        "seg1": "450",
+        "seg2": "500",
+        "x": 770,
+        "y": 2560,
+        "wires": []
+    },
+    {
+        "id": "7853127.033b7ec",
+        "type": "ui_chart",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "group": "b271485f.0eb428",
+        "order": 14,
+        "width": "16",
+        "height": "8",
+        "label": "filtered water [m³]",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "0",
+        "ymax": "500",
+        "removeOlder": "24",
+        "removeOlderPoints": "96",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "x": 770,
+        "y": 2500,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "3b931ee9.0688c2",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "mqttbroker",
+        "port": "1883",
+        "clientid": "",
+        "usetls": false,
+        "compatmode": false,
+        "keepalive": "60",
+        "cleansession": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthPayload": "",
+        "closeTopic": "",
+        "closeQos": "0",
+        "closePayload": "",
+        "willTopic": "",
+        "willQos": "0",
+        "willPayload": ""
+    },
+    {
+        "id": "675fff50.e5e07",
+        "type": "ui_group",
+        "name": "Configuration",
+        "tab": "8d5b248b.b32978",
+        "order": 1,
+        "disp": true,
+        "width": "24",
+        "collapse": true
+    },
+    {
+        "id": "82589263.04fb3",
+        "type": "ui_group",
+        "name": "produced hydrogen daily",
+        "tab": "8d5b248b.b32978",
+        "order": 3,
+        "disp": true,
+        "width": "24",
+        "collapse": false
+    },
+    {
+        "id": "a64e0f17.85ccc",
+        "type": "ui_group",
+        "name": "filtered water daily",
+        "tab": "8d5b248b.b32978",
+        "order": 4,
+        "disp": true,
+        "width": "24",
+        "collapse": false
+    },
+    {
+        "id": "a7c03f91.8126",
+        "type": "ui_group",
+        "name": "Input Information",
+        "tab": "8d5b248b.b32978",
+        "order": 2,
+        "disp": true,
+        "width": "24",
+        "collapse": false
+    },
+    {
+        "id": "210d4dd0.319092",
+        "type": "ui_group",
+        "name": "produced hydrogen ID: 0",
+        "tab": "e78265c3.aa1d18",
+        "order": 2,
+        "disp": true,
+        "width": "24",
+        "collapse": false
+    },
+    {
+        "id": "4bee3804.109978",
+        "type": "ui_group",
+        "name": "produced hydrogen ID: 1",
+        "tab": "e78265c3.aa1d18",
+        "order": 3,
+        "disp": true,
+        "width": "24",
+        "collapse": false
+    },
+    {
+        "id": "47d801f0.676f6",
+        "type": "ui_group",
+        "name": "produced hydrogen ID: 2",
+        "tab": "e78265c3.aa1d18",
+        "order": 5,
+        "disp": true,
+        "width": "24",
+        "collapse": false
+    },
+    {
+        "id": "8f7d479f.b374f8",
+        "type": "ui_group",
+        "name": "filtered water ID: 0",
+        "tab": "e78265c3.aa1d18",
+        "order": 5,
+        "disp": true,
+        "width": "24",
+        "collapse": false
+    },
+    {
+        "id": "e5acd9ea.fce8d8",
+        "type": "ui_group",
+        "name": "filtered water ID: 1",
+        "tab": "e78265c3.aa1d18",
+        "order": 6,
+        "disp": true,
+        "width": "24",
+        "collapse": false
+    },
+    {
+        "id": "b271485f.0eb428",
+        "type": "ui_group",
+        "name": "filtered water ID: 2",
+        "tab": "e78265c3.aa1d18",
+        "order": 7,
+        "disp": true,
+        "width": "24",
+        "collapse": false
+    },
+    {
+        "id": "8d5b248b.b32978",
+        "type": "ui_tab",
+        "name": "Home",
+        "icon": "dashboard",
+        "disabled": false,
+        "hidden": false
+    },
+    {
+        "id": "e78265c3.aa1d18",
+        "type": "ui_tab",
+        "name": "Seperate System",
+        "icon": "dashboard",
+        "disabled": false,
+        "hidden": false
+    }
+]
