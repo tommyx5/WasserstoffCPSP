@@ -5,9 +5,10 @@ from random import seed, randint
 from mqtt.mqtt_wrapper import MQTTWrapper
 import os
 
-TEST = True
+TEST = False
 TEST_DATA = {"payload": "THIS IS A BASE TEST!"}
-TETS_TOPIC = "data/test"
+TETS_TOPIC = "data/power/test"
+TOPIC_DEBUG = "mgmt/debug_mode"
 
 def getenv_or_exit(env_name, default="default"):
     value = os.getenv(env_name, default)
@@ -95,11 +96,21 @@ HYDROGEN_SUM_AMOUNT = 0
 FILTER_AVAILABLE_POWER = SUM_POWER*FILTER_RATIO
 HYDROGEN_AVAILABLE_POWER = SUM_POWER*HYDROGEN_RATIO
 
+def on_message_debug_mode(client, userdata, msg):
+    global TEST
+    boolean = msg.payload.decode("utf-8")
+    if boolean == "true" or boolean == "1" or boolean == "I love Python" or boolean == "True":
+        TEST = True
+    else:
+        TEST = False
+
 #MAIN
 def main():
     mqtt = MQTTWrapper('mqttbroker', 1883, name='wind_power_sum')   
     mqtt.subscribe(TOPIC_ADAPTIVE_MODE)
     mqtt.subscribe_with_callback(TOPIC_ADAPTIVE_MODE, on_message_adaptive_mode)
+    mqtt.subscribe(TOPIC_DEBUG)
+    mqtt.subscribe_with_callback(TOPIC_DEBUG, on_message_debug_mode)
     for topic in WIND_POWER_TOPIC_LIST:
         mqtt.subscribe(topic)
         mqtt.subscribe_with_callback(topic, on_message_power)
