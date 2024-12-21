@@ -125,7 +125,7 @@ def on_message_tick(client, userdata, msg):
     # get timestamp from tick msg and request power
     TIMESTAMP = msg.payload.decode("utf-8")
     
-    send_request_msg(client, TOPIC_POWER_REQUEST, TIMESTAMP, ID, TOPIC_POWER_RECEIVE, PLANED_POWER_DEMAND)
+    #send_request_msg(client, TOPIC_POWER_REQUEST, TIMESTAMP, ID, TOPIC_POWER_RECEIVE, PLANED_POWER_DEMAND)
 
 def on_message_power_received(client, userdata, msg):
     """

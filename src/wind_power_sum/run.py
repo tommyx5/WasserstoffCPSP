@@ -5,7 +5,7 @@ from random import seed, randint
 from mqtt.mqtt_wrapper import MQTTWrapper
 import os
 
-TEST = False
+TEST = True
 TEST_DATA = {"payload": "THIS IS A BASE TEST!"}
 TETS_TOPIC = "data/test"
 
@@ -16,8 +16,10 @@ def getenv_or_exit(env_name, default="default"):
     return value
 
 PLANT_DATA = {}
-PLANT_DATA["filter"] = {}
-PLANT_DATA["hydrogen"] = {}
+FILTER_PLANT = "filter_plant"
+HYDROGEN_PLANT = "hydrogen_plant"
+PLANT_DATA[FILTER_PLANT] = {}
+PLANT_DATA[HYDROGEN_PLANT] = {}
 
 COUNT_POWER_GEN = int(getenv_or_exit("POWER_SUM_COUNT_POWER_GEN", 0))
 COUNT_FILTER_PLANT = int(getenv_or_exit("NUMBER_OF_FILTER_PLANTS", 0))
@@ -33,45 +35,50 @@ TOPIC_FILTER_KPIS = getenv_or_exit("TOPIC_FILTER_KPIS", "default")
 TOPIC_HYDROGEN_KPIS = getenv_or_exit("TOPIC_FILTER_KPIS", "default")
 
 WIND_POWER_TOPIC_LIST = []
-for i in range(COUNT_POWER_GEN):
-    WIND_POWER_TOPIC_LIST.append(WIND_POWER_DATA+str(i))
+for j in range(COUNT_POWER_GEN):
+    i = str(j)
+    WIND_POWER_TOPIC_LIST.append(WIND_POWER_DATA+i)
     
 FILTER_PLANT_TOPIC_LIST = []
 FILTER_KPIS_TOPIC_LIST = []
-for i in range(COUNT_FILTER_PLANT):
-    FILTER_PLANT_TOPIC_LIST.append(TOPIC_FILTER_REQUEST+str(i))
-    FILTER_KPIS_TOPIC_LIST.append(TOPIC_FILTER_KPIS+str(i))
-    PLANT_DATA["filter"][str(i)] = {}
-    PLANT_DATA["filter"][str(i)]["reply_topic"] = ""
-    PLANT_DATA["filter"][str(i)]["amount"] = 0
-    PLANT_DATA["filter"][str(i)]["timestamp"] = 0
-    PLANT_DATA["filter"][str(i)]["status"] = "offline"
-    PLANT_DATA["filter"][str(i)]["eff"] = 0.5
-    PLANT_DATA["filter"][str(i)]["prod"] = 0.5
-    PLANT_DATA["filter"][str(i)]["cper"] = 0.5
-    PLANT_DATA["filter"][str(i)]["powersupply"] = 0
-    PLANT_DATA["filter"][str(i)]["priority"] = 0
+for j in range(COUNT_FILTER_PLANT):
+    i = str(j)
+    FILTER_PLANT_TOPIC_LIST.append(TOPIC_FILTER_REQUEST+i)
+    FILTER_KPIS_TOPIC_LIST.append(TOPIC_FILTER_KPIS+i)
+    PLANT_DATA[FILTER_PLANT][i] = {}
+    PLANT_DATA[FILTER_PLANT][i]["reply_topic"] = ""
+    PLANT_DATA[FILTER_PLANT][i]["amount"] = 0
+    PLANT_DATA[FILTER_PLANT][i]["timestamp"] = i
+    PLANT_DATA[FILTER_PLANT][i]["status"] = "offline"
+    PLANT_DATA[FILTER_PLANT][i]["eff"] = 0.5
+    PLANT_DATA[FILTER_PLANT][i]["prod"] = 0.5
+    PLANT_DATA[FILTER_PLANT][i]["cper"] = 0.5
+    PLANT_DATA[FILTER_PLANT][i]["powersupply"] = 0
+    PLANT_DATA[FILTER_PLANT][i]["priority"] = 0
+    PLANT_DATA[FILTER_PLANT][i]["npower"] = 0
+    PLANT_DATA[FILTER_PLANT][i]["namount"] = 0
     
 HYDROGEN_PLANT_TOPIC_LIST = []
 HYDROGEN_KPIS_TOPIC_LIST = []
 for j in range(COUNT_HYDROGEN_PLANT):
-    i = j
-    HYDROGEN_PLANT_TOPIC_LIST.append(TOPIC_HYDROGEN_REQUEST+str(i))
-    HYDROGEN_KPIS_TOPIC_LIST.append(TOPIC_FILTER_KPIS+str(i))
     i = str(j)
-    PLANT_DATA["hydrogen"][i] = {}
-    PLANT_DATA["hydrogen"][i]["reply_topic"] = ""
-    PLANT_DATA["hydrogen"][i]["amount"] = 0
-    PLANT_DATA["hydrogen"][i]["timestamp"] = 0
-    PLANT_DATA["hydrogen"][i]["status"] = "offline"
-    PLANT_DATA["hydrogen"][i]["eff"] = 0.5
-    PLANT_DATA["hydrogen"][i]["prod"] = 0.5
-    PLANT_DATA["hydrogen"][i]["cper"] = 0.5
-    PLANT_DATA["hydrogen"][i]["powersupply"] = 0
-    PLANT_DATA["hydrogen"][i]["priority"] = 0
+    HYDROGEN_PLANT_TOPIC_LIST.append(TOPIC_HYDROGEN_REQUEST+i)
+    HYDROGEN_KPIS_TOPIC_LIST.append(TOPIC_FILTER_KPIS+i)
+    PLANT_DATA[HYDROGEN_PLANT][i] = {}
+    PLANT_DATA[HYDROGEN_PLANT][i]["reply_topic"] = ""
+    PLANT_DATA[HYDROGEN_PLANT][i]["amount"] = 0
+    PLANT_DATA[HYDROGEN_PLANT][i]["timestamp"] = i
+    PLANT_DATA[HYDROGEN_PLANT][i]["status"] = "offline"
+    PLANT_DATA[HYDROGEN_PLANT][i]["eff"] = 0.5
+    PLANT_DATA[HYDROGEN_PLANT][i]["prod"] = 0.5
+    PLANT_DATA[HYDROGEN_PLANT][i]["cper"] = 0.5
+    PLANT_DATA[HYDROGEN_PLANT][i]["powersupply"] = 0
+    PLANT_DATA[HYDROGEN_PLANT][i]["priority"] = 0
+    PLANT_DATA[HYDROGEN_PLANT][i]["npower"] = 0
+    PLANT_DATA[HYDROGEN_PLANT][i]["namount"] = 0
 
 SUM_POWER = 0
-AVAILABLE_POWER = SUM_POWER
+POWER_COLLECTED = False
 WEIGHTS = [2/5,2/5,1/5]
 COUNT = 0
 MEAN_POWER = 0
@@ -81,7 +88,12 @@ COUNT_TICKS = 0
 for i in range(COUNT_TICKS_MAX):
     POWER_LIST.append(0)
 ADAPTIVE = False
-DICTONARY_BACKLOCK = {}
+FILTER_RATIO = 0.3 #FILTER_SUM_AMOUNT/(FILTER_SUM_AMOUNT+HYDROGEN_SUM_AMOUNT)
+HYDROGEN_RATIO = 1-FILTER_RATIO #HYDROGEN_SUM_AMOUNT/(FILTER_SUM_AMOUNT+HYDROGEN_SUM_AMOUNT)
+FILTER_SUM_AMOUNT = 0
+HYDROGEN_SUM_AMOUNT = 0
+FILTER_AVAILABLE_POWER = SUM_POWER*FILTER_RATIO
+HYDROGEN_AVAILABLE_POWER = SUM_POWER*HYDROGEN_RATIO
 
 #MAIN
 def main():
@@ -126,59 +138,32 @@ def calc_mean():
 def get_key(liste):
     return liste[0]
 
-def calculate_supply(client):
-    global SUM_POWER, MEAN_POWER, AVAILABLE_POWER, PLANT_DATA
-    sum_eff = 0
-    sum_prod = 0
-    sum_cper = 0
+def calculate_supply(typ, sortByPrio = False):
+    global PLANT_DATA
+    global HYDROGEN_PLANT, HYDROGEN_AVAILABLE_POWER, HYDROGEN_SUM_AMOUNT, HYDROGEN_RATIO
+    global FILTER_PLANT, FILTER_AVAILABLE_POWER, FILTER_SUM_AMOUNT, FILTER_RATIO
     result_list = []
-    result_list_hydrogen = [] 
-    for typ in PLANT_DATA.keys():
-        for id in PLANT_DATA[typ].keys():
-            sum_eff += PLANT_DATA[typ][id]["eff"]
-            sum_prod += PLANT_DATA[typ][id]["prod"]
-            sum_cper += PLANT_DATA[typ][id]["cper"]
-    typ = "filter"
     for id in PLANT_DATA[typ].keys():
-        if sum_eff > 0 and sum_prod > 0 and sum_cper > 0:
-            PLANT_DATA[typ][id]["priority"] = (PLANT_DATA[typ][id]["eff"]/sum_eff+
-                                                PLANT_DATA[typ][id]["prod"]/sum_prod+
-                                                PLANT_DATA[typ][id]["cper"]/sum_cper)
-        else:
-            PLANT_DATA[typ][id]["priority"] = 0
         result_list.append([PLANT_DATA[typ][id]["priority"],typ,id,PLANT_DATA[typ][id]["amount"],PLANT_DATA[typ][id]["reply_topic"]])
-    result_list.sort(key=get_key,reverse=True)
-    typ = "hydrogen"
-    for id in PLANT_DATA[typ].keys():
-        if sum_eff > 0 and sum_prod > 0 and sum_cper > 0:   
-            PLANT_DATA[typ][id]["priority"] = (PLANT_DATA[typ][id]["eff"]/sum_eff+
-                                                PLANT_DATA[typ][id]["prod"]/sum_prod+
-                                                PLANT_DATA[typ][id]["cper"]/sum_cper)
-        else:
-            PLANT_DATA[typ][id]["priority"] = 0
-        result_list_hydrogen.append([PLANT_DATA[typ][id]["priority"],typ,id,PLANT_DATA[typ][id]["amount"],PLANT_DATA[typ][id]["reply_topic"]])
-    result_list_hydrogen.sort(key=get_key,reverse=True)
-    
-    factor = 1
-    multi = 100
-    for i in range(len(result_list)+len(result_list_hydrogen)):
-        factor *= multi
-    calc_factor = factor
-    for i in range(len(result_list)):
-        result_list[i][0] = result_list[i][0]*(calc_factor)
-        calc_factor /= multi
-    calc_factor = factor
-    for i in range(len(result_list_hydrogen)):
-        result_list_hydrogen[i][0] = result_list_hydrogen[i][0]*(calc_factor)
-        calc_factor /= multi
-    
-    result_list.extend(result_list_hydrogen)
-    result_list.sort(key=get_key,reverse=True)
-    for i in range(len(result_list)):
-        if AVAILABLE_POWER - result_list[i][3] > 0:
-            AVAILABLE_POWER -= result_list[i][3]
-        else:
-            result_list[i][3] = 0
+    if sortByPrio:
+        result_list.sort(key=get_key,reverse=True)
+    if typ == FILTER_PLANT:
+        for e in result_list:
+            FILTER_SUM_AMOUNT += e[3]
+            if FILTER_AVAILABLE_POWER - e[3] >= 0:
+                FILTER_AVAILABLE_POWER = FILTER_AVAILABLE_POWER - e[3]
+            else:
+                e[3] = 0
+        if FILTER_SUM_AMOUNT+HYDROGEN_SUM_AMOUNT > 0:
+            FILTER_RATIO = FILTER_SUM_AMOUNT/(FILTER_SUM_AMOUNT+HYDROGEN_SUM_AMOUNT)
+            HYDROGEN_RATIO = HYDROGEN_SUM_AMOUNT/(FILTER_SUM_AMOUNT+HYDROGEN_SUM_AMOUNT)
+    if typ == HYDROGEN_PLANT:
+        for e in result_list:
+            HYDROGEN_SUM_AMOUNT += e[3]
+            if HYDROGEN_AVAILABLE_POWER - e[3] >= 0:
+                HYDROGEN_AVAILABLE_POWER = HYDROGEN_AVAILABLE_POWER - e[3]
+            else:
+                e[3] = 0
     return result_list
     
 def on_message_adaptive_mode(client, userdata, msg):
@@ -188,14 +173,12 @@ def on_message_adaptive_mode(client, userdata, msg):
         ADAPTIVE = True
     else:
         ADAPTIVE = False
-    if TEST:
-        client.publish(TETS_TOPIC, json.dumps({"payload": "on_message_adaptive_mode"}))
     
     
 def on_message_power(client, userdata, msg):
     global WIND_POWER_SUM_DATA
     global COUNT, COUNT_TICKS_MAX, COUNT_TICKS
-    global SUM_POWER, MEAN_POWER, POWER_LIST, AVAILABLE_POWER
+    global SUM_POWER, MEAN_POWER, POWER_LIST, FILTER_AVAILABLE_POWER, HYDROGEN_AVAILABLE_POWER, POWER_COLLECTED
     global COUNT_POWER_GEN
 
     payload = json.loads(msg.payload) 
@@ -204,6 +187,7 @@ def on_message_power(client, userdata, msg):
     
     if COUNT % COUNT_POWER_GEN == 0:
         SUM_POWER = power
+        POWER_COLLECTED = False
     else:
         SUM_POWER += power
         POWER_LIST[COUNT_TICKS] = SUM_POWER
@@ -214,91 +198,81 @@ def on_message_power(client, userdata, msg):
         data = {"power": round(SUM_POWER,2), "mean_power": MEAN_POWER, "timestamp": timestamp}
         # Publish the data to the chaos sensor topic in JSON format
         client.publish(WIND_POWER_SUM_DATA, json.dumps(data))
-        AVAILABLE_POWER = SUM_POWER
+        FILTER_AVAILABLE_POWER = SUM_POWER*FILTER_RATIO
+        HYDROGEN_AVAILABLE_POWER = SUM_POWER*HYDROGEN_RATIO
+        POWER_COLLECTED = True
+        if TEST:
+            client.publish(TETS_TOPIC, json.dumps({"FILTER_AVAILABLE_POWER": FILTER_AVAILABLE_POWER,"HYDROGEN_AVAILABLE_POWER": HYDROGEN_AVAILABLE_POWER}))
+            client.publish(TETS_TOPIC, json.dumps({"FILTER_RATIO": FILTER_RATIO,"HYDROGEN_RATIO": HYDROGEN_RATIO}))
     COUNT = (COUNT + 1) % COUNT_POWER_GEN
-    if TEST:
-        client.publish(TETS_TOPIC, json.dumps({"payload": "on_message_power"}))
 
 def on_message_filter_kpi(client, userdata, msg):
     global PLANT_DATA
     payload = json.loads(msg.payload)
     plant_id = payload["plant_id"]
-    if not plant_id in PLANT_DATA["filter"].keys():
-        PLANT_DATA["filter"][plant_id] = {}
-    PLANT_DATA["filter"][plant_id]["status"] = payload["status"]
-    PLANT_DATA["filter"][plant_id]["eff"] = payload["eff"]
-    PLANT_DATA["filter"][plant_id]["prod"] = payload["prod"]
-    PLANT_DATA["filter"][plant_id]["cper"] = payload["cper"]
-    if TEST:
-        client.publish(TETS_TOPIC, json.dumps({"payload": "on_message_filter_kpi"}))
-
+    if not plant_id in PLANT_DATA[FILTER_PLANT].keys():
+        PLANT_DATA[FILTER_PLANT][plant_id] = {}
+    PLANT_DATA[FILTER_PLANT][plant_id]["status"] = payload["status"]
+    PLANT_DATA[FILTER_PLANT][plant_id]["eff"] = payload["eff"]
+    PLANT_DATA[FILTER_PLANT][plant_id]["prod"] = payload["prod"]
+    PLANT_DATA[FILTER_PLANT][plant_id]["cper"] = payload["cper"]
+    #TODO if implementet, if "namount" in payload and "npower" in payload: can be removed
+    if "namount" in payload and "npower" in payload:
+        PLANT_DATA[FILTER_PLANT][plant_id]["namount"] = payload["namount"]
+        PLANT_DATA[FILTER_PLANT][plant_id]["npower"] = payload["npower"]
+        if payload["npower"] > 0:
+            PLANT_DATA[FILTER_PLANT][plant_id]["priority"] = payload["namount"]/payload["npower"]
     
 def on_message_hydrogen_kpi(client, userdata, msg):
     global PLANT_DATA
     payload = json.loads(msg.payload)
     plant_id = payload["plant_id"]
-    if not plant_id in PLANT_DATA["filter"].keys():
-        PLANT_DATA["hydrogen"][plant_id] = {}
-    PLANT_DATA["hydrogen"][plant_id]["status"] = payload["status"]
-    PLANT_DATA["hydrogen"][plant_id]["eff"] = payload["eff"]
-    PLANT_DATA["hydrogen"][plant_id]["prod"] = payload["prod"]
-    PLANT_DATA["hydrogen"][plant_id]["cper"] = payload["cper"]
-    if TEST:
-        client.publish(TETS_TOPIC, json.dumps({"payload": "on_message_hydrogen_kpi"}))
+    if not plant_id in PLANT_DATA[FILTER_PLANT].keys():
+        PLANT_DATA[HYDROGEN_PLANT][plant_id] = {}
+    PLANT_DATA[HYDROGEN_PLANT][plant_id]["status"] = payload["status"]
+    PLANT_DATA[HYDROGEN_PLANT][plant_id]["eff"] = payload["eff"]
+    PLANT_DATA[HYDROGEN_PLANT][plant_id]["prod"] = payload["prod"]
+    PLANT_DATA[HYDROGEN_PLANT][plant_id]["cper"] = payload["cper"]
+    #TODO if implementet, if "namount" in payload and "npower" in payload: can be removed
+    if "namount" in payload and "npower" in payload:
+        PLANT_DATA[HYDROGEN_PLANT][plant_id]["namount"] = payload["namount"]
+        PLANT_DATA[HYDROGEN_PLANT][plant_id]["npower"] = payload["npower"]
+        if payload["npower"] > 0:
+            PLANT_DATA[HYDROGEN_PLANT][plant_id]["priority"] = payload["namount"]/payload["npower"]
  
 def on_message_request(client, userdata, msg):
-    global PLANT_DATA, ADAPTIVE, AVAILABLE_POWER, DICTONARY_BACKLOCK
+    global PLANT_DATA, ADAPTIVE, FILTER_PLANT, HYDROGEN_PLANT
     #extracting the timestamp and other data
     payload = json.loads(msg.payload)
     plant_id = payload["plant_id"]
-    plant_type = payload["reply_topic"].split("/")[3]
-    ptype = "hydrogen"
-    if (plant_type == "filter_plant"):
-        ptype = "filter"
-    if not plant_id in PLANT_DATA[ptype].keys():
-        PLANT_DATA[ptype][plant_id] = {}
-    PLANT_DATA[ptype][plant_id]["reply_topic"] = payload["reply_topic"]
-    PLANT_DATA[ptype][plant_id]["amount"] = payload["amount"]
-    PLANT_DATA[ptype][plant_id]["timestamp"] = payload["timestamp"]
-    PLANT_DATA[ptype][plant_id]["powersupply"] = 0
-    
-    '''
-    if payload["timestamp"] in DICTONARY_BACKLOCK:
-        DICTONARY_BACKLOCK[payload["timestamp"]] = DICTONARY_BACKLOCK[payload["timestamp"]]+1
-    else:
-        DICTONARY_BACKLOCK[payload["timestamp"]] = 0
-    '''
-    
-    if ADAPTIVE==True: #PRIORITY in ratio to eff, prod, cper
-        all_request_receiced = True
-        for typ in PLANT_DATA.keys():
-            for id in PLANT_DATA[typ].keys():
-                all_request_receiced = all_request_receiced and (payload["timestamp"] == PLANT_DATA[typ][id]["timestamp"])
-        #client.publish(TETS_TOPIC, json.dumps({"all_request_receiced": all_request_receiced}))
-        if all_request_receiced:
-            result_list = calculate_supply(client)
-            client.publish(TETS_TOPIC, json.dumps({"result_list": result_list}))
-            for e in result_list:
-                if e[4] != "":
-                    data = {
-                        "timestamp": payload["timestamp"],
-                        "amount": e[3]
-                    }
-                    client.publish(e[4], json.dumps(data))
-                    PLANT_DATA[e[1]][e[2]]["timestamp"] = 0
-            if TEST:
-                client.publish(TETS_TOPIC, json.dumps({"payload": result_list}))
-    else: #FIFO
-        supplied_power = 0
-        if AVAILABLE_POWER - payload["amount"] > 0:
-            AVAILABLE_POWER -= payload["amount"]
-            supplied_power = payload["amount"]            
-        data = {
-            "timestamp": payload["timestamp"],
-            "amount": supplied_power
-        }
-        client.publish(payload["reply_topic"], json.dumps(data))
+    plant_typ = FILTER_PLANT
+    if payload["reply_topic"].split("/")[3] == HYDROGEN_PLANT:
+        plant_typ = HYDROGEN_PLANT
+    if not plant_id in PLANT_DATA[plant_typ].keys():
+        PLANT_DATA[plant_typ][plant_id] = {}
+    PLANT_DATA[plant_typ][plant_id]["reply_topic"] = payload["reply_topic"]
+    PLANT_DATA[plant_typ][plant_id]["amount"] = payload["amount"]
+    PLANT_DATA[plant_typ][plant_id]["timestamp"] = payload["timestamp"]
+    PLANT_DATA[plant_typ][plant_id]["powersupply"] = 0
+    all_request_receiced = True
+    for id in PLANT_DATA[plant_typ].keys():
+        all_request_receiced = all_request_receiced and (payload["timestamp"] == PLANT_DATA[plant_typ][id]["timestamp"])
+    if all_request_receiced:
+        result_list = calculate_supply(plant_typ, sortByPrio=ADAPTIVE)
+        send_supply_filter_msg(client, result_list, payload["timestamp"])
+        if TEST:
+            client.publish(TETS_TOPIC, json.dumps({"SUPPLY_LIST": result_list}))
 
+def send_supply_filter_msg(client, result_list, timestamp):
+    global PLANT_DATA, FILTER_SUM_AMOUNT, FILTER_PLANT
+    for e in result_list:
+        if e[4] != "":
+            data = {
+                "timestamp": timestamp,
+                "amount": e[3]
+            }
+            client.publish(e[4], json.dumps(data))
+            PLANT_DATA[e[1]][e[2]]["timestamp"] = 0
 
 if __name__ == '__main__':
     # Entry point for the script
