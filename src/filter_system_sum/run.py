@@ -262,7 +262,7 @@ def calculate_and_publish_requests(client, coefficient_function=weighted_coeffic
                     print(f"No request topic found for filter plant ID {kpi.plant_id}, skipping...")
                     continue
 
-                if kpi.status != "online" :
+                if kpi.status == "offline" :
                     # Offline plants receive 0 allocation
                     request_amount = 0
                 else:
