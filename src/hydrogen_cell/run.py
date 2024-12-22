@@ -44,56 +44,6 @@ EFFICIENCY = 0
 PRODUCTION = 0
 CURRENT_PERFORMANCE = 0
 
-def on_message_water_received(client, userdata, msg):
-    """
-    Callback function that processes messages from the water received topic.
-    It processes how much water is received from water pipe and generates the coresponding volume of filtered volume.
-    After that publishes it along with the timestamp.
-    """
-    global TIMESTAMP, FILTERED_WATER_SUPPLIED, TOPIC_HYDROGEN_SUPPLY, TOPIC_KPI, ID, HYDROGEN_PRODUCED
-    global STATUS, EFFICIENCY, PRODUCTION, CURRENT_PERFORMANCE
-
-    payload = json.loads(msg.payload)
-    timestamp = payload["timestamp"]
-    FILTERED_WATER_SUPPLIED = payload["amount"]
-
-    # Calculate the amount of filtered water based on supplied water and publish supply msg 
-    HYDROGEN_PRODUCED = produce_on_supplied_filtered_water()
-    send_supply_msg(client, TOPIC_HYDROGEN_SUPPLY, TIMESTAMP, HYDROGEN_PRODUCED)
-
-    # Calculate the current KPIs and publish them
-    calculate_kpis()
-    send_kpi_msg(client, TOPIC_KPI, TIMESTAMP, ID, STATUS, EFFICIENCY, PRODUCTION, CURRENT_PERFORMANCE)
-
-def on_message_tick(client, userdata, msg):
-    global TIMESTAMP
-
-    # get timestamp from tick msg and request power   
-    TIMESTAMP = msg.payload.decode("utf-8")
-
-def on_message_power_received(client, userdata, msg):
-    global TIMESTAMP
-    global TOPIC_FILTERED_WATER_REQUEST, ID, TOPIC_FILTERED_WATER_RECEIVE, POWER_SUPPLIED
-
-    payload = json.loads(msg.payload)
-    TIMESTAMP = payload["timestamp"]
-    POWER_SUPPLIED = payload["amount"]
-
-    # Calculate filtered water demand based on supplied power and publish filtered water request
-    filtered_water_demand = filtered_water_demand_on_supplied_power()
-    send_request_msg(client, TOPIC_FILTERED_WATER_REQUEST, TIMESTAMP, ID, TOPIC_FILTERED_WATER_RECEIVE, filtered_water_demand)
-
-"""
-def on_message_plan(client, userdata, msg):
-    global PLANED_HYDROGEN_SUPPLY
-
-    payload = json.loads(msg.payload)
-    timestamp = payload["timestamp"]
-    PLANED_HYDROGEN_SUPPLY = payload["amount"]
-
-    calculate_demand()
-"""
-
 def send_request_msg(client, request_topic, timestamp, plant_id, reply_topic, amount):
     data = {
         "timestamp": timestamp, 
@@ -157,12 +107,51 @@ def calculate_kpis():
         PRODUCTION = 0
     CURRENT_PERFORMANCE = HYDROGEN_PRODUCED / NOMINAL_HYDROGEN_SUPPLY
 
-def calculate_demand():
+def calculate_filtererd_water_demand():
     global PLANED_HYDROGEN_SUPPLY, PLANED_FILTERED_WATER_DEMAND, PLANED_POWER_DEMAND, PRODUCTION_LOSSES, NOMINAL_PERFORMANCE, NOMINAL_FILTERED_WATER_DEMAND, NOMINAL_HYDROGEN_SUPPLY 
 
     PLANED_FILTERED_WATER_DEMAND = round((PLANED_HYDROGEN_SUPPLY * (NOMINAL_FILTERED_WATER_DEMAND/NOMINAL_HYDROGEN_SUPPLY) * PRODUCTION_LOSSES),2)
 
     PLANED_POWER_DEMAND = NOMINAL_PERFORMANCE * PLANED_HYDROGEN_SUPPLY
+
+def on_message_tick(client, userdata, msg):
+    global TIMESTAMP
+
+    # get timestamp from tick msg and request power   
+    TIMESTAMP = msg.payload.decode("utf-8")
+
+def on_message_power_received(client, userdata, msg):
+    global TIMESTAMP
+    global TOPIC_FILTERED_WATER_REQUEST, ID, TOPIC_FILTERED_WATER_RECEIVE, POWER_SUPPLIED
+
+    payload = json.loads(msg.payload)
+    TIMESTAMP = payload["timestamp"]
+    POWER_SUPPLIED = payload["amount"]
+
+    # Calculate filtered water demand based on supplied power and publish filtered water request
+    filtered_water_demand = filtered_water_demand_on_supplied_power()
+    send_request_msg(client, TOPIC_FILTERED_WATER_REQUEST, TIMESTAMP, ID, TOPIC_FILTERED_WATER_RECEIVE, filtered_water_demand)
+
+def on_message_water_received(client, userdata, msg):
+    """
+    Callback function that processes messages from the water received topic.
+    It processes how much water is received from water pipe and generates the coresponding volume of filtered volume.
+    After that publishes it along with the timestamp.
+    """
+    global TIMESTAMP, FILTERED_WATER_SUPPLIED, TOPIC_HYDROGEN_SUPPLY, TOPIC_KPI, ID, HYDROGEN_PRODUCED
+    global STATUS, EFFICIENCY, PRODUCTION, CURRENT_PERFORMANCE
+
+    payload = json.loads(msg.payload)
+    timestamp = payload["timestamp"]
+    FILTERED_WATER_SUPPLIED = payload["amount"]
+
+    # Calculate the amount of filtered water based on supplied water and publish supply msg 
+    HYDROGEN_PRODUCED = produce_on_supplied_filtered_water()
+    send_supply_msg(client, TOPIC_HYDROGEN_SUPPLY, TIMESTAMP, HYDROGEN_PRODUCED)
+
+    # Calculate the current KPIs and publish them
+    calculate_kpis()
+    send_kpi_msg(client, TOPIC_KPI, TIMESTAMP, ID, STATUS, EFFICIENCY, PRODUCTION, CURRENT_PERFORMANCE)
 
 def on_message_hydrogen_request(client, userdata, msg):
     global TIMESTAMP, TOPIC_POWER_REQUEST, ID, TOPIC_POWER_RECEIVE, PLANED_POWER_DEMAND, PLANED_HYDROGEN_SUPPLY
@@ -171,10 +160,9 @@ def on_message_hydrogen_request(client, userdata, msg):
     timestamp = payload["timestamp"]
     PLANED_HYDROGEN_SUPPLY = payload["amount"]
 
-    calculate_demand()
+    calculate_filtererd_water_demand()
     
     send_request_msg(client, TOPIC_POWER_REQUEST, TIMESTAMP, ID, TOPIC_POWER_RECEIVE, PLANED_POWER_DEMAND)
-
 
 def main():
     """
@@ -189,11 +177,9 @@ def main():
     mqtt.subscribe(TOPIC_FILTERED_WATER_RECEIVE)
     mqtt.subscribe(TOPIC_POWER_RECEIVE)
     mqtt.subscribe(TOPIC_HYDROGEN_REQUEST)
-    #mqtt.subscribe(TOPIC_PLANED_AMOUNT)
     mqtt.subscribe_with_callback(TICK, on_message_tick)
     mqtt.subscribe_with_callback(TOPIC_FILTERED_WATER_RECEIVE, on_message_water_received)
     mqtt.subscribe_with_callback(TOPIC_POWER_RECEIVE, on_message_power_received)
-    #mqtt.subscribe_with_callback(TOPIC_PLANED_AMOUNT, on_message_plan)
     mqtt.subscribe_with_callback(TOPIC_HYDROGEN_REQUEST, on_message_hydrogen_request)
     
     try:

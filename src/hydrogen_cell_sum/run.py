@@ -63,126 +63,6 @@ def send_plan_msg(client, topic, timestamp, amount):
     }
     client.publish(topic, json.dumps(data))
 
-
-"""
-def weighted_supply_function(daily_goal, requests, weights=None):
-"""
-    #Calculate supply distribution based on weighted KPIs.
-    #:param available_supply: Total available hydrogen supply.
-    #:param requests: List of KPIs.
-    #:param weights: Dictionary with weights for eff, prod, and cper.
-"""
-    if weights is None:
-        weights = {"eff": 0.4, "prod": 0.35, "cper": 0.25}
-
-    # Step 1: Normalization of KPIs
-    eff_values = [req.eff for req in requests]
-    prod_values = [req.prod for req in requests]
-    cper_values = [req.cper for req in requests]
-
-    max_eff = max(eff_values) if eff_values else 1
-    max_prod = max(prod_values) if prod_values else 1
-    max_cper = max(cper_values) if cper_values else 1
-
-    # Step 2: Calculate weighted score for each plant
-    scores = {}
-    for request in requests:
-        normalized_eff = request.eff / max_eff
-        normalized_prod = request.prod / max_prod
-        normalized_cper = request.cper / max_cper
-
-        # Weighted sum of normalized values
-        score = (normalized_eff * weights["eff"] +
-                 normalized_prod * weights["prod"] +
-                 normalized_cper * weights["cper"])
-        scores[request.plant_id] = score
-
-    # Step 3: Proportional allocation based on scores
-    total_score = sum(scores.values())
-    allocation = {}
-    for request in requests:
-        share = (scores[request.plant_id] / total_score) * (daily_goal/24 * 4)  # 24 * 4 ticks per day
-        allocation[request.plant_id] = round(share, 2)  # Round for clarity
-
-    return allocation
-
-def no_addaptive_supply_function(daily_goal, requests):
-
-    allocation = {}
-    amount_plants = request.len()
-    for request in requests:
-            allocation[request.plant_id] = (daily_goal/24 * 4) / amount_plants
-
-    return allocation
-
-def calculate_and_publish_amount(client):
-"""
-    #Calculates the supply for each requester and publishes the replies.
-"""
-    global KPIS_LIST, HYDROGEN_DAILY_DEMAND, TIMESTAMP, ADAPTABLE
-
-    if not KPIS_LIST:
-        print("No requests to process.")
-        return
-
-    if ADAPTABLE == True:
-    # Use the supplied supply function to calculate allocation
-        allocation = weighted_supply_function(HYDROGEN_DAILY_DEMAND, KPIS_LIST)
-    else:
-        allocation = no_addaptive_supply_function(HYDROGEN_DAILY_DEMAND, KPIS_LIST)
-    totalsupply = 0
-    # Publish replies (simulate publishing with print statements for now)
-    for request in KPIS_LIST:
-        
-        supply = allocation.get(request.plant_id, 0)
-        totalsupply += supply
-        send_reply_msg(client, HYDROGEN_AMOUNT, TIMESTAMP, supply)
-    
-    send_reply_msg(client, FILTERED_WATER_AMOUNT, TIMESTAMP, totalsupply * 9)  # 1 kg H2O -> 9 kg H2
-    send_reply_msg(client, HYDROGEN_SUPPLY_SUM, TIMESTAMP, totalsupply)
-
-    # Clear the REQUESTS list after processing
-    KPIS_LIST.clear()
-
-def add_request(timestamp, plant_id, status, eff, prod, cper):
-    global RECEIVED_KPI_M, KPIS_LIST, KPIS_CLASS
-
-    KPIS_LIST.append(KPIS_CLASS(timestamp, plant_id, status, eff, prod, cper))
-    RECEIVED_KPI_M += 1
-
-def on_message_request(client, userdata, msg):
-"""
-    #Callback function that processes messages from the request topic.
-"""
-    
-    #extracting the timestamp and other data
-    payload = json.loads(msg.payload)
-    timestamp = payload["timestamp"]
-    plant_id = payload["plant_id"]
-    status = payload["status"]
-    eff = payload["eff"]
-    prod = payload["prod"]
-    cper = payload["cper"]
-
-    add_request(timestamp, plant_id, status, eff, prod, cper)
-"""
-
-def on_message_tick(client, userdata, msg):
-    global TIMESTAMP, RECEIVED_KPI_M
-     
-    TIMESTAMP = msg.payload.decode("utf-8") # extract the timestamp 
-    RECEIVED_KPI_M = 0 # update request number
-    calculate_and_publish_requests(client)
-
-def on_message_daily_hydrogen_amount(client, userdata, msg):
-    """
-    Callback function that processes messages from the daily hydrogen amount topic.
-    """
-    global HYDROGEN_DAILY_DEMAND, TOTAL_HYDROGEN_PRODUCED
-    payload = json.loads(msg.payload)
-    HYDROGEN_DAILY_DEMAND = payload["hydrogen"]
-    TOTAL_HYDROGEN_PRODUCED = 0
-
 def calculate_hydrogen_demand_for_tick():
     global HYDROGEN_DAILY_DEMAND, TOTAL_HYDROGEN_PRODUCED, TICK_COUNT
 
@@ -219,7 +99,7 @@ def weighted_coefficient_function(kpi):
     )
     return max(coefficient, 0.0)  # Avoid negative coefficients
 
-def calculate_and_publish_requests(client, coefficient_function=weighted_coefficient_function):
+def calculate_and_publish_hydrogen_requests(client, coefficient_function=weighted_coefficient_function):
     global TIMESTAMP, ADAPTABLE, PLANTS_NUMBER, TOPIC_HYDROGEN_REQEUST_LIST, HYDROGEN_DAILY_DEMAND, RECEIVED_KPI
     global KPI_LIST
 
@@ -280,7 +160,7 @@ def calculate_and_publish_requests(client, coefficient_function=weighted_coeffic
     RECEIVED_KPI = 0
     KPI_LIST.clear()
 
-def calculate_supply(client):
+def calculate_total_supply(client):
     global HYDROGEN_PRODUCED, TOTAL_HYDROGEN_PRODUCED, SUPPLY_LIST, RECEIVED_SUPPLIES
     # Calculate the total supply
     HYDROGEN_PRODUCED = sum(supply.supply for supply in SUPPLY_LIST)
@@ -299,6 +179,41 @@ def calculate_supply(client):
     SUPPLY_LIST.clear()
     RECEIVED_SUPPLIES = 0
 
+def add_supply(supply):
+    global RECEIVED_SUPPLIES, SUPPLY_LIST, SUPPLY_CLASS
+
+    SUPPLY_LIST.append(SUPPLY_CLASS(supply))
+    RECEIVED_SUPPLIES += 1
+
+def add_kpi(plant_id, status, eff, prod, cper):
+    global RECEIVED_KPI, KPI_LIST, KPI_CLASS
+
+    KPI_LIST.append(KPI_CLASS(plant_id=plant_id, status=status, eff=eff, prod=prod, cper=cper))
+    RECEIVED_KPI += 1
+
+def on_message_tick(client, userdata, msg):
+    global TIMESTAMP
+     
+    TIMESTAMP = msg.payload.decode("utf-8") # extract the timestamp 
+    calculate_and_publish_hydrogen_requests(client)
+
+def on_message_daily_hydrogen_amount(client, userdata, msg):
+    """
+    Callback function that processes messages from the daily hydrogen amount topic.
+    """
+    global HYDROGEN_DAILY_DEMAND, TOTAL_HYDROGEN_PRODUCED
+    payload = json.loads(msg.payload)
+    HYDROGEN_DAILY_DEMAND = payload["hydrogen"]
+    TOTAL_HYDROGEN_PRODUCED = 0
+
+def on_message_adaptive_mode(client, userdata, msg):
+    global ADAPTABLE
+    boolean = msg.payload.decode("utf-8")
+    if boolean == "true" or boolean == "1" or boolean == "I love Python" or boolean == "True":
+        ADAPTABLE = True
+    else:
+        ADAPTABLE = False
+
 def on_message_supply(client, userdata, msg):
     """
     Callback function that processes messages from the request topic.
@@ -311,12 +226,6 @@ def on_message_supply(client, userdata, msg):
 
     add_supply(supply)
 
-def add_supply(supply):
-    global RECEIVED_SUPPLIES, SUPPLY_LIST, SUPPLY_CLASS
-
-    SUPPLY_LIST.append(SUPPLY_CLASS(supply))
-    RECEIVED_SUPPLIES += 1
-
 def on_message_kpi(client, userdata, msg):
     #extracting the timestamp and other data
     payload = json.loads(msg.payload)
@@ -328,20 +237,6 @@ def on_message_kpi(client, userdata, msg):
     cper = payload["cper"]
 
     add_kpi(plant_id, status, eff, prod, cper)
-
-def add_kpi(plant_id, status, eff, prod, cper):
-    global RECEIVED_KPI, KPI_LIST, KPI_CLASS
-
-    KPI_LIST.append(KPI_CLASS(plant_id=plant_id, status=status, eff=eff, prod=prod, cper=cper))
-    RECEIVED_KPI += 1
-
-def on_message_adaptive_mode(client, userdata, msg):
-    global ADAPTABLE
-    boolean = msg.payload.decode("utf-8")
-    if boolean == "true" or boolean == "1" or boolean == "I love Python" or boolean == "True":
-        ADAPTABLE = True
-    else:
-        ADAPTABLE = False
 
 def main():
     """
@@ -371,7 +266,7 @@ def main():
         # Start the MQTT loop to process incoming and outgoing messages
         while True:
             if RECEIVED_SUPPLIES >= PLANTS_NUMBER:
-                calculate_supply(mqtt)
+                calculate_total_supply(mqtt)
                 
             mqtt.loop(0.05) # loop every 50ms
     except (KeyboardInterrupt, SystemExit):
