@@ -3,6 +3,13 @@ import json
 from mqtt.mqtt_wrapper import MQTTWrapper
 import os
 import random
+import logging
+
+# Configure the logger
+logging.basicConfig(
+    level=logging.DEBUG,  # Set minimum level to log
+    format="%(asctime)s - %(levelname)s - %(message)s",  # Customize the output format
+)
 
 def getenv_or_exit(env_name, default="default"):
     value = os.getenv(env_name, default)
@@ -25,7 +32,6 @@ TOPIC_POWER_REQUEST = getenv_or_exit("TOPIC_POWER_FILTER_POWER_DATA", "default")
 TOPIC_POWER_RECEIVE = getenv_or_exit("TOPIC_FILTER_PLANT_POWER_RECEIVE", "default") + ID # must be followed by filter plant id
 TOPIC_FILTERED_WATER_SUPPLY = getenv_or_exit("TOPIC_FILTER_PLANT_FILTERED_WATER_SUPPLY", "default") + ID # must be followed by filter plant id
 TOPIC_KPI = getenv_or_exit("TOPIC_FILTER_PLANT_KPI", "default") + ID # Topic to post kpis
-TOPIC_PLANED_AMOUNT = getenv_or_exit("TOPIC_FILTER_PLANT_PLANED_AMOUNT", "default") + ID # topic to receive produce planed amount for the next tick
 
 TOPIC_FILTERED_WATER_REQUEST = getenv_or_exit("TOPIC_FILTER_PLANT_FILTERED_WATER_REQUEST", "default") + ID # topic to receive requests from filtered water pipe (must be followed by filter plant id)
 
@@ -153,9 +159,9 @@ def calculate_kpis():
         STATUS = "online"
 
 def calculate_demand():
-    global PLANED_FILTERED_WATER_SUPPLY, PLANED_WATER_DEMAND, PLANED_POWER_DEMAND, PRODUCTION_LOSSES, NOMINAL_PERFORMANCE, MAXIMAL_WATER_SUPPLY, NOMINAL_WATER_DEMAND 
+    global PLANED_FILTERED_WATER_SUPPLY, PLANED_WATER_DEMAND, PLANED_POWER_DEMAND, PRODUCTION_LOSSES, NOMINAL_PERFORMANCE, NOMINAL_FILTERED_WATER_SUPPLY, NOMINAL_WATER_DEMAND 
 
-    PLANED_WATER_DEMAND = round((PLANED_FILTERED_WATER_SUPPLY * (NOMINAL_WATER_DEMAND/MAXIMAL_WATER_SUPPLY) * PRODUCTION_LOSSES),4)
+    PLANED_WATER_DEMAND = round((PLANED_FILTERED_WATER_SUPPLY * (NOMINAL_WATER_DEMAND/NOMINAL_FILTERED_WATER_SUPPLY) * PRODUCTION_LOSSES),4)
 
     PLANED_POWER_DEMAND = round((NOMINAL_PERFORMANCE * PLANED_FILTERED_WATER_SUPPLY),4)
 
@@ -190,6 +196,9 @@ def failure_check():
             FAILURE_TICK_COUNT = 0
             FAILURE_TIMEOUT = int(rng_value * 100) 
             STATUS_FAILURE = True
+
+            global TIMESTAMP
+            logging.info(f"{TIMESTAMP} The filter plant experienced Failure and will be out for {FAILURE_TIMEOUT} ticks")
 
 def on_message_tick(client, userdata, msg):
     """
@@ -282,7 +291,6 @@ def main():
     mqtt.subscribe(TICK)
     mqtt.subscribe(TOPIC_POWER_RECEIVE)
     mqtt.subscribe(TOPIC_WATER_RECEIVE)
-    mqtt.subscribe(TOPIC_PLANED_AMOUNT)
     mqtt.subscribe(TOPIC_FILTERED_WATER_REQUEST)
     mqtt.subscribe_with_callback(TICK, on_message_tick)
     mqtt.subscribe_with_callback(TOPIC_WATER_RECEIVE, on_message_water_received)

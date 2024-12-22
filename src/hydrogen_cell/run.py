@@ -24,7 +24,6 @@ TOPIC_POWER_REQUEST = getenv_or_exit("TOPIC_POWER_HYDROGEN_POWER_DATA", "default
 TOPIC_POWER_RECEIVE = getenv_or_exit("TOPIC_HYDROGEN_CELL_POWER_RECEIVE", "default") + ID # must be followed by filter plant id
 TOPIC_HYDROGEN_SUPPLY = getenv_or_exit("TOPIC_HYDROGEN_CELL_HYDROGEN_SUPPLY", "default") + ID # must be followed by filter plant id
 TOPIC_KPI = getenv_or_exit("TOPIC_HYDROGEN_CELL_KPI", "default") + ID #topic to post kpis
-TOPIC_PLANED_AMOUNT = getenv_or_exit("TOPIC_HYDROGEN_CELL_PLANED_AMOUNT", "default") + ID #topic to receive produce planed amount for the next tick
 
 TOPIC_HYDROGEN_REQUEST = getenv_or_exit("TOPIC_HYDROGEN_CELL_HYDROGEN_REQUEST", "default") + ID # topic to receive requests from hydrogen pipe (must be followed by filter plant id)
 
