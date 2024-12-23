@@ -76,15 +76,17 @@ def send_supply_msg(client, supply_topic, timestamp, amount):
     }
     client.publish(supply_topic, json.dumps(data))
 
-def send_kpi_msg(client, kpi_topic, timestamp, plant_id, status, eff, prod, cper):
+def send_kpi_msg(client, kpi_topic, timestamp, plant_id, status, eff, prod, cper, npower, namount):
     data_KPI = {
         "timestamp": timestamp, 
         "plant_id": plant_id,
         "status": status,
         "eff": eff, 
         "prod": prod, 
-        "cper": cper
-    }
+        "cper": cper,
+        "npower": npower,
+        "namount": namount
+        }
     client.publish(kpi_topic, json.dumps(data_KPI))
 
 def water_demand_on_supplied_power():
@@ -247,7 +249,7 @@ def on_message_water_received(client, userdata, msg):
     After that publishes it along with the KPIs.
     """
     global TIMESTAMP, WATER_SUPPLIED, TOPIC_FILTERED_WATER_SUPPLY, TOPIC_KPI, ID, FILTERED_WATER_PRODUCED
-    global STATUS, EFFICIENCY, PRODUCTION, CURRENT_PERFORMANCE
+    global STATUS, EFFICIENCY, PRODUCTION, CURRENT_PERFORMANCE, NOMINAL_POWER_DEMAND, NOMINAL_FILTERED_WATER_SUPPLY
 
     payload = json.loads(msg.payload)
     timestamp = payload["timestamp"]
@@ -269,7 +271,9 @@ def on_message_water_received(client, userdata, msg):
         status=STATUS, 
         eff=EFFICIENCY, 
         prod=PRODUCTION, 
-        cper=CURRENT_PERFORMANCE
+        cper=CURRENT_PERFORMANCE,
+        npower=NOMINAL_POWER_DEMAND,
+        namount=NOMINAL_FILTERED_WATER_SUPPLY
     )
     logging.debug(f"Sending kpi message: timestamp: {TIMESTAMP}, topic: {TOPIC_KPI}, supply: {FILTERED_WATER_PRODUCED}, plant_id: {ID}, status: {STATUS}, eff: {EFFICIENCY}, prod: {PRODUCTION}, cper: {CURRENT_PERFORMANCE}")
 
