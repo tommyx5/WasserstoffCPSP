@@ -6,6 +6,12 @@ from mqtt.mqtt_wrapper import MQTTWrapper
 import os
 from collections import namedtuple
 
+# Configure the logger
+logging.basicConfig(
+    level=logging.INFO,  # Set minimum level to log
+    format="%(asctime)s - %(levelname)s - %(message)s",  # Customize the output format
+)
+
 def getenv_or_exit(env_name, default="default"):
     value = os.getenv(env_name, default)
     if value == default:
@@ -52,41 +58,30 @@ KPI_CLASS = namedtuple("KPI", ["plant_id", "status", "eff", "prod", "cper"]) # A
 
 TOPIC_FILTER_SYSTEM_SUM_DATA = getenv_or_exit("TOPIC_FILTER_SUM_FILTER_SUM_DATA", "default")
 
-def send_reply_msg(client, reply_topic, timestamp, amount):
-    data = {
-        "timestamp": timestamp,  
-        "amount": amount
-    }
-    client.publish(reply_topic, json.dumps(data))
-
-def send_supply_msg(client, supply_topic, timestamp, amount):
-    data = {
-        "timestamp": timestamp,  
-        "amount": amount
-    }
-    client.publish(supply_topic, json.dumps(data))
-
-def send_plan_msg(client, topic, timestamp, amount):
+def send_msg(client, topic, timestamp, amount):
     data = {
         "timestamp": timestamp,  
         "amount": amount
     }
     client.publish(topic, json.dumps(data))
 
-def default_supply_function(available_supply, total_demand, requests):
+def default_supply_function(total_demand):
     """
     Default function to calculate supply distribution.
     """
+    global AVAILABLE_WATER, REQUEST_LIST
+
     allocation = {}
-    if total_demand <= available_supply:
+    if total_demand <= AVAILABLE_WATER:
         # If total demand can be satisfied, give everyone what they requested
-        for request in requests:
+        for request in REQUEST_LIST:
             allocation[request.plant_id] = request.demand
+            logging.debug(f"allocation for plant id: {request.plant_id} amount: {allocation[request.plant_id]}")
     else:
         # Otherwise, distribute water proportionally to demands
-        for request in requests:
-            share = (request.demand / total_demand) * available_supply
-            allocation[request.plant_id] = round(share, 2)  # Round for simplicity
+        for request in REQUEST_LIST:
+            allocation[request.plant_id] = round(((request.demand / total_demand) * AVAILABLE_WATER), 4)  
+            logging.debug(f"allocation for plant id: {request.plant_id} amount: {allocation[request.plant_id]}")
     return allocation
 
 def calculate_and_publish_filtered_water_replies(client, supply_function=default_supply_function):
@@ -101,23 +96,25 @@ def calculate_and_publish_filtered_water_replies(client, supply_function=default
     if not REQUEST_LIST:
         print("No requests to process.")
         return
+    #logging.debug(f"Request list at replies distribution: {REQUEST_LIST}")
 
     # Calculate the total demand
     total_demand = sum(request.demand for request in REQUEST_LIST)
 
     # Use the supplied supply function to calculate allocation
-    allocation = supply_function(AVAILABLE_WATER, total_demand, REQUEST_LIST)
+    allocation = supply_function(total_demand)
 
     # Publish replies
     for request in REQUEST_LIST:
         supply = allocation.get(request.plant_id, 0)
-
-        send_reply_msg(
+        # send reply msg
+        send_msg(
             client=client,
-            reply_topic=request.reply_topic,
+            topic=request.reply_topic,
             timestamp=TIMESTAMP, 
             amount=supply
         )
+        logging.debug(f"Sending filtered water reply message to hydrogen plants: timestamp: {TIMESTAMP}, topic: {request.reply_topic}, request_amount: {supply}")
 
     # Clear the REQUESTS list after processing
     REQUEST_LIST.clear()
@@ -165,61 +162,67 @@ def calculate_and_publish_filtered_water_requests(client, coefficient_function=w
     global KPI_LIST, RECEIVED_KPI
 
     if not REQUEST_LIST:
-        print("No requests to process.")
+        logging.warning("No requests to process.")
         return
+    #logging.debug(f"Request list at requests distribution: {REQUEST_LIST}")
 
-    # Calculate the total demand for this tick
     total_demand = sum(request.demand for request in REQUEST_LIST)
 
-    if ADAPTABLE:
-
-        # If first iteration and kpi list is not there yet
-        if not KPI_LIST:
-            partial_demand = round (total_demand / PLANTS_NUMBER, 2)
-            for request_topic in TOPIC_FILTERED_WATER_REQEUST_LIST:
-                send_plan_msg(
-                    client=client,
-                    topic=request_topic,
-                    timestamp=TIMESTAMP,
-                    amount=partial_demand
-                )
-        else:    
-            total_coefficient = sum(
-                coefficient_function(kpi)
-                for kpi in KPI_LIST if kpi.status != "offline"
-            )
-
-            for kpi in KPI_LIST:
-                # Find the topic corresponding to the plant's ID
-                request_topic = next((t for t in TOPIC_FILTERED_WATER_REQEUST_LIST if f"/{kpi.plant_id}" in t), None)
-                if not request_topic:
-                    print(f"No request topic found for filter plant ID {kpi.plant_id}, skipping...")
-                    continue
-
-                if kpi.status == "offline" :
-                    # Offline plants receive 0 allocation
-                    request_amount = 0
-                else:
-                    # Calculate allocation for active plants
-                    coefficient = coefficient_function(kpi)
-                    request_amount = (coefficient/total_coefficient) * total_demand
-
-                # Send the water production request message
-                send_plan_msg(
-                    client=client,
-                    topic=request_topic,
-                    timestamp=TIMESTAMP,
-                    amount=request_amount
-                )
-    else:
-        partial_demand = round (total_demand / PLANTS_NUMBER, 2)
+    # Handling for the initial loop where no kpi is present
+    if not KPI_LIST:
+        logging.debug("Warning. No kpi list. Using default mean allocation")
         for request_topic in TOPIC_FILTERED_WATER_REQEUST_LIST:
-            send_plan_msg(
+            request_amount = round(total_demand/PLANTS_NUMBER, 4)
+                
+            # Send the water production request message
+            send_msg(
                 client=client,
                 topic=request_topic,
                 timestamp=TIMESTAMP,
-                amount=partial_demand
+                amount=request_amount
             )
+            logging.debug(f"Sending request filtered water message to filter plant: timestamp: {TIMESTAMP}, topic: {request_topic}, request_amount: {request_amount}")
+
+        RECEIVED_REQUESTS = 0
+        RECEIVED_KPI = 0
+        return
+
+    if ADAPTABLE:
+        # ToDo: your super mape function here
+        total_coefficient = sum(coefficient_function(kpi) for kpi in KPI_LIST if kpi.status != "offline")
+    else:
+        online_count = sum(1 for kpi in KPI_LIST if kpi.status != "offline")
+
+    for request_topic in TOPIC_FILTERED_WATER_REQEUST_LIST:
+        # extract corresponding kpi
+        request_plant_id = request_topic.split('/')[-1]
+        corresponding_kpi = next((kpi for kpi in KPI_LIST if kpi.plant_id == request_plant_id), None)
+        logging.debug(f"Plant id: {request_plant_id}")
+
+        if not corresponding_kpi:
+            logging.debug(f"Plant with request topic: {request_topic} has no corresponding KPI.")
+            continue            
+
+        if corresponding_kpi.status == "offline" :
+            # Offline plants receive 0 allocation
+            request_amount = 0
+        else:
+            # Calculate allocation for active plants
+            if ADAPTABLE:
+                # ToDo: your super mape function here
+                coefficient = coefficient_function(corresponding_kpi)
+                request_amount = round((coefficient/total_coefficient) * total_demand, 4)
+            else:
+                request_amount = round(total_demand/online_count, 4)
+            
+        # Send the water production request message
+        send_msg(
+            client=client,
+            topic=request_topic,
+            timestamp=TIMESTAMP,
+            amount=request_amount
+        )
+        logging.debug(f"Sending request filtered water message to filter plant: timestamp: {TIMESTAMP}, topic: {request_topic}, request_amount: {request_amount}")
 
     RECEIVED_REQUESTS = 0
     RECEIVED_KPI = 0
@@ -253,12 +256,7 @@ def on_message_tick(client, userdata, msg):
     AVAILABLE_WATER = 0 # reset the available water amount
     TICK_COUNT += 1
 
-    #Hardcode for daily messages
-    global TOTAL_PRODUCED, TOTAL_PLANED
-    if(TICK_COUNT % 96 == 0):
-        TOTAL_PLANED = 1000
-        TOTAL_PRODUCED = 0
-        TICK_COUNT = 1
+    logging.debug(f"Received tick message, timestamp: {TIMESTAMP}")
 
 def on_message_request(client, userdata, msg):
     """
@@ -274,6 +272,8 @@ def on_message_request(client, userdata, msg):
 
     add_request(plant_id, reply_topic, demand)
 
+    logging.debug(f"Received message with request: timestamp: {timestamp}, topic: {msg.topic}, plant_id: {plant_id}, reply_topic: {reply_topic}, demand: {demand}")
+
 def on_message_supply(client, userdata, msg):
     """
     Callback function that processes messages from the request topic.
@@ -285,6 +285,8 @@ def on_message_supply(client, userdata, msg):
     supply = payload["amount"]
 
     add_supply(supply)
+
+    logging.debug(f"Received message with filtered water supply: timestamp: {timestamp}, topic: {msg.topic}, supply: {supply}")
 
 def on_message_kpi(client, userdata, msg):
     #extracting the timestamp and other data
@@ -298,12 +300,17 @@ def on_message_kpi(client, userdata, msg):
 
     add_kpi(plant_id, status, eff, prod, cper)
 
+    logging.debug(f"Received message with KPI: timestamp: {timestamp}, topic: {msg.topic}, plant_id: {plant_id}, status: {status}, eff: {eff}, prod: {prod}, cper: {cper}")
+
 def on_message_daily_need(client, userdata, msg):
     global TOTAL_PLANED, TOTAL_PRODUCED, TICK_COUNT
     payload = json.loads(msg.payload)
+    timestamp = payload["timestamp"]
     TOTAL_PLANED = payload["amount"]
     TOTAL_PRODUCED = 0
     TICK_COUNT = 1
+
+    logging.debug(f"Received message with daily request: timestamp: {timestamp}, daily demand: {TOTAL_PLANED}")
 
 def on_message_adaptive_mode(client, userdata, msg):
     global ADAPTABLE
@@ -312,6 +319,8 @@ def on_message_adaptive_mode(client, userdata, msg):
         ADAPTABLE = True
     else:
         ADAPTABLE = False
+
+    logging.debug(f"Received message with to change mode, adaptable mode is {ADAPTABLE}")
 
 def main():
     """
@@ -345,10 +354,6 @@ def main():
 
             if RECEIVED_SUPPLIES >= PLANTS_NUMBER:
                 calculate_and_publish_filtered_water_replies(mqtt)
-
-            #ignore for now
-            #if RECEIVED_KPI >= PLANTS_NUMBER:
-                #calculate_and_publish_plan(mqtt)
             
             mqtt.loop(0.05) # loop every 50ms
     except (KeyboardInterrupt, SystemExit):

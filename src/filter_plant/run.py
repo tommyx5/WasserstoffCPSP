@@ -7,7 +7,7 @@ import logging
 
 # Configure the logger
 logging.basicConfig(
-    level=logging.DEBUG,  # Set minimum level to log
+    level=logging.INFO,  # Set minimum level to log
     format="%(asctime)s - %(levelname)s - %(message)s",  # Customize the output format
 )
 
@@ -217,6 +217,8 @@ def on_message_tick(client, userdata, msg):
 
     failure_check()
 
+    logging.debug(f"Received tick message, timestamp: {TIMESTAMP}")
+
 def on_message_power_received(client, userdata, msg):
     """
     Callback function that processes messages from the power received topic.
@@ -230,10 +232,13 @@ def on_message_power_received(client, userdata, msg):
     payload = json.loads(msg.payload)
     timestamp = payload["timestamp"]
     POWER_SUPPLIED = payload["amount"]
+    logging.debug(f"Received power message: timestamp: {timestamp}, topic: {msg.topic}, supplied power: {POWER_SUPPLIED}")
 
     # Calculate water demand based on supplied power and publish water request
     water_demand = water_demand_on_supplied_power()
     send_request_msg(client, TOPIC_WATER_REQUEST, TIMESTAMP, ID, TOPIC_WATER_RECEIVE, water_demand)
+    logging.debug(f"Sending water request message to water pipe: timestamp: {TIMESTAMP}, topic: {TOPIC_FILTERED_WATER_REQUEST}, plant_id: {ID}, reply_topic: {TOPIC_WATER_RECEIVE}, demand: {water_demand}")
+
 
 def on_message_water_received(client, userdata, msg):
     """
@@ -247,10 +252,12 @@ def on_message_water_received(client, userdata, msg):
     payload = json.loads(msg.payload)
     timestamp = payload["timestamp"]
     WATER_SUPPLIED = payload["amount"]
+    logging.debug(f"Received water message: timestamp: {timestamp}, topic: {msg.topic}, supplied water: {WATER_SUPPLIED}")
 
     # Calculate the amount of filtered water based on supplied water and publish supply msg 
     FILTERED_WATER_PRODUCED = produce_on_supplied_water()
     send_supply_msg(client, TOPIC_FILTERED_WATER_SUPPLY, TIMESTAMP, FILTERED_WATER_PRODUCED)
+    logging.debug(f"Sending filtered water supply message: timestamp: {TIMESTAMP}, topic: {TOPIC_FILTERED_WATER_SUPPLY}, supply: {FILTERED_WATER_PRODUCED}")
 
     # Calculate the current KPIs and publish them
     calculate_kpis()
@@ -264,9 +271,11 @@ def on_message_water_received(client, userdata, msg):
         prod=PRODUCTION, 
         cper=CURRENT_PERFORMANCE
     )
+    logging.debug(f"Sending kpi message: timestamp: {TIMESTAMP}, topic: {TOPIC_KPI}, supply: {FILTERED_WATER_PRODUCED}, plant_id: {ID}, status: {STATUS}, eff: {EFFICIENCY}, prod: {PRODUCTION}, cper: {CURRENT_PERFORMANCE}")
 
     # Calculate outage risk for the next tick
     calculate_outage_risk()
+    logging.debug(f"Current outage risk: {CURRENT_FAILURE_POSIBILITY}")
 
 def on_message_filtered_water_request(client, userdata, msg):
     global TIMESTAMP, TOPIC_POWER_REQUEST, ID, TOPIC_POWER_RECEIVE, PLANED_POWER_DEMAND, PLANED_FILTERED_WATER_SUPPLY
@@ -274,10 +283,12 @@ def on_message_filtered_water_request(client, userdata, msg):
     payload = json.loads(msg.payload)
     timestamp = payload["timestamp"]
     PLANED_FILTERED_WATER_SUPPLY = payload["amount"]
+    logging.debug(f"Received filtered water request message: timestamp: {timestamp}, topic: {msg.topic}, requested amount: {PLANED_FILTERED_WATER_SUPPLY}")
 
     calculate_demand()
-    
     send_request_msg(client, TOPIC_POWER_REQUEST, TIMESTAMP, ID, TOPIC_POWER_RECEIVE, PLANED_POWER_DEMAND)
+    logging.debug(f"Sending power request message to power line: timestamp: {TIMESTAMP}, topic: {TOPIC_POWER_REQUEST}, plant_id: {ID}, reply_topic: {TOPIC_POWER_RECEIVE}, demand: {PLANED_POWER_DEMAND}")
+
 
 def main():
     """
