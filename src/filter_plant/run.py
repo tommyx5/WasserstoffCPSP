@@ -100,12 +100,6 @@ def water_demand_on_supplied_power():
     else:
         water_demand = round(((POWER_SUPPLIED / PLANED_POWER_DEMAND) * PLANED_WATER_DEMAND),4) 
 
-    # Power outage status
-    if POWER_SUPPLIED != 0:
-        STATUS_POWER_NOT_RECEIVED = False
-    elif PLANED_POWER_DEMAND == 0:
-        STATUS_POWER_NOT_RECEIVED = False
-
     return water_demand
 
 def produce_on_supplied_water():
@@ -228,12 +222,18 @@ def on_message_power_received(client, userdata, msg):
     After that it publishes the water request msg.
     """
     global TIMESTAMP
-    global TOPIC_WATER_REQUEST, ID, TOPIC_WATER_RECEIVE, POWER_SUPPLIED
+    global TOPIC_WATER_REQUEST, ID, TOPIC_WATER_RECEIVE, POWER_SUPPLIED, STATUS_POWER_NOT_RECEIVED, PLANED_POWER_DEMAND
 
     payload = json.loads(msg.payload)
     timestamp = payload["timestamp"]
     POWER_SUPPLIED = payload["amount"]
     logging.debug(f"Received power message. timestamp: {timestamp}, msg topic: {msg.topic}, supplied power: {POWER_SUPPLIED}")
+
+    # Power outage status
+    if POWER_SUPPLIED != 0:
+        STATUS_POWER_NOT_RECEIVED = False
+    elif PLANED_POWER_DEMAND == 0:
+        STATUS_POWER_NOT_RECEIVED = False
 
     # Calculate water demand based on supplied power and publish water request
     water_demand = water_demand_on_supplied_power()

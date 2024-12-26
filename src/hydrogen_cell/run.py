@@ -7,7 +7,7 @@ from mqtt.mqtt_wrapper import MQTTWrapper
 
 # Configure the logger
 logging.basicConfig(
-    level=logging.DEBUG,  # Set minimum level to log
+    level=logging.INFO,  # Set minimum level to log
     format="%(asctime)s - %(levelname)s - %(message)s",  # Customize the output format
 )
 
@@ -99,12 +99,6 @@ def filtered_water_demand_on_supplied_power():
         filtered_water_demand = 0
     else:
         filtered_water_demand = round(((POWER_SUPPLIED / PLANED_POWER_DEMAND) * PLANED_FILTERED_WATER_DEMAND),4) 
-
-    # Power outage status
-    if POWER_SUPPLIED != 0:
-        STATUS_POWER_NOT_RECEIVED = False
-    elif PLANED_POWER_DEMAND == 0:
-        STATUS_POWER_NOT_RECEIVED = False
 
     return filtered_water_demand
 
@@ -228,11 +222,18 @@ def on_message_power_received(client, userdata, msg):
     After that it publishes the water request msg.
     """
     global TIMESTAMP
-    global TOPIC_FILTERED_WATER_REQUEST, ID, TOPIC_FILTERED_WATER_RECEIVE, POWER_SUPPLIED
+    global TOPIC_FILTERED_WATER_REQUEST, ID, TOPIC_FILTERED_WATER_RECEIVE, POWER_SUPPLIED, STATUS_POWER_NOT_RECEIVED, PLANED_POWER_DEMAND
 
     payload = json.loads(msg.payload)
     timestamp = payload["timestamp"]
     POWER_SUPPLIED = payload["amount"]
+    
+    # Power outage status
+    if POWER_SUPPLIED != 0:
+        STATUS_POWER_NOT_RECEIVED = False
+    elif PLANED_POWER_DEMAND == 0:
+        STATUS_POWER_NOT_RECEIVED = False
+
     logging.debug(f"Received power message. timestamp: {timestamp}, msg topic: {msg.topic}, supplied power: {POWER_SUPPLIED}")
 
     # Calculate filtered water demand based on supplied power and publish filtered water request

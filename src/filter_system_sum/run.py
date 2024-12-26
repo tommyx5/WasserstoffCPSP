@@ -25,7 +25,8 @@ TOPIC_REQUEST = getenv_or_exit("TOPIC_FILTER_SUM_FILTERED_WATER_REQUEST", "defau
 TOPIC_FILTERED_WATER_REQEUST = getenv_or_exit("TOPIC_FILTER_PLANT_FILTERED_WATER_REQUEST", "default") # Topic to send requests for filtered water to filter plants (must be followed by Plant ID)
 TOPIC_SUPPLY = getenv_or_exit("TOPIC_FILTER_PLANT_FILTERED_WATER_SUPPLY", "default") # Base topic to receive supply msg from the filter plants (must be followed by Plant ID)
 TOPIC_KPI = getenv_or_exit("TOPIC_FILTER_PLANT_KPI", "default") # Base topic to receive kpis from filter plants (must be followed by Plant ID)
-TOPIC_ADAPTIVE_MODE = getenv_or_exit('TOPIC_ADAPTIVE_MODE', 'default')
+TOPIC_ADAPTIVE_MODE = getenv_or_exit('TOPIC_ADAPTIVE_MODE', 'default') # Topic to change work modes 
+TOPIC_FILTER_SYSTEM_SUM_DATA = getenv_or_exit("TOPIC_FILTER_SUM_FILTER_SUM_DATA", "default") # Topic to send production data for the dashboard 
 
 TOPIC_SUPPLY_LIST = []
 TOPIC_KPI_LIST = []
@@ -36,17 +37,14 @@ for i in range(PLANTS_NUMBER):
     TOPIC_KPI_LIST.append(TOPIC_KPI+str(i)) # list with all kpi topics
 
 ADAPTABLE = False
-
 TIMESTAMP = 0
-AVAILABLE_WATER = 0 # total volume of water that can be supplied
+TICK_COUNT = 0
 RECEIVED_REQUESTS = 0
 RECEIVED_SUPPLIES = 0
 RECEIVED_KPI = 0
 
-TOTAL_PLANED_PER_TICK = 0 # The total amount of filtered water planed for the next tick
-TOTAL_PLANED = 0 # The total amount of filtered water planed for the day
-TOTAL_PRODUCED = 0 # The total amount of water already produced during current day
-TICK_COUNT = 0
+AVAILABLE_WATER = 0 # total volume of water that can be supplied each tick
+TOTAL_FILTERED_WATER_PRODUCED = 0 # The total amount of water already produced during current day
 
 REQUEST_LIST = [] # A list to hold all requests
 SUPPLY_LIST = [] # A list to hold all supplies
@@ -56,7 +54,7 @@ REQUEST_CLASS = namedtuple("Request", ["plant_id", "reply_topic", "demand"]) # A
 SUPPLY_CLASS = namedtuple("Supply", ["supply"]) # A data structure for supplies
 KPI_CLASS = namedtuple("KPI", ["plant_id", "status", "eff", "prod", "cper"]) # A data structure for kpis
 
-TOPIC_FILTER_SYSTEM_SUM_DATA = getenv_or_exit("TOPIC_FILTER_SUM_FILTER_SUM_DATA", "default")
+TICKS_IN_DAY = 96
 
 def send_msg(client, topic, timestamp, amount):
     data = {
@@ -121,19 +119,19 @@ def calculate_and_publish_filtered_water_replies(client, supply_function=default
     RECEIVED_REQUESTS = 0
 
 def calculate_supply(client):
-    global AVAILABLE_WATER, SUPPLY_LIST, RECEIVED_SUPPLIES, TOTAL_PRODUCED
+    global AVAILABLE_WATER, SUPPLY_LIST, RECEIVED_SUPPLIES, TOTAL_FILTERED_WATER_PRODUCED
 
     # Calculate the total supply
     AVAILABLE_WATER = sum(supply.supply for supply in SUPPLY_LIST)
-    TOTAL_PRODUCED += AVAILABLE_WATER
+    TOTAL_FILTERED_WATER_PRODUCED = round(TOTAL_FILTERED_WATER_PRODUCED + AVAILABLE_WATER, 4)
 
 
     # Publish the data for the dashboard
     # Maybe delete later
-    global TIMESTAMP, TOPIC_FILTER_SYSTEM_SUM_DATA, TICK_COUNT
-    if TICK_COUNT == 0: tick = 1 
-    else: tick = TICK_COUNT
-    data = {"fwater": TOTAL_PRODUCED, "mean_fwater": round(TOTAL_PRODUCED/tick,2), "timestamp": TIMESTAMP}
+    global TIMESTAMP, TOPIC_FILTER_SYSTEM_SUM_DATA, TICK_COUNT, TICKS_IN_DAY
+    tick = TICK_COUNT % TICKS_IN_DAY
+    if tick == 0: tick = TICKS_IN_DAY
+    data = {"fwater": TOTAL_FILTERED_WATER_PRODUCED, "mean_fwater": round(TOTAL_FILTERED_WATER_PRODUCED/tick,4), "timestamp": TIMESTAMP}
     client.publish(TOPIC_FILTER_SYSTEM_SUM_DATA, json.dumps(data))
 
 
@@ -158,13 +156,15 @@ def weighted_coefficient_function(kpi):
     return max(coefficient, 0.0)  # Avoid negative coefficients
 
 def calculate_and_publish_filtered_water_requests(client, coefficient_function=weighted_coefficient_function):
+    """
+        This defenitely needs refactoring
+    """
     global TIMESTAMP, REQUEST_LIST, ADAPTABLE, PLANTS_NUMBER, TOPIC_FILTERED_WATER_REQEUST_LIST, RECEIVED_REQUESTS
     global KPI_LIST, RECEIVED_KPI
 
     if not REQUEST_LIST:
         logging.warning("No requests to process.")
         return
-    #logging.debug(f"Request list at requests distribution: {REQUEST_LIST}")
 
     total_demand = sum(request.demand for request in REQUEST_LIST)
 
@@ -188,7 +188,7 @@ def calculate_and_publish_filtered_water_requests(client, coefficient_function=w
         return
 
     if ADAPTABLE:
-        # ToDo: your super mape function here
+        # Place for everything that MAPE loop has to do before the iterating trough and publishing requests to filter plants
         total_coefficient = sum(coefficient_function(kpi) for kpi in KPI_LIST if kpi.status != "offline")
     else:
         online_count = sum(1 for kpi in KPI_LIST if kpi.status != "offline")
@@ -200,16 +200,17 @@ def calculate_and_publish_filtered_water_requests(client, coefficient_function=w
         logging.debug(f"Plant id: {request_plant_id}")
 
         if not corresponding_kpi:
-            logging.debug(f"Plant with request topic: {request_topic} has no corresponding KPI.")
-            continue            
-
-        if corresponding_kpi.status == "offline" :
+            # No kpi corresponding for plant id in the request 
+            logging.debug(f"Filter plant with id {request_plant_id} and request topic: {request_topic} has no corresponding KPI.")
+            request_amount = 0
+        elif corresponding_kpi.status == "offline" :
             # Offline plants receive 0 allocation
+            logging.debug(f"Filter plant with id {corresponding_kpi.plant_id} is offline.")
             request_amount = 0
         else:
             # Calculate allocation for active plants
             if ADAPTABLE:
-                # ToDo: your super mape function here
+                # Iterations of the MAPE loop
                 coefficient = coefficient_function(corresponding_kpi)
                 request_amount = round((coefficient/total_coefficient) * total_demand, 4)
             else:
@@ -222,7 +223,7 @@ def calculate_and_publish_filtered_water_requests(client, coefficient_function=w
             timestamp=TIMESTAMP,
             amount=request_amount
         )
-        logging.debug(f"Sending request filtered water message to filter plant: timestamp: {TIMESTAMP}, topic: {request_topic}, request_amount: {request_amount}")
+        logging.debug(f"Sending filtered water request message to filter plant with id {request_plant_id}: timestamp: {TIMESTAMP}, msg topic: {request_topic}, requested amount: {request_amount}")
 
     RECEIVED_REQUESTS = 0
     RECEIVED_KPI = 0
@@ -255,7 +256,6 @@ def on_message_tick(client, userdata, msg):
     RECEIVED_KPI = 0
     AVAILABLE_WATER = 0 # reset the available water amount
     TICK_COUNT += 1
-
     logging.debug(f"Received tick message, timestamp: {TIMESTAMP}")
 
 def on_message_request(client, userdata, msg):
@@ -269,24 +269,21 @@ def on_message_request(client, userdata, msg):
     plant_id = payload["plant_id"]
     reply_topic = payload["reply_topic"] # topic to publish the supplied water to
     demand = payload["amount"]
+    logging.debug(f"Received message with request: timestamp: {timestamp}, topic: {msg.topic}, plant_id: {plant_id}, reply_topic: {reply_topic}, demand: {demand}")
 
     add_request(plant_id, reply_topic, demand)
-
-    logging.debug(f"Received message with request: timestamp: {timestamp}, topic: {msg.topic}, plant_id: {plant_id}, reply_topic: {reply_topic}, demand: {demand}")
 
 def on_message_supply(client, userdata, msg):
     """
     Callback function that processes messages from the request topic.
     """
-    
     #extracting the timestamp and other data
     payload = json.loads(msg.payload)
     timestamp = payload["timestamp"]
     supply = payload["amount"]
+    logging.debug(f"Received message with filtered water supply. timestamp: {timestamp}, msg topic: {msg.topic}, supply: {supply}")
 
     add_supply(supply)
-
-    logging.debug(f"Received message with filtered water supply: timestamp: {timestamp}, topic: {msg.topic}, supply: {supply}")
 
 def on_message_kpi(client, userdata, msg):
     #extracting the timestamp and other data
@@ -297,20 +294,17 @@ def on_message_kpi(client, userdata, msg):
     eff = payload["eff"]
     prod = payload["prod"]
     cper = payload["cper"]
-
+    logging.debug(f"Received message with KPI: timestamp. {timestamp}, msg topic: {msg.topic}, plant_id: {plant_id}, status: {status}, eff: {eff}, prod: {prod}, cper: {cper}")
+    
     add_kpi(plant_id, status, eff, prod, cper)
-
-    logging.debug(f"Received message with KPI: timestamp: {timestamp}, topic: {msg.topic}, plant_id: {plant_id}, status: {status}, eff: {eff}, prod: {prod}, cper: {cper}")
-
+    
 def on_message_daily_need(client, userdata, msg):
-    global TOTAL_PLANED, TOTAL_PRODUCED, TICK_COUNT
+    global TOTAL_FILTERED_WATER_PRODUCED, TICK_COUNT
     payload = json.loads(msg.payload)
     timestamp = payload["timestamp"]
-    TOTAL_PLANED = payload["amount"]
-    TOTAL_PRODUCED = 0
+    TOTAL_FILTERED_WATER_PRODUCED = 0
     TICK_COUNT = 1
-
-    logging.debug(f"Received message with daily request: timestamp: {timestamp}, daily demand: {TOTAL_PLANED}")
+    logging.debug(f"Received message with daily request, counters reset. timestamp: {timestamp}")
 
 def on_message_adaptive_mode(client, userdata, msg):
     global ADAPTABLE
@@ -319,8 +313,7 @@ def on_message_adaptive_mode(client, userdata, msg):
         ADAPTABLE = True
     else:
         ADAPTABLE = False
-
-    logging.debug(f"Received message with to change mode, adaptable mode is {ADAPTABLE}")
+    logging.info(f"Received message with to change mode, adaptable mode is {ADAPTABLE}")
 
 def main():
     """
