@@ -52,7 +52,7 @@ KPI_LIST = [] # A list to hold all kpis
 
 REQUEST_CLASS = namedtuple("Request", ["plant_id", "reply_topic", "demand"]) # A data structure for requests
 SUPPLY_CLASS = namedtuple("Supply", ["supply"]) # A data structure for supplies
-KPI_CLASS = namedtuple("KPI", ["plant_id", "status", "eff", "prod", "cper"]) # A data structure for kpis
+KPI_CLASS = namedtuple("KPI", ["plant_id", "status", "eff", "prod", "cper", "poproduction", "failure", "ploss", "statusoverproduction"]) # A data structure for kpis TODO: Erweitern um neue KPIs
 
 TICKS_IN_DAY = 96
 
@@ -146,12 +146,23 @@ def weighted_coefficient_function(kpi):
     eff_weight = 0.5
     prod_weight = 0.3
     cper_weight = 0.2
+    poproduction_weight = 0.0
+    failure_weight = 0.0
+    ploss_weight = 0.0
+    statusoverproduction_weight = 0.0
+
+    
+    #TODO: Gewichtung für neue KPIs hinzufügen
 
     coefficient = (
         1.0 +
         kpi.eff * eff_weight +
         kpi.prod * prod_weight +
-        kpi.cper * cper_weight
+        kpi.cper * cper_weight +
+        kpi.poproduction * poproduction_weight+
+        kpi.failure * failure_weight +
+        kpi.ploss * ploss_weight +
+        kpi.statusoverproduction * statusoverproduction_weight
     )
     return max(coefficient, 0.0)  # Avoid negative coefficients
 
@@ -241,10 +252,10 @@ def add_supply(supply):
     SUPPLY_LIST.append(SUPPLY_CLASS(supply))
     RECEIVED_SUPPLIES += 1
 
-def add_kpi(plant_id, status, eff, prod, cper):
+def add_kpi(plant_id, status, eff, prod, cper, poproduction, failure, ploss, statusoverproduction):
     global RECEIVED_KPI, KPI_LIST, KPI_CLASS
 
-    KPI_LIST.append(KPI_CLASS(plant_id, status, eff, prod, cper))
+    KPI_LIST.append(KPI_CLASS(plant_id, status, eff, prod, cper, poproduction, failure, ploss, statusoverproduction))
     RECEIVED_KPI += 1
 
 def on_message_tick(client, userdata, msg):
@@ -294,7 +305,11 @@ def on_message_kpi(client, userdata, msg):
     eff = payload["eff"]
     prod = payload["prod"]
     cper = payload["cper"]
-    logging.debug(f"Received message with KPI: timestamp. {timestamp}, msg topic: {msg.topic}, plant_id: {plant_id}, status: {status}, eff: {eff}, prod: {prod}, cper: {cper}")
+    poproduction = payload["poproduction"]
+    failure = payload["failure"]
+    ploss = payload["loss"]
+    statusoverproduction = payload["statusoverproduction"]
+    logging.debug(f"Received message with KPI: timestamp. {timestamp}, msg topic: {msg.topic}, plant_id: {plant_id}, status: {status}, eff: {eff}, prod: {prod}, cper: {cper}, poproduction: {poproduction}, failure: {failure}, ploss: {ploss}, statusoverproduction: {statusoverproduction}")
     
     add_kpi(plant_id, status, eff, prod, cper)
     
