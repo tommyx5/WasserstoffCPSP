@@ -25,6 +25,7 @@ MINIMAL_HYDROGEN_SUPPLY = float(getenv_or_exit("HYDROGEN_CELL_" + ID + "_MINIMAL
 MAXIMAL_HYDROGEN_SUPPLY = float(getenv_or_exit("HYDROGEN_CELL_" + ID + "_MAXIMAL_HYDROGEN_SUPPLY", 0.0)) # Hydrogen supply at maximal Perfomance (in m^3)
 PRODUCTION_LOSSES = float(getenv_or_exit("HYDROGEN_CELL_" + ID + "_PRODUCTION_LOSSES", 0.0)) # Percent of ressources lost during proccesing
 STANDART_FAILURE_POSIBILITY = float(getenv_or_exit("HYDROGEN_CELL_" + ID + "_FAILURE_POSIBILITY", 0.0)) # Posibility of the outage
+MINIMAL_OUTAGE_DURATION = float(getenv_or_exit("HYDROGEN_CELL_" + ID + "_MINIMAL_OUTAGE_DURATION", 0.0)) # Minimal outage duration 
 
 TICK = getenv_or_exit("TOPIC_TICK_GEN_TICK", "default")
 TOPIC_FILTERED_WATER_REQUEST = getenv_or_exit("TOPIC_FILTER_SUM_FILTERED_WATER_REQUEST", "default") # topic to request water
@@ -60,7 +61,7 @@ STATUS_POWER_NOT_RECEIVED = True
 STATUS_FILTERED_WATER_NOT_RECEIVED = True
 STATUS_FAILURE = False
 CURRENT_FAILURE_POSIBILITY = STANDART_FAILURE_POSIBILITY
-MINIMAL_FAILURE_POSIBILITY_CHANGE = 0.005
+MINIMAL_FAILURE_POSIBILITY_CHANGE = 0.0005
 OVERPRODUCTION_MODE = False
 
 COUNTER_ALLTICKS = 0
@@ -209,7 +210,7 @@ def failure_check():
         if rng_value <= CURRENT_FAILURE_POSIBILITY:
             # calculate the time the plant will be out
             FAILURE_TICK_COUNT = 0
-            FAILURE_TIMEOUT = int(rng_value * 100) 
+            FAILURE_TIMEOUT = MINIMAL_OUTAGE_DURATION + int(rng_value * 1000) 
             STATUS_FAILURE = True
             logging.info(f"{TIMESTAMP} The hydrogen plant experienced Failure and will be out for {FAILURE_TIMEOUT} ticks")
 

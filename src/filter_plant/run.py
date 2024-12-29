@@ -25,6 +25,7 @@ MINIMAL_FILTERED_WATER_SUPPLY = float(getenv_or_exit("FILTER_PLANT_" + ID + "_MI
 MAXIMAL_FILTERED_WATER_SUPPLY = float(getenv_or_exit("FILTER_PLANT_" + ID + "_MAXIMAL_FILTERED_WATER_SUPPLY", 0.0)) # Filtered Water supply at maximal Perfomance (in m^3)
 PRODUCTION_LOSSES = float(getenv_or_exit("FILTER_PLANT_" + ID + "_PRODUCTION_LOSSES", 0.0)) # Percent of ressources lost during proccesing 
 STANDART_FAILURE_POSIBILITY = float(getenv_or_exit("FILTER_PLANT_" + ID + "_FAILURE_POSIBILITY", 0.0)) # Posibility of the outage
+MINIMAL_OUTAGE_DURATION = float(getenv_or_exit("FILTER_PLANT_" + ID + "_MINIMAL_OUTAGE_DURATION", 0.0)) # Minimal outage duration 
 
 TICK = getenv_or_exit("TOPIC_TICK_GEN_TICK", "default")
 TOPIC_WATER_REQUEST = getenv_or_exit("TOPIC_WATER_PIPE_WATER_REQUEST", "default") # topic to request water
@@ -60,7 +61,7 @@ STATUS_POWER_NOT_RECEIVED = True
 STATUS_WATER_NOT_RECEIVED = True
 STATUS_FAILURE = False
 CURRENT_FAILURE_POSIBILITY = STANDART_FAILURE_POSIBILITY
-MINIMAL_FAILURE_POSIBILITY_CHANGE = 0.005
+MINIMAL_FAILURE_POSIBILITY_CHANGE = 0.0005
 OVERPRODUCTION_MODE = False
 
 COUNTER_ALLTICKS = 0
@@ -193,7 +194,7 @@ def calculate_outage_risk():
 
 def failure_check():
     global STATUS_FAILURE, STANDART_FAILURE_POSIBILITY, CURRENT_FAILURE_POSIBILITY, FAILURE_TICK_COUNT, FAILURE_TIMEOUT
-    global TIMESTAMP
+    global TIMESTAMP, MINIMAL_OUTAGE_DURATION
 
     if STATUS_FAILURE:
         # each tick increase outage tick count
@@ -210,7 +211,7 @@ def failure_check():
         if rng_value <= CURRENT_FAILURE_POSIBILITY:
             # calculate the time the plant will be out
             FAILURE_TICK_COUNT = 0
-            FAILURE_TIMEOUT = int(rng_value * 100) 
+            FAILURE_TIMEOUT = MINIMAL_OUTAGE_DURATION + int(rng_value * 1000) 
             STATUS_FAILURE = True
             logging.info(f"{TIMESTAMP} The filter plant experienced Failure and will be out for {FAILURE_TIMEOUT} ticks")
 
