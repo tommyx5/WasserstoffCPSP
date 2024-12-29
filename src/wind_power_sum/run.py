@@ -164,7 +164,7 @@ def calculate_supply(typ, sortByPrio = False):
             if FILTER_AVAILABLE_POWER - e[3] >= 0:
                 FILTER_AVAILABLE_POWER = FILTER_AVAILABLE_POWER - e[3]
             else:
-                e[3] = 0
+                e[3] = 0 
         if FILTER_SUM_AMOUNT+HYDROGEN_SUM_AMOUNT > 0:
             FILTER_RATIO = FILTER_SUM_AMOUNT/(FILTER_SUM_AMOUNT+HYDROGEN_SUM_AMOUNT)
             HYDROGEN_RATIO = HYDROGEN_SUM_AMOUNT/(FILTER_SUM_AMOUNT+HYDROGEN_SUM_AMOUNT)
@@ -174,7 +174,7 @@ def calculate_supply(typ, sortByPrio = False):
             if HYDROGEN_AVAILABLE_POWER - e[3] >= 0:
                 HYDROGEN_AVAILABLE_POWER = HYDROGEN_AVAILABLE_POWER - e[3]
             else:
-                e[3] = 0
+                e[3] = 0 
     return result_list
     
 def on_message_adaptive_mode(client, userdata, msg):
@@ -270,11 +270,11 @@ def on_message_request(client, userdata, msg):
         all_request_receiced = all_request_receiced and (payload["timestamp"] == PLANT_DATA[plant_typ][id]["timestamp"])
     if all_request_receiced:
         result_list = calculate_supply(plant_typ, sortByPrio=ADAPTIVE)
-        send_supply_filter_msg(client, result_list, payload["timestamp"])
+        send_supply_msg(client, result_list, payload["timestamp"])
         if TEST:
             client.publish(TETS_TOPIC, json.dumps({"SUPPLY_LIST": result_list}))
 
-def send_supply_filter_msg(client, result_list, timestamp):
+def send_supply_msg(client, result_list, timestamp):
     global PLANT_DATA, FILTER_SUM_AMOUNT, FILTER_PLANT
     for e in result_list:
         if e[4] != "":

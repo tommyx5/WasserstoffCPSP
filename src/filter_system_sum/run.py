@@ -307,11 +307,11 @@ def on_message_kpi(client, userdata, msg):
     cper = payload["cper"]
     poproduction = payload["poproduction"]
     failure = payload["failure"]
-    ploss = payload["loss"]
+    ploss = payload["ploss"]
     statusoverproduction = payload["statusoverproduction"]
     logging.debug(f"Received message with KPI: timestamp. {timestamp}, msg topic: {msg.topic}, plant_id: {plant_id}, status: {status}, eff: {eff}, prod: {prod}, cper: {cper}, poproduction: {poproduction}, failure: {failure}, ploss: {ploss}, statusoverproduction: {statusoverproduction}")
     
-    add_kpi(plant_id, status, eff, prod, cper)
+    add_kpi(plant_id, status, eff, prod, cper, poproduction, failure, ploss, statusoverproduction)
     
 def on_message_daily_need(client, userdata, msg):
     global TOTAL_FILTERED_WATER_PRODUCED, TICK_COUNT

@@ -152,6 +152,90 @@ services:
     networks:
       - hydroplant
 
+  filter_plant_3:
+    build: ./src/filter_plant
+    container_name: filter_plant_3
+    depends_on:
+      - mqttbroker
+    env_file:
+      - src/.env
+    environment:
+      - ID=3
+    networks:
+      - hydroplant
+
+  filter_plant_4:
+    build: ./src/filter_plant
+    container_name: filter_plant_4
+    depends_on:
+      - mqttbroker
+    env_file:
+      - src/.env
+    environment:
+      - ID=4
+    networks:
+      - hydroplant
+  
+  filter_plant_5:
+    build: ./src/filter_plant
+    container_name: filter_plant_5
+    depends_on:
+      - mqttbroker
+    env_file:
+      - src/.env
+    environment:
+      - ID=5
+    networks:
+      - hydroplant
+
+  filter_plant_6:
+    build: ./src/filter_plant
+    container_name: filter_plant_6
+    depends_on:
+      - mqttbroker
+    env_file:
+      - src/.env
+    environment:
+      - ID=6
+    networks:
+      - hydroplant
+
+  filter_plant_7:
+    build: ./src/filter_plant
+    container_name: filter_plant_7
+    depends_on:
+      - mqttbroker
+    env_file:
+      - src/.env
+    environment:
+      - ID=7
+    networks:
+      - hydroplant
+
+  filter_plant_8:
+    build: ./src/filter_plant
+    container_name: filter_plant_8
+    depends_on:
+      - mqttbroker
+    env_file:
+      - src/.env
+    environment:
+      - ID=8
+    networks:
+      - hydroplant
+  
+  filter_plant_9:
+    build: ./src/filter_plant
+    container_name: filter_plant_9
+    depends_on:
+      - mqttbroker
+    env_file:
+      - src/.env
+    environment:
+      - ID=9
+    networks:
+      - hydroplant
+
   hydrogen_cell_0:
     build: ./src/hydrogen_cell
     container_name: hydrogen_cell_0
@@ -187,6 +271,91 @@ services:
       - ID=2
     networks:
       - hydroplant
+
+  hydrogen_cell_3:
+    build: ./src/hydrogen_cell
+    container_name: hydrogen_cell_3
+    depends_on:
+      - mqttbroker
+    env_file:
+      - src/.env
+    environment:
+      - ID=3
+    networks:
+      - hydroplant
+  
+  hydrogen_cell_4:
+    build: ./src/hydrogen_cell
+    container_name: hydrogen_cell_4
+    depends_on:
+      - mqttbroker
+    env_file:
+      - src/.env
+    environment:
+      - ID=4
+    networks:
+      - hydroplant
+  
+  hydrogen_cell_5:
+    build: ./src/hydrogen_cell
+    container_name: hydrogen_cell_5
+    depends_on:
+      - mqttbroker
+    env_file:
+      - src/.env
+    environment:
+      - ID=5
+    networks:
+      - hydroplant
+
+  hydrogen_cell_6:
+    build: ./src/hydrogen_cell
+    container_name: hydrogen_cell_6
+    depends_on:
+      - mqttbroker
+    env_file:
+      - src/.env
+    environment:
+      - ID=6
+    networks:
+      - hydroplant
+
+  hydrogen_cell_7:
+    build: ./src/hydrogen_cell
+    container_name: hydrogen_cell_7
+    depends_on:
+      - mqttbroker
+    env_file:
+      - src/.env
+    environment:
+      - ID=7
+    networks:
+      - hydroplant
+
+  hydrogen_cell_8:
+    build: ./src/hydrogen_cell
+    container_name: hydrogen_cell_8
+    depends_on:
+      - mqttbroker
+    env_file:
+      - src/.env
+    environment:
+      - ID=8
+    networks:
+      - hydroplant
+
+  hydrogen_cell_9:
+    build: ./src/hydrogen_cell
+    container_name: hydrogen_cell_9
+    depends_on:
+      - mqttbroker
+    env_file:
+      - src/.env
+    environment:
+      - ID=9
+    networks:
+      - hydroplant
+
 
 # Define a shared network for the containers
 networks:

@@ -89,7 +89,7 @@ def weighted_coefficient_function(kpi):
     poproduction_weight = 0.0
     failure_weight = 0.0
     ploss_weight = 0.0
-    statusoverproduction_weight = 0.0
+    statusoverproduction_weight = 0.0   #TODO kann raus
 
     coefficient = (
         1.0 +
@@ -255,11 +255,11 @@ def on_message_kpi(client, userdata, msg):
     cper = payload["cper"]
     poproduction = payload["poproduction"]
     failure = payload["failure"]
-    ploss = payload["loss"]
-    statusoverproduction = payload["statusoverproduction"]
+    ploss = payload["ploss"]
+    statusoverproduction = payload["statusoverproduction"] #TODO kann raus
     logging.debug(f"Received message with KPI: timestamp. {timestamp}, msg topic: {msg.topic}, plant_id: {plant_id}, status: {status}, eff: {eff}, prod: {prod}, cper: {cper}, poproduction: {poproduction}, failure: {failure}, ploss: {ploss}, statusoverproduction: {statusoverproduction}")
 
-    add_kpi(plant_id, status, eff, prod, cper)
+    add_kpi(plant_id, status, eff, prod, cper, poproduction, failure, ploss, statusoverproduction)
 
 def main():
     """
