@@ -28,6 +28,8 @@ TOPIC_KPI = getenv_or_exit("TOPIC_FILTER_PLANT_KPI", "default") # Base topic to 
 TOPIC_ADAPTIVE_MODE = getenv_or_exit('TOPIC_ADAPTIVE_MODE', 'default') # Topic to change work modes 
 TOPIC_FILTER_SYSTEM_SUM_DATA = getenv_or_exit("TOPIC_FILTER_SUM_FILTER_SUM_DATA", "default") # Topic to send production data for the dashboard 
 
+
+
 TOPIC_SUPPLY_LIST = []
 TOPIC_KPI_LIST = []
 TOPIC_FILTERED_WATER_REQEUST_LIST = []
@@ -52,7 +54,7 @@ KPI_LIST = [] # A list to hold all kpis
 
 REQUEST_CLASS = namedtuple("Request", ["plant_id", "reply_topic", "demand"]) # A data structure for requests
 SUPPLY_CLASS = namedtuple("Supply", ["supply"]) # A data structure for supplies
-KPI_CLASS = namedtuple("KPI", ["plant_id", "status", "eff", "prod", "cper", "poproduction", "failure", "ploss", "statusoverproduction"]) # A data structure for kpis TODO: Erweitern um neue KPIs
+KPI_CLASS = namedtuple("KPI", ["plant_id", "status", "eff", "prod", "cper", "soproduction", "failure", "ploss", "nominalo"]) # A data structure for kpis TODO: Erweitern um neue KPIs
 
 TICKS_IN_DAY = 96
 
@@ -138,35 +140,8 @@ def calculate_supply(client):
     SUPPLY_LIST.clear()
     RECEIVED_SUPPLIES = 0
 
-def weighted_coefficient_function(kpi):
-    """
-    Replaceable function to calculate the coefficient for allocation.
-    Uses `eff`, `prod`, and `cper` as weights.
-    """
-    eff_weight = 0.5
-    prod_weight = 0.3
-    cper_weight = 0.2
-    poproduction_weight = 0.0
-    failure_weight = 0.0
-    ploss_weight = 0.0
-    statusoverproduction_weight = 0.0
 
-    
-    #TODO: Gewichtung für neue KPIs hinzufügen
-
-    coefficient = (
-        1.0 +
-        kpi.eff * eff_weight +
-        kpi.prod * prod_weight +
-        kpi.cper * cper_weight +
-        kpi.poproduction * poproduction_weight+
-        kpi.failure * failure_weight +
-        kpi.ploss * ploss_weight +
-        kpi.statusoverproduction * statusoverproduction_weight
-    )
-    return max(coefficient, 0.0)  # Avoid negative coefficients
-
-def calculate_and_publish_filtered_water_requests(client, coefficient_function=weighted_coefficient_function):
+def calculate_and_publish_filtered_water_requests(client):
     """
         This defenitely needs refactoring
     """
@@ -178,7 +153,8 @@ def calculate_and_publish_filtered_water_requests(client, coefficient_function=w
         return
 
     total_demand = sum(request.demand for request in REQUEST_LIST)
-
+    plants_left = PLANTS_NUMBER
+    demand_need = total_demand
     # Handling for the initial loop where no kpi is present
     if not KPI_LIST:
         logging.debug("Warning. No kpi list. Using default mean allocation")
@@ -197,44 +173,99 @@ def calculate_and_publish_filtered_water_requests(client, coefficient_function=w
         RECEIVED_REQUESTS = 0
         RECEIVED_KPI = 0
         return
-
+    
     if ADAPTABLE:
-        # Place for everything that MAPE loop has to do before the iterating trough and publishing requests to filter plants
-        total_coefficient = sum(coefficient_function(kpi) for kpi in KPI_LIST if kpi.status != "offline")
-    else:
-        online_count = sum(1 for kpi in KPI_LIST if kpi.status != "offline")
-
-    for request_topic in TOPIC_FILTERED_WATER_REQEUST_LIST:
-        # extract corresponding kpi
-        request_plant_id = request_topic.split('/')[-1]
-        corresponding_kpi = next((kpi for kpi in KPI_LIST if kpi.plant_id == request_plant_id), None)
-        logging.debug(f"Plant id: {request_plant_id}")
-
-        if not corresponding_kpi:
-            # No kpi corresponding for plant id in the request 
-            logging.debug(f"Filter plant with id {request_plant_id} and request topic: {request_topic} has no corresponding KPI.")
-            request_amount = 0
-        elif corresponding_kpi.status == "offline" :
-            # Offline plants receive 0 allocation
-            logging.debug(f"Filter plant with id {corresponding_kpi.plant_id} is offline.")
-            request_amount = 0
-        else:
-            # Calculate allocation for active plants
-            if ADAPTABLE:
-                # Iterations of the MAPE loop
-                coefficient = coefficient_function(corresponding_kpi)
-                request_amount = round((coefficient/total_coefficient) * total_demand, 4)
+        for request_topic in TOPIC_FILTERED_WATER_REQEUST_LIST:
+            # extract corresponding kpi
+            request_plant_id = request_topic.split('/')[-1]
+            corresponding_kpi = next((kpi for kpi in KPI_LIST if kpi.plant_id == request_plant_id), None)
+            logging.debug(f"Plant id: {request_plant_id}")
+            if not corresponding_kpi:
+                # No kpi corresponding for plant id in the request 
+                logging.debug(f"Filter plant with id {request_plant_id} and request topic: {request_topic} has no corresponding KPI.")
+                request_amount = 0
+            elif corresponding_kpi.status == "offline" :
+                # Offline plants receive 0 allocation
+                logging.debug(f"Filter plant with id {corresponding_kpi.plant_id} is offline.")
+                request_amount = 0
             else:
-                request_amount = round(total_demand/online_count, 4)
-            
-        # Send the water production request message
-        send_msg(
-            client=client,
-            topic=request_topic,
-            timestamp=TIMESTAMP,
-            amount=request_amount
-        )
-        logging.debug(f"Sending filtered water request message to filter plant with id {request_plant_id}: timestamp: {TIMESTAMP}, msg topic: {request_topic}, requested amount: {request_amount}")
+                if(corresponding_kpi.soproduction > 8 or (corresponding_kpi.failure > 0.8 and corresponding_kpi.prod > 1.0)):
+                    if(round(total_demand/plants_left, 4) > (corresponding_kpi.nominalo * 0.8)):
+                        request_amount = corresponding_kpi.nominalo * 0.8
+                        demand_need = demand_need - request_amount
+                        plants_left = plants_left - 1
+                    else:
+                        request_amount = round(demand_need/plants_left, 4)
+                        demand_need = demand_need - request_amount
+                        plants_left = plants_left - 1
+                
+                elif(corresponding_kpi.soproduction < 2 and corresponding_kpi.ploss < 0.3 and corresponding_kpi.failure < 0.2):         #bei zu hoher production loss lohnt sich keine starke Überlast
+                    if(round(demand_need/plants_left, 4) > (corresponding_kpi.nominalo * 1.5)):
+                        request_amount = round(demand_need/plants_left, 4)
+                        demand_need = demand_need - request_amount
+                        plants_left = plants_left - 1
+                    else:
+                        request_amount = corresponding_kpi.nominalo * 1.5
+                        demand_need = demand_need - request_amount
+                        plants_left = plants_left - 1
+
+                elif(corresponding_kpi.soproduction < 4 and corresponding_kpi.ploss < 0.1 and corresponding_kpi.failure < 0.1):
+                    if(round(demand_need/plants_left, 4) > (corresponding_kpi.nominalo * 1.3)):
+                        request_amount = round(demand_need/plants_left, 4)
+                        demand_need = demand_need - request_amount
+                        plants_left = plants_left - 1
+                    else:
+                        request_amount = corresponding_kpi.nominalo * 1.3
+                        demand_need = demand_need - request_amount
+                        plants_left = plants_left - 1
+                elif(corresponding_kpi.soproduction < 6):
+                    if(round(demand_need/plants_left, 4) > (corresponding_kpi.nominalo * 1.1)):
+                        request_amount = round(demand_need/plants_left, 4)
+                        demand_need = demand_need - request_amount
+                        plants_left = plants_left - 1
+                    else:
+                        request_amount = corresponding_kpi.nominalo * 1.1
+                        demand_need = demand_need - request_amount
+                        plants_left = plants_left - 1
+                else:
+                    if(round(demand_need/plants_left, 4) > corresponding_kpi.nominalo ):
+                        request_amount = round(demand_need/plants_left, 4)
+                        demand_need = demand_need - request_amount
+                        plants_left = plants_left - 1
+                    else:
+                        request_amount = corresponding_kpi.nominalo * 1.1
+                        demand_need = demand_need - request_amount
+                        plants_left = plants_left - 1      
+            send_msg(
+                client=client,
+                topic=request_topic,
+                timestamp=TIMESTAMP,
+                amount=request_amount
+            )
+    else:
+        for request_topic in TOPIC_FILTERED_WATER_REQEUST_LIST:
+            request_plant_id = request_topic.split('/')[-1]
+            corresponding_kpi = next((kpi for kpi in KPI_LIST if kpi.plant_id == request_plant_id), None)
+            logging.debug(f"Plant id: {request_plant_id}")
+            if not corresponding_kpi:
+                # No kpi corresponding for plant id in the request 
+                logging.debug(f"Filter plant with id {request_plant_id} and request topic: {request_topic} has no corresponding KPI.")
+                request_amount = 0
+            elif corresponding_kpi.status == "offline" :
+                # Offline plants receive 0 allocation
+                logging.debug(f"Filter plant with id {corresponding_kpi.plant_id} is offline.")
+                request_amount = 0
+            else:
+                online_count = sum(1 for kpi in KPI_LIST if kpi.status != "offline")
+                request_amount = round(total_demand/online_count, 4)  
+                
+            send_msg(
+                client=client,
+                topic=request_topic,
+                timestamp=TIMESTAMP,
+                amount=request_amount
+            )
+    logging.debug(f"Sending filtered water request message to filter plant with id {request_plant_id}: timestamp: {TIMESTAMP}, msg topic: {request_topic}, requested amount: {request_amount}")
 
     RECEIVED_REQUESTS = 0
     RECEIVED_KPI = 0
@@ -252,10 +283,10 @@ def add_supply(supply):
     SUPPLY_LIST.append(SUPPLY_CLASS(supply))
     RECEIVED_SUPPLIES += 1
 
-def add_kpi(plant_id, status, eff, prod, cper, poproduction, failure, ploss, statusoverproduction):
+def add_kpi(plant_id, status, eff, prod, cper, soproduction, failure, ploss, nominalo):
     global RECEIVED_KPI, KPI_LIST, KPI_CLASS
 
-    KPI_LIST.append(KPI_CLASS(plant_id, status, eff, prod, cper, poproduction, failure, ploss, statusoverproduction))
+    KPI_LIST.append(KPI_CLASS(plant_id, status, eff, prod, cper, soproduction, failure, ploss, nominalo))
     RECEIVED_KPI += 1
 
 def on_message_tick(client, userdata, msg):
@@ -305,13 +336,13 @@ def on_message_kpi(client, userdata, msg):
     eff = payload["eff"]
     prod = payload["prod"]
     cper = payload["cper"]
-    poproduction = payload["poproduction"]
+    soproduction = payload["soproduction"]
     failure = payload["failure"]
     ploss = payload["ploss"]
-    statusoverproduction = payload["statusoverproduction"]
-    logging.debug(f"Received message with KPI: timestamp. {timestamp}, msg topic: {msg.topic}, plant_id: {plant_id}, status: {status}, eff: {eff}, prod: {prod}, cper: {cper}, poproduction: {poproduction}, failure: {failure}, ploss: {ploss}, statusoverproduction: {statusoverproduction}")
+    nominalo = payload["nominalo"]
+    logging.debug(f"Received message with KPI: timestamp. {timestamp}, msg topic: {msg.topic}, plant_id: {plant_id}, status: {status}, eff: {eff}, prod: {prod}, cper: {cper}, soproduction: {soproduction}, failure: {failure}, ploss: {ploss}, nominalo: {nominalo}")
     
-    add_kpi(plant_id, status, eff, prod, cper, poproduction, failure, ploss, statusoverproduction)
+    add_kpi(plant_id, status, eff, prod, cper, soproduction, failure, ploss, nominalo)
     
 def on_message_daily_need(client, userdata, msg):
     global TOTAL_FILTERED_WATER_PRODUCED, TICK_COUNT
