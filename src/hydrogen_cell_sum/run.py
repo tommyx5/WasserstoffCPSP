@@ -49,7 +49,7 @@ SUPPLY_LIST = [] # A list to hold all supplies
 KPI_LIST = [] # A list to hold all requests
 
 SUPPLY_CLASS = namedtuple("Supply", ["supply"]) # A data structure for supplies
-KPI_CLASS = namedtuple("KPI", ["plant_id", "status", "eff", "prod", "cper", "poproduction", "failure", "ploss", "nominalo"]) # A data structure for requests
+KPI_CLASS = namedtuple("KPI", ["plant_id", "status", "eff", "prod", "cper", "soproduction", "failure", "ploss", "nominalo"]) # A data structure for requests
 
 TICKS_IN_DAY = 96
 
@@ -225,10 +225,10 @@ def add_supply(supply):
     SUPPLY_LIST.append(SUPPLY_CLASS(supply))
     RECEIVED_SUPPLIES += 1
 
-def add_kpi(plant_id, status, eff, prod, cper, poproduction, failure, ploss, nominalo):
+def add_kpi(plant_id, status, eff, prod, cper, soproduction, failure, ploss, nominalo):
     global RECEIVED_KPI, KPI_LIST, KPI_CLASS
 
-    KPI_LIST.append(KPI_CLASS(plant_id, status, eff, prod, cper, poproduction, failure, ploss, nominalo))
+    KPI_LIST.append(KPI_CLASS(plant_id, status, eff, prod, cper, soproduction, failure, ploss, nominalo))
     RECEIVED_KPI += 1
 
 def on_message_tick(client, userdata, msg):
@@ -283,13 +283,13 @@ def on_message_kpi(client, userdata, msg):
     eff = payload["eff"]
     prod = payload["prod"]
     cper = payload["cper"]
-    poproduction = payload["poproduction"]
+    soproduction = payload["soproduction"]
     failure = payload["failure"]
     ploss = payload["ploss"]
     nominalo = payload["nominalo"] #TODO kann raus
-    logging.debug(f"Received message with KPI: timestamp. {timestamp}, msg topic: {msg.topic}, plant_id: {plant_id}, status: {status}, eff: {eff}, prod: {prod}, cper: {cper}, poproduction: {poproduction}, failure: {failure}, ploss: {ploss}, nominalo: {nominalo}")
+    logging.debug(f"Received message with KPI: timestamp. {timestamp}, msg topic: {msg.topic}, plant_id: {plant_id}, status: {status}, eff: {eff}, prod: {prod}, cper: {cper}, soproduction: {soproduction}, failure: {failure}, ploss: {ploss}, nominalo: {nominalo}")
 
-    add_kpi(plant_id, status, eff, prod, cper, poproduction, failure, ploss, nominalo)
+    add_kpi(plant_id, status, eff, prod, cper, soproduction, failure, ploss, nominalo)
 
 def main():
     """

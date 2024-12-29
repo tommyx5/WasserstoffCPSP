@@ -80,7 +80,7 @@ def send_supply_msg(client, supply_topic, timestamp, amount):
     }
     client.publish(supply_topic, json.dumps(data))
 
-def send_kpi_msg(client, kpi_topic, timestamp, plant_id, status, eff, prod, cper, npower, namount, poproduction, failure, ploss, nominalo):
+def send_kpi_msg(client, kpi_topic, timestamp, plant_id, status, eff, prod, cper, npower, namount, soproduction, failure, ploss, nominalo):
     data = {
         "timestamp": timestamp, 
         "plant_id": plant_id,
@@ -90,7 +90,7 @@ def send_kpi_msg(client, kpi_topic, timestamp, plant_id, status, eff, prod, cper
         "cper": cper,
         "npower": npower,
         "namount": namount,
-        "poproduction": poproduction,
+        "soproduction": soproduction,
         "failure": failure,
         "ploss": ploss,
         "nominalo": nominalo
@@ -286,7 +286,7 @@ def on_message_water_received(client, userdata, msg):
         cper=CURRENT_PERFORMANCE,
         npower=NOMINAL_POWER_DEMAND,
         namount=NOMINAL_HYDROGEN_SUPPLY,
-        poproduction=STREAK_OVERPRODUCTION,
+        soproduction=STREAK_OVERPRODUCTION,
         failure=(COUNTER_FAILURE / COUNTER_ALLTICKS),
         ploss=PRODUCTION_LOSSES,
         nominalo=NOMINAL_HYDROGEN_SUPPLY
