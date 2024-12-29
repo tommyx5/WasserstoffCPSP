@@ -7,7 +7,7 @@ from mqtt.mqtt_wrapper import MQTTWrapper
 
 # Configure the logger
 logging.basicConfig(
-    level=logging.DEBUG,  # Set minimum level to log
+    level=logging.INFO,  # Set minimum level to log
     format="%(asctime)s - %(levelname)s - %(message)s",  # Customize the output format
 )
 
