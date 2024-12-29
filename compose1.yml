@@ -128,30 +128,6 @@ services:
     networks:
       - hydroplant
 
-  filter_plant_1:
-    build: ./src/filter_plant
-    container_name: filter_plant_1
-    depends_on:
-      - mqttbroker
-    env_file:
-      - src/.env
-    environment:
-      - ID=1
-    networks:
-      - hydroplant
-
-  filter_plant_2:
-    build: ./src/filter_plant
-    container_name: filter_plant_2
-    depends_on:
-      - mqttbroker
-    env_file:
-      - src/.env
-    environment:
-      - ID=2
-    networks:
-      - hydroplant
-
   hydrogen_cell_0:
     build: ./src/hydrogen_cell
     container_name: hydrogen_cell_0
@@ -161,30 +137,6 @@ services:
       - src/.env
     environment:
       - ID=0
-    networks:
-      - hydroplant
-
-  hydrogen_cell_1:
-    build: ./src/hydrogen_cell
-    container_name: hydrogen_cell_1
-    depends_on:
-      - mqttbroker
-    env_file:
-      - src/.env
-    environment:
-      - ID=1
-    networks:
-      - hydroplant
-
-  hydrogen_cell_2:
-    build: ./src/hydrogen_cell
-    container_name: hydrogen_cell_2
-    depends_on:
-      - mqttbroker
-    env_file:
-      - src/.env
-    environment:
-      - ID=2
     networks:
       - hydroplant
 
