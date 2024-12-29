@@ -535,8 +535,8 @@
         "qos": "2",
         "datatype": "auto",
         "broker": "3b931ee9.0688c2",
-        "x": 210,
-        "y": 640,
+        "x": 170,
+        "y": 1300,
         "wires": [
             [
                 "2e77b6d.0eb054a"
@@ -555,8 +555,8 @@
         "label": "STATUS HYDDROGEN PLANT ID:0",
         "format": "{{msg.payload}}",
         "layout": "row-spread",
-        "x": 890,
-        "y": 640,
+        "x": 850,
+        "y": 1300,
         "wires": []
     },
     {
@@ -585,8 +585,8 @@
         "from": "",
         "to": "",
         "reg": false,
-        "x": 610,
-        "y": 640,
+        "x": 570,
+        "y": 1300,
         "wires": [
             [
                 "8052aeac.6ae08"
@@ -601,8 +601,8 @@
         "property": "payload",
         "action": "",
         "pretty": false,
-        "x": 430,
-        "y": 640,
+        "x": 390,
+        "y": 1300,
         "wires": [
             [
                 "34bd4458.a7f94c"
@@ -618,8 +618,8 @@
         "qos": "2",
         "datatype": "auto",
         "broker": "3b931ee9.0688c2",
-        "x": 210,
-        "y": 700,
+        "x": 170,
+        "y": 1360,
         "wires": [
             [
                 "1d62f25a.e4a33e"
@@ -638,8 +638,8 @@
         "label": "STATUS HYDDROGEN PLANT ID:1",
         "format": "{{msg.payload}}",
         "layout": "row-spread",
-        "x": 890,
-        "y": 700,
+        "x": 850,
+        "y": 1360,
         "wires": []
     },
     {
@@ -668,8 +668,8 @@
         "from": "",
         "to": "",
         "reg": false,
-        "x": 610,
-        "y": 700,
+        "x": 570,
+        "y": 1360,
         "wires": [
             [
                 "9df47d11.b030a"
@@ -684,8 +684,8 @@
         "property": "payload",
         "action": "",
         "pretty": false,
-        "x": 430,
-        "y": 700,
+        "x": 390,
+        "y": 1360,
         "wires": [
             [
                 "ad979450.01cc98"
@@ -701,8 +701,8 @@
         "qos": "2",
         "datatype": "auto",
         "broker": "3b931ee9.0688c2",
-        "x": 210,
-        "y": 760,
+        "x": 170,
+        "y": 1420,
         "wires": [
             [
                 "62feb234.d7834c"
@@ -721,8 +721,8 @@
         "label": "STATUS HYDDROGEN PLANT ID:2",
         "format": "{{msg.payload}}",
         "layout": "row-spread",
-        "x": 890,
-        "y": 760,
+        "x": 850,
+        "y": 1420,
         "wires": []
     },
     {
@@ -751,8 +751,8 @@
         "from": "",
         "to": "",
         "reg": false,
-        "x": 610,
-        "y": 760,
+        "x": 570,
+        "y": 1420,
         "wires": [
             [
                 "d1b9d5c6.0fb038"
@@ -767,8 +767,8 @@
         "property": "payload",
         "action": "",
         "pretty": false,
-        "x": 430,
-        "y": 760,
+        "x": 390,
+        "y": 1420,
         "wires": [
             [
                 "a95a1aad.e71d38"
@@ -802,7 +802,7 @@
         "to": "",
         "reg": false,
         "x": 640,
-        "y": 860,
+        "y": 1940,
         "wires": [
             [
                 "c6471f84.8576b"
@@ -836,7 +836,7 @@
         "to": "",
         "reg": false,
         "x": 650,
-        "y": 900,
+        "y": 1980,
         "wires": [
             [
                 "2f336a30.c280b6"
@@ -870,7 +870,7 @@
         "to": "",
         "reg": false,
         "x": 650,
-        "y": 940,
+        "y": 2020,
         "wires": [
             [
                 "f78c2e3d.f8d21"
@@ -887,7 +887,7 @@
         "datatype": "auto",
         "broker": "3b931ee9.0688c2",
         "x": 150,
-        "y": 860,
+        "y": 1940,
         "wires": [
             [
                 "fe8cb3ed.e0c44"
@@ -903,7 +903,7 @@
         "action": "",
         "pretty": false,
         "x": 450,
-        "y": 860,
+        "y": 1940,
         "wires": [
             [
                 "f28d6f10.6465c",
@@ -925,7 +925,7 @@
         "format": "{{msg.payload}}",
         "layout": "row-spread",
         "x": 860,
-        "y": 860,
+        "y": 1940,
         "wires": []
     },
     {
@@ -941,7 +941,7 @@
         "format": "{{msg.payload}}",
         "layout": "row-spread",
         "x": 870,
-        "y": 900,
+        "y": 1980,
         "wires": []
     },
     {
@@ -957,7 +957,7 @@
         "format": "{{msg.payload}}",
         "layout": "row-spread",
         "x": 870,
-        "y": 940,
+        "y": 2020,
         "wires": []
     },
     {
@@ -970,7 +970,7 @@
         "datatype": "auto",
         "broker": "3b931ee9.0688c2",
         "x": 190,
-        "y": 1300,
+        "y": 2380,
         "wires": [
             [
                 "2f81daae.df8406"
@@ -986,7 +986,7 @@
         "action": "",
         "pretty": false,
         "x": 410,
-        "y": 1300,
+        "y": 2380,
         "wires": [
             [
                 "beb63b49.d2bd58"
@@ -1020,7 +1020,7 @@
         "to": "",
         "reg": false,
         "x": 590,
-        "y": 1300,
+        "y": 2380,
         "wires": [
             [
                 "6ca881fb.d1a8d",
@@ -1042,16 +1042,16 @@
         "label": "[kg]",
         "format": "{{value}}",
         "min": "0",
-        "max": "500",
+        "max": "6000",
         "colors": [
             "#ff0000",
             "#e6e600",
             "#00ff00"
         ],
-        "seg1": "300",
-        "seg2": "400",
+        "seg1": "3000",
+        "seg2": "4000",
         "x": 830,
-        "y": 1300,
+        "y": 2380,
         "wires": []
     },
     {
@@ -1064,7 +1064,7 @@
         "datatype": "auto",
         "broker": "3b931ee9.0688c2",
         "x": 200,
-        "y": 1460,
+        "y": 2540,
         "wires": [
             [
                 "2ba1640.a48a39c"
@@ -1080,7 +1080,7 @@
         "action": "",
         "pretty": false,
         "x": 410,
-        "y": 1460,
+        "y": 2540,
         "wires": [
             [
                 "b0feed87.5af39"
@@ -1114,7 +1114,7 @@
         "to": "",
         "reg": false,
         "x": 570,
-        "y": 1460,
+        "y": 2540,
         "wires": [
             [
                 "5dc249df.b01488",
@@ -1145,7 +1145,7 @@
         "seg1": "3.33",
         "seg2": "6.66",
         "x": 770,
-        "y": 1460,
+        "y": 2540,
         "wires": []
     },
     {
@@ -1186,7 +1186,7 @@
         "outputs": 1,
         "useDifferentColor": false,
         "x": 770,
-        "y": 1400,
+        "y": 2480,
         "wires": [
             []
         ]
@@ -1201,7 +1201,7 @@
         "datatype": "auto",
         "broker": "3b931ee9.0688c2",
         "x": 180,
-        "y": 1080,
+        "y": 2160,
         "wires": [
             [
                 "ab53cb2d.3113b8"
@@ -1217,7 +1217,7 @@
         "action": "",
         "pretty": false,
         "x": 390,
-        "y": 1080,
+        "y": 2160,
         "wires": [
             [
                 "57a4ab2a.86f6a4"
@@ -1251,7 +1251,7 @@
         "to": "",
         "reg": false,
         "x": 550,
-        "y": 1080,
+        "y": 2160,
         "wires": [
             [
                 "20e6afb9.027cf"
@@ -1281,7 +1281,7 @@
         "seg1": "14000",
         "seg2": "15000",
         "x": 770,
-        "y": 1080,
+        "y": 2160,
         "wires": []
     },
     {
@@ -1294,7 +1294,7 @@
         "datatype": "auto",
         "broker": "3b931ee9.0688c2",
         "x": 180,
-        "y": 1140,
+        "y": 2220,
         "wires": [
             [
                 "ddb72b92.bc7688"
@@ -1310,7 +1310,7 @@
         "action": "",
         "pretty": false,
         "x": 370,
-        "y": 1140,
+        "y": 2220,
         "wires": [
             [
                 "cfc12e4d.06124"
@@ -1344,7 +1344,7 @@
         "to": "",
         "reg": false,
         "x": 520,
-        "y": 1140,
+        "y": 2220,
         "wires": [
             [
                 "f9ece3d7.3bf12"
@@ -1365,7 +1365,7 @@
         "label": "[kg]",
         "format": "{{value}}",
         "min": "0",
-        "max": "600",
+        "max": "6000",
         "colors": [
             "#00b500",
             "#e6e600",
@@ -1374,7 +1374,7 @@
         "seg1": "300",
         "seg2": "500",
         "x": 750,
-        "y": 1140,
+        "y": 2220,
         "wires": []
     },
     {
@@ -1387,7 +1387,7 @@
         "datatype": "auto",
         "broker": "3b931ee9.0688c2",
         "x": 200,
-        "y": 1200,
+        "y": 2280,
         "wires": [
             [
                 "4e51fdae.0e1364"
@@ -1403,7 +1403,7 @@
         "action": "",
         "pretty": false,
         "x": 410,
-        "y": 1200,
+        "y": 2280,
         "wires": [
             [
                 "c437ddd7.2676e"
@@ -1437,7 +1437,7 @@
         "to": "",
         "reg": false,
         "x": 550,
-        "y": 1200,
+        "y": 2280,
         "wires": [
             [
                 "30aaa576.68d56a"
@@ -1467,7 +1467,7 @@
         "seg1": "450",
         "seg2": "500",
         "x": 770,
-        "y": 1200,
+        "y": 2280,
         "wires": []
     },
     {
@@ -1487,10 +1487,10 @@
         "nodata": "",
         "dot": true,
         "ymin": "0",
-        "ymax": "500",
-        "removeOlder": "24",
-        "removeOlderPoints": "96",
-        "removeOlderUnit": "3600",
+        "ymax": "6000",
+        "removeOlder": "1",
+        "removeOlderPoints": "672",
+        "removeOlderUnit": "604800",
         "cutout": 0,
         "useOneColor": false,
         "useUTC": false,
@@ -1508,7 +1508,7 @@
         "outputs": 1,
         "useDifferentColor": false,
         "x": 830,
-        "y": 1260,
+        "y": 2340,
         "wires": [
             []
         ]
@@ -1523,7 +1523,7 @@
         "datatype": "auto",
         "broker": "3b931ee9.0688c2",
         "x": 230,
-        "y": 1920,
+        "y": 2640,
         "wires": [
             [
                 "456d1d39.bbe3b4"
@@ -1539,7 +1539,7 @@
         "action": "",
         "pretty": false,
         "x": 470,
-        "y": 1920,
+        "y": 2640,
         "wires": [
             [
                 "9db69bf9.952ae8"
@@ -1573,7 +1573,7 @@
         "to": "",
         "reg": false,
         "x": 650,
-        "y": 1920,
+        "y": 2640,
         "wires": [
             [
                 "227943f6.22d9ac",
@@ -1604,7 +1604,7 @@
         "seg1": "2",
         "seg2": "5",
         "x": 890,
-        "y": 1920,
+        "y": 2640,
         "wires": []
     },
     {
@@ -1645,7 +1645,7 @@
         "outputs": 1,
         "useDifferentColor": false,
         "x": 890,
-        "y": 1880,
+        "y": 2600,
         "wires": [
             []
         ]
@@ -1660,7 +1660,7 @@
         "datatype": "auto",
         "broker": "3b931ee9.0688c2",
         "x": 230,
-        "y": 2040,
+        "y": 2760,
         "wires": [
             [
                 "2fc97ad.68cef86"
@@ -1676,7 +1676,7 @@
         "action": "",
         "pretty": false,
         "x": 470,
-        "y": 2040,
+        "y": 2760,
         "wires": [
             [
                 "de262edf.5fa09"
@@ -1710,7 +1710,7 @@
         "to": "",
         "reg": false,
         "x": 650,
-        "y": 2040,
+        "y": 2760,
         "wires": [
             [
                 "c4b01e31.10e21",
@@ -1741,7 +1741,7 @@
         "seg1": "2",
         "seg2": "5",
         "x": 890,
-        "y": 2040,
+        "y": 2760,
         "wires": []
     },
     {
@@ -1782,7 +1782,7 @@
         "outputs": 1,
         "useDifferentColor": false,
         "x": 890,
-        "y": 2000,
+        "y": 2720,
         "wires": [
             []
         ]
@@ -1797,7 +1797,7 @@
         "datatype": "auto",
         "broker": "3b931ee9.0688c2",
         "x": 230,
-        "y": 2180,
+        "y": 2900,
         "wires": [
             [
                 "67fb8d5d.0f3924"
@@ -1813,7 +1813,7 @@
         "action": "",
         "pretty": false,
         "x": 470,
-        "y": 2180,
+        "y": 2900,
         "wires": [
             [
                 "3c817d97.872da2"
@@ -1847,7 +1847,7 @@
         "to": "",
         "reg": false,
         "x": 650,
-        "y": 2180,
+        "y": 2900,
         "wires": [
             [
                 "c478213e.41806",
@@ -1878,7 +1878,7 @@
         "seg1": "2",
         "seg2": "5",
         "x": 890,
-        "y": 2180,
+        "y": 2900,
         "wires": []
     },
     {
@@ -1919,7 +1919,7 @@
         "outputs": 1,
         "useDifferentColor": false,
         "x": 890,
-        "y": 2140,
+        "y": 2860,
         "wires": [
             []
         ]
@@ -1934,7 +1934,7 @@
         "datatype": "auto",
         "broker": "3b931ee9.0688c2",
         "x": 210,
-        "y": 2320,
+        "y": 3040,
         "wires": [
             [
                 "867a24f5.b4cff8"
@@ -1950,7 +1950,7 @@
         "action": "",
         "pretty": false,
         "x": 410,
-        "y": 2320,
+        "y": 3040,
         "wires": [
             [
                 "a1e2ae32.1d8a7"
@@ -1984,7 +1984,7 @@
         "to": "",
         "reg": false,
         "x": 570,
-        "y": 2320,
+        "y": 3040,
         "wires": [
             [
                 "83009749.ad1c38",
@@ -2015,7 +2015,7 @@
         "seg1": "1",
         "seg2": "2",
         "x": 770,
-        "y": 2320,
+        "y": 3040,
         "wires": []
     },
     {
@@ -2056,7 +2056,7 @@
         "outputs": 1,
         "useDifferentColor": false,
         "x": 770,
-        "y": 2260,
+        "y": 2980,
         "wires": [
             []
         ]
@@ -2071,7 +2071,7 @@
         "datatype": "auto",
         "broker": "3b931ee9.0688c2",
         "x": 210,
-        "y": 2440,
+        "y": 3160,
         "wires": [
             [
                 "92593234.509e4"
@@ -2087,7 +2087,7 @@
         "action": "",
         "pretty": false,
         "x": 410,
-        "y": 2440,
+        "y": 3160,
         "wires": [
             [
                 "f5f6bdf3.fba52"
@@ -2121,7 +2121,7 @@
         "to": "",
         "reg": false,
         "x": 570,
-        "y": 2440,
+        "y": 3160,
         "wires": [
             [
                 "dd381775.521e98",
@@ -2152,7 +2152,7 @@
         "seg1": "1",
         "seg2": "2",
         "x": 770,
-        "y": 2440,
+        "y": 3160,
         "wires": []
     },
     {
@@ -2193,7 +2193,7 @@
         "outputs": 1,
         "useDifferentColor": false,
         "x": 770,
-        "y": 2380,
+        "y": 3100,
         "wires": [
             []
         ]
@@ -2208,7 +2208,7 @@
         "datatype": "auto",
         "broker": "3b931ee9.0688c2",
         "x": 210,
-        "y": 2560,
+        "y": 3280,
         "wires": [
             [
                 "22042f0b.8b3eb"
@@ -2224,7 +2224,7 @@
         "action": "",
         "pretty": false,
         "x": 410,
-        "y": 2560,
+        "y": 3280,
         "wires": [
             [
                 "6133e72.e166a18"
@@ -2258,7 +2258,7 @@
         "to": "",
         "reg": false,
         "x": 570,
-        "y": 2560,
+        "y": 3280,
         "wires": [
             [
                 "9293256d.75b908",
@@ -2289,7 +2289,7 @@
         "seg1": "1",
         "seg2": "2",
         "x": 770,
-        "y": 2560,
+        "y": 3280,
         "wires": []
     },
     {
@@ -2330,7 +2330,7 @@
         "outputs": 1,
         "useDifferentColor": false,
         "x": 770,
-        "y": 2500,
+        "y": 3220,
         "wires": [
             []
         ]
@@ -2475,6 +2475,1168 @@
         "x": 1010,
         "y": 220,
         "wires": []
+    },
+    {
+        "id": "b3f71356.0719b",
+        "type": "mqtt in",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "data/kpi/status/hydrogen_plant/3",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "3b931ee9.0688c2",
+        "x": 170,
+        "y": 1480,
+        "wires": [
+            [
+                "416897fd.7cdeb8"
+            ]
+        ]
+    },
+    {
+        "id": "3cb2bbf5.e293e4",
+        "type": "ui_text",
+        "z": "5992b366.f9457c",
+        "group": "675fff50.e5e07",
+        "order": 3,
+        "width": 8,
+        "height": 1,
+        "name": "",
+        "label": "STATUS HYDDROGEN PLANT ID:3",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 850,
+        "y": 1480,
+        "wires": []
+    },
+    {
+        "id": "83855019.fdf8d",
+        "type": "change",
+        "z": "5992b366.f9457c",
+        "name": "status",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.status",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "timestamp",
+                "pt": "msg",
+                "to": "payload.timestamp",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 570,
+        "y": 1480,
+        "wires": [
+            [
+                "3cb2bbf5.e293e4"
+            ]
+        ]
+    },
+    {
+        "id": "416897fd.7cdeb8",
+        "type": "json",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 390,
+        "y": 1480,
+        "wires": [
+            [
+                "83855019.fdf8d"
+            ]
+        ]
+    },
+    {
+        "id": "d5c4482e.7e1908",
+        "type": "mqtt in",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "data/kpi/status/hydrogen_plant/4",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "3b931ee9.0688c2",
+        "x": 170,
+        "y": 1540,
+        "wires": [
+            [
+                "3fcfa36e.c1f0ec"
+            ]
+        ]
+    },
+    {
+        "id": "7717fdc7.ffb8e4",
+        "type": "ui_text",
+        "z": "5992b366.f9457c",
+        "group": "675fff50.e5e07",
+        "order": 3,
+        "width": 8,
+        "height": 1,
+        "name": "",
+        "label": "STATUS HYDDROGEN PLANT ID:4",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 850,
+        "y": 1540,
+        "wires": []
+    },
+    {
+        "id": "ffd8faba.166348",
+        "type": "change",
+        "z": "5992b366.f9457c",
+        "name": "status",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.status",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "timestamp",
+                "pt": "msg",
+                "to": "payload.timestamp",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 570,
+        "y": 1540,
+        "wires": [
+            [
+                "7717fdc7.ffb8e4"
+            ]
+        ]
+    },
+    {
+        "id": "3fcfa36e.c1f0ec",
+        "type": "json",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 390,
+        "y": 1540,
+        "wires": [
+            [
+                "ffd8faba.166348"
+            ]
+        ]
+    },
+    {
+        "id": "27cdc7d0.8e2e68",
+        "type": "mqtt in",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "data/kpi/status/hydrogen_plant/5",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "3b931ee9.0688c2",
+        "x": 170,
+        "y": 1600,
+        "wires": [
+            [
+                "d2ce692f.398fa8"
+            ]
+        ]
+    },
+    {
+        "id": "345e6459.83bb7c",
+        "type": "ui_text",
+        "z": "5992b366.f9457c",
+        "group": "675fff50.e5e07",
+        "order": 3,
+        "width": 8,
+        "height": 1,
+        "name": "",
+        "label": "STATUS HYDDROGEN PLANT ID:5",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 850,
+        "y": 1600,
+        "wires": []
+    },
+    {
+        "id": "711600c5.9a3f2",
+        "type": "change",
+        "z": "5992b366.f9457c",
+        "name": "status",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.status",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "timestamp",
+                "pt": "msg",
+                "to": "payload.timestamp",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 570,
+        "y": 1600,
+        "wires": [
+            [
+                "345e6459.83bb7c"
+            ]
+        ]
+    },
+    {
+        "id": "d2ce692f.398fa8",
+        "type": "json",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 390,
+        "y": 1600,
+        "wires": [
+            [
+                "711600c5.9a3f2"
+            ]
+        ]
+    },
+    {
+        "id": "b3637c21.c324a",
+        "type": "mqtt in",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "data/kpi/status/hydrogen_plant/6",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "3b931ee9.0688c2",
+        "x": 170,
+        "y": 1660,
+        "wires": [
+            [
+                "4fd9aa3d.76e4d4"
+            ]
+        ]
+    },
+    {
+        "id": "533f9c65.d23384",
+        "type": "ui_text",
+        "z": "5992b366.f9457c",
+        "group": "675fff50.e5e07",
+        "order": 3,
+        "width": 8,
+        "height": 1,
+        "name": "",
+        "label": "STATUS HYDDROGEN PLANT ID:6",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 850,
+        "y": 1660,
+        "wires": []
+    },
+    {
+        "id": "28541c6.b11e2e4",
+        "type": "change",
+        "z": "5992b366.f9457c",
+        "name": "status",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.status",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "timestamp",
+                "pt": "msg",
+                "to": "payload.timestamp",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 570,
+        "y": 1660,
+        "wires": [
+            [
+                "533f9c65.d23384"
+            ]
+        ]
+    },
+    {
+        "id": "4fd9aa3d.76e4d4",
+        "type": "json",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 390,
+        "y": 1660,
+        "wires": [
+            [
+                "28541c6.b11e2e4"
+            ]
+        ]
+    },
+    {
+        "id": "ad2ee7c1.372618",
+        "type": "mqtt in",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "data/kpi/status/hydrogen_plant/7",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "3b931ee9.0688c2",
+        "x": 170,
+        "y": 1720,
+        "wires": [
+            [
+                "7a827a13.551b04"
+            ]
+        ]
+    },
+    {
+        "id": "b4a77eac.ebdc8",
+        "type": "ui_text",
+        "z": "5992b366.f9457c",
+        "group": "675fff50.e5e07",
+        "order": 3,
+        "width": 8,
+        "height": 1,
+        "name": "",
+        "label": "STATUS HYDDROGEN PLANT ID:7",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 850,
+        "y": 1720,
+        "wires": []
+    },
+    {
+        "id": "c742f3bd.cf898",
+        "type": "change",
+        "z": "5992b366.f9457c",
+        "name": "status",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.status",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "timestamp",
+                "pt": "msg",
+                "to": "payload.timestamp",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 570,
+        "y": 1720,
+        "wires": [
+            [
+                "b4a77eac.ebdc8"
+            ]
+        ]
+    },
+    {
+        "id": "7a827a13.551b04",
+        "type": "json",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 390,
+        "y": 1720,
+        "wires": [
+            [
+                "c742f3bd.cf898"
+            ]
+        ]
+    },
+    {
+        "id": "fa08e48f.965ec8",
+        "type": "mqtt in",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "data/kpi/status/hydrogen_plant/8",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "3b931ee9.0688c2",
+        "x": 170,
+        "y": 1780,
+        "wires": [
+            [
+                "3365fdde.213572"
+            ]
+        ]
+    },
+    {
+        "id": "e20406c5.3bac38",
+        "type": "ui_text",
+        "z": "5992b366.f9457c",
+        "group": "675fff50.e5e07",
+        "order": 3,
+        "width": 8,
+        "height": 1,
+        "name": "",
+        "label": "STATUS HYDDROGEN PLANT ID:8",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 850,
+        "y": 1780,
+        "wires": []
+    },
+    {
+        "id": "3fcbd850.4ea098",
+        "type": "change",
+        "z": "5992b366.f9457c",
+        "name": "status",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.status",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "timestamp",
+                "pt": "msg",
+                "to": "payload.timestamp",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 570,
+        "y": 1780,
+        "wires": [
+            [
+                "e20406c5.3bac38"
+            ]
+        ]
+    },
+    {
+        "id": "3365fdde.213572",
+        "type": "json",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 390,
+        "y": 1780,
+        "wires": [
+            [
+                "3fcbd850.4ea098"
+            ]
+        ]
+    },
+    {
+        "id": "33045509.a40d2a",
+        "type": "mqtt in",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "data/kpi/status/hydrogen_plant/9",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "3b931ee9.0688c2",
+        "x": 170,
+        "y": 1840,
+        "wires": [
+            [
+                "540b0f99.adbe7"
+            ]
+        ]
+    },
+    {
+        "id": "f7af549f.6b2178",
+        "type": "ui_text",
+        "z": "5992b366.f9457c",
+        "group": "675fff50.e5e07",
+        "order": 3,
+        "width": 8,
+        "height": 1,
+        "name": "",
+        "label": "STATUS HYDDROGEN PLANT ID:9",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 850,
+        "y": 1840,
+        "wires": []
+    },
+    {
+        "id": "6f24f399.cee48c",
+        "type": "change",
+        "z": "5992b366.f9457c",
+        "name": "status",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.status",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "timestamp",
+                "pt": "msg",
+                "to": "payload.timestamp",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 570,
+        "y": 1840,
+        "wires": [
+            [
+                "f7af549f.6b2178"
+            ]
+        ]
+    },
+    {
+        "id": "540b0f99.adbe7",
+        "type": "json",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 390,
+        "y": 1840,
+        "wires": [
+            [
+                "6f24f399.cee48c"
+            ]
+        ]
+    },
+    {
+        "id": "4bc6d9d1.0dcaa8",
+        "type": "mqtt in",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "data/kpi/status/filter_plant/3",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "3b931ee9.0688c2",
+        "x": 190,
+        "y": 660,
+        "wires": [
+            [
+                "892ffe08.f2d6f"
+            ]
+        ]
+    },
+    {
+        "id": "91cc1c76.867f1",
+        "type": "ui_text",
+        "z": "5992b366.f9457c",
+        "group": "675fff50.e5e07",
+        "order": 3,
+        "width": 8,
+        "height": 1,
+        "name": "",
+        "label": "STATUS FILTER PLANT ID:3",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 860,
+        "y": 660,
+        "wires": []
+    },
+    {
+        "id": "1cdda78e.914068",
+        "type": "change",
+        "z": "5992b366.f9457c",
+        "name": "status",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.status",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "timestamp",
+                "pt": "msg",
+                "to": "payload.timestamp",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 610,
+        "y": 660,
+        "wires": [
+            [
+                "91cc1c76.867f1"
+            ]
+        ]
+    },
+    {
+        "id": "892ffe08.f2d6f",
+        "type": "json",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 430,
+        "y": 660,
+        "wires": [
+            [
+                "1cdda78e.914068"
+            ]
+        ]
+    },
+    {
+        "id": "3351774e.1376a8",
+        "type": "mqtt in",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "data/kpi/status/filter_plant/4",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "3b931ee9.0688c2",
+        "x": 190,
+        "y": 720,
+        "wires": [
+            [
+                "ffa172bc.b035"
+            ]
+        ]
+    },
+    {
+        "id": "92974052.4091",
+        "type": "ui_text",
+        "z": "5992b366.f9457c",
+        "group": "675fff50.e5e07",
+        "order": 3,
+        "width": 8,
+        "height": 1,
+        "name": "",
+        "label": "STATUS FILTER PLANT ID:4",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 860,
+        "y": 720,
+        "wires": []
+    },
+    {
+        "id": "33618926.1c7c66",
+        "type": "change",
+        "z": "5992b366.f9457c",
+        "name": "status",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.status",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "timestamp",
+                "pt": "msg",
+                "to": "payload.timestamp",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 610,
+        "y": 720,
+        "wires": [
+            [
+                "92974052.4091"
+            ]
+        ]
+    },
+    {
+        "id": "ffa172bc.b035",
+        "type": "json",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 430,
+        "y": 720,
+        "wires": [
+            [
+                "33618926.1c7c66"
+            ]
+        ]
+    },
+    {
+        "id": "2c0a47c2.69a9b8",
+        "type": "mqtt in",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "data/kpi/status/filter_plant/5",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "3b931ee9.0688c2",
+        "x": 190,
+        "y": 780,
+        "wires": [
+            [
+                "6f5a274a.111bc8"
+            ]
+        ]
+    },
+    {
+        "id": "10974d87.678af2",
+        "type": "ui_text",
+        "z": "5992b366.f9457c",
+        "group": "675fff50.e5e07",
+        "order": 3,
+        "width": 8,
+        "height": 1,
+        "name": "",
+        "label": "STATUS FILTER PLANT ID:5",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 860,
+        "y": 780,
+        "wires": []
+    },
+    {
+        "id": "db0d35cf.453648",
+        "type": "change",
+        "z": "5992b366.f9457c",
+        "name": "status",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.status",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "timestamp",
+                "pt": "msg",
+                "to": "payload.timestamp",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 610,
+        "y": 780,
+        "wires": [
+            [
+                "10974d87.678af2"
+            ]
+        ]
+    },
+    {
+        "id": "6f5a274a.111bc8",
+        "type": "json",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 430,
+        "y": 780,
+        "wires": [
+            [
+                "db0d35cf.453648"
+            ]
+        ]
+    },
+    {
+        "id": "dd417ad2.4f2348",
+        "type": "mqtt in",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "data/kpi/status/filter_plant/6",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "3b931ee9.0688c2",
+        "x": 190,
+        "y": 860,
+        "wires": [
+            [
+                "8a33d3d.e75c63"
+            ]
+        ]
+    },
+    {
+        "id": "2fb08b3c.276ea4",
+        "type": "ui_text",
+        "z": "5992b366.f9457c",
+        "group": "675fff50.e5e07",
+        "order": 3,
+        "width": 8,
+        "height": 1,
+        "name": "",
+        "label": "STATUS FILTER PLANT ID:6",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 860,
+        "y": 860,
+        "wires": []
+    },
+    {
+        "id": "b9640297.71b01",
+        "type": "change",
+        "z": "5992b366.f9457c",
+        "name": "status",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.status",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "timestamp",
+                "pt": "msg",
+                "to": "payload.timestamp",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 610,
+        "y": 860,
+        "wires": [
+            [
+                "2fb08b3c.276ea4"
+            ]
+        ]
+    },
+    {
+        "id": "8a33d3d.e75c63",
+        "type": "json",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 430,
+        "y": 860,
+        "wires": [
+            [
+                "b9640297.71b01"
+            ]
+        ]
+    },
+    {
+        "id": "603fa7a4.914228",
+        "type": "mqtt in",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "data/kpi/status/filter_plant/7",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "3b931ee9.0688c2",
+        "x": 190,
+        "y": 920,
+        "wires": [
+            [
+                "d52ad4ef.2e5008"
+            ]
+        ]
+    },
+    {
+        "id": "c05c5751.c196d8",
+        "type": "ui_text",
+        "z": "5992b366.f9457c",
+        "group": "675fff50.e5e07",
+        "order": 3,
+        "width": 8,
+        "height": 1,
+        "name": "",
+        "label": "STATUS FILTER PLANT ID:7",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 860,
+        "y": 920,
+        "wires": []
+    },
+    {
+        "id": "62f76f85.c6a77",
+        "type": "change",
+        "z": "5992b366.f9457c",
+        "name": "status",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.status",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "timestamp",
+                "pt": "msg",
+                "to": "payload.timestamp",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 610,
+        "y": 920,
+        "wires": [
+            [
+                "c05c5751.c196d8"
+            ]
+        ]
+    },
+    {
+        "id": "d52ad4ef.2e5008",
+        "type": "json",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 430,
+        "y": 920,
+        "wires": [
+            [
+                "62f76f85.c6a77"
+            ]
+        ]
+    },
+    {
+        "id": "93faa448.ba8f48",
+        "type": "mqtt in",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "data/kpi/status/filter_plant/8",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "3b931ee9.0688c2",
+        "x": 190,
+        "y": 980,
+        "wires": [
+            [
+                "99f21c7f.cac7e"
+            ]
+        ]
+    },
+    {
+        "id": "4372440c.00bd7c",
+        "type": "ui_text",
+        "z": "5992b366.f9457c",
+        "group": "675fff50.e5e07",
+        "order": 3,
+        "width": 8,
+        "height": 1,
+        "name": "",
+        "label": "STATUS FILTER PLANT ID:8",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 860,
+        "y": 980,
+        "wires": []
+    },
+    {
+        "id": "e532566b.908a98",
+        "type": "change",
+        "z": "5992b366.f9457c",
+        "name": "status",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.status",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "timestamp",
+                "pt": "msg",
+                "to": "payload.timestamp",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 610,
+        "y": 980,
+        "wires": [
+            [
+                "4372440c.00bd7c"
+            ]
+        ]
+    },
+    {
+        "id": "99f21c7f.cac7e",
+        "type": "json",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 430,
+        "y": 980,
+        "wires": [
+            [
+                "e532566b.908a98"
+            ]
+        ]
+    },
+    {
+        "id": "6587a033.2a212",
+        "type": "mqtt in",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "topic": "data/kpi/status/filter_plant/9",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "3b931ee9.0688c2",
+        "x": 190,
+        "y": 1040,
+        "wires": [
+            [
+                "9c905688.b3b5e8"
+            ]
+        ]
+    },
+    {
+        "id": "b661e494.71ec08",
+        "type": "ui_text",
+        "z": "5992b366.f9457c",
+        "group": "675fff50.e5e07",
+        "order": 3,
+        "width": 8,
+        "height": 1,
+        "name": "",
+        "label": "STATUS FILTER PLANT ID:9",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 860,
+        "y": 1040,
+        "wires": []
+    },
+    {
+        "id": "6ed9fd7b.10c604",
+        "type": "change",
+        "z": "5992b366.f9457c",
+        "name": "status",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.status",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "timestamp",
+                "pt": "msg",
+                "to": "payload.timestamp",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 610,
+        "y": 1040,
+        "wires": [
+            [
+                "b661e494.71ec08"
+            ]
+        ]
+    },
+    {
+        "id": "9c905688.b3b5e8",
+        "type": "json",
+        "z": "5992b366.f9457c",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 430,
+        "y": 1040,
+        "wires": [
+            [
+                "6ed9fd7b.10c604"
+            ]
+        ]
     },
     {
         "id": "3b931ee9.0688c2",

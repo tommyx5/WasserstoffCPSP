@@ -6,6 +6,12 @@ from mqtt.mqtt_wrapper import MQTTWrapper
 import os
 from collections import namedtuple
 
+# Configure the logger
+logging.basicConfig(
+    level=logging.INFO,  # Set minimum level to log
+    format="%(asctime)s - %(levelname)s - %(message)s",  # Customize the output format
+)
+
 def getenv_or_exit(env_name, default="default"):
     value = os.getenv(env_name, default)
     if value == default:
@@ -16,18 +22,11 @@ PLANTS_NUMBER = int(getenv_or_exit("NUMBER_OF_HYDROGEN_PLANTS", 0))
 
 TICK = getenv_or_exit('TOPIC_TICK_GEN_TICK', 'default')
 TOPIC_HYDROGEN_DAILY_DEMAND = getenv_or_exit("TOPIC_HYDROGEN_DEMAND_GEN_HYDROGEN_DEMAND", 'default')
-FILTERED_WATER_AMOUNT = getenv_or_exit("TOPIC_FILTER_PLANT_PLANED_AMOUNT", 'default')
-HYDROGEN_SUPPLY_SUM = getenv_or_exit("TOPIC_HYDROGEN_SUM_DATA", 'default')
-TOPIC_KPI = getenv_or_exit("TOPIC_HYDROGEN_CELL_KPI", "default") # Base topic to receive kpis from filter plants (must be followed by Plant ID)
-TOPIC_ADAPTIVE_MODE = getenv_or_exit('TOPIC_ADAPTIVE_MODE', 'default')
-
-TIMESTAMP = 0
-HYDROGEN_DAILY_DEMAND = 0
-HYDROGEN_PRODUCED = 0
-TOTAL_HYDROGEN_PRODUCED = 0
-
-TOPIC_SUPPLY = getenv_or_exit("TOPIC_HYDROGEN_CELL_HYDROGEN_SUPPLY", "default") # Base topic to receive supply msg from the hydrogen plants (must be followed by Plant ID)
 TOPIC_HYDROGEN_REQEUST = getenv_or_exit("TOPIC_HYDROGEN_CELL_HYDROGEN_REQUEST", "default") # Topic to send requests for hydrogen to hydrogen plants (must be followed by Plant ID)
+TOPIC_SUPPLY = getenv_or_exit("TOPIC_HYDROGEN_CELL_HYDROGEN_SUPPLY", "default") # Base topic to receive supply msg from the hydrogen plants (must be followed by Plant ID)
+TOPIC_KPI = getenv_or_exit("TOPIC_HYDROGEN_CELL_KPI", "default") # Base topic to receive kpis from filter plants (must be followed by Plant ID)
+TOPIC_ADAPTIVE_MODE = getenv_or_exit('TOPIC_ADAPTIVE_MODE', 'default')# Topic to change work modes 
+TOPIC_HYDROGEN_SUPPLY_SUM = getenv_or_exit("TOPIC_HYDROGEN_SUM_DATA", 'default') # Topic to send production data for the dashboard
 
 TOPIC_KPI_LIST = []
 TOPIC_SUPPLY_LIST = []
@@ -37,151 +36,29 @@ for i in range(PLANTS_NUMBER):
     TOPIC_SUPPLY_LIST.append(TOPIC_SUPPLY+str(i)) # list with all supply topics
     TOPIC_KPI_LIST.append(TOPIC_KPI+str(i)) # list with all kpi topics
 
-RECEIVED_KPI = 0
-RECEIVED_SUPPLIES = 0
-
-KPI_LIST = [] # A list to hold all requests
-KPI_CLASS = namedtuple("KPI", ["plant_id", "status", "eff", "prod", "cper"]) # A data structure for requests
-SUPPLY_LIST = [] # A list to hold all supplies
-SUPPLY_CLASS = namedtuple("Supply", ["supply"]) # A data structure for supplies
-
 ADAPTABLE = False
-
+TIMESTAMP = 0
 TICK_COUNT = 0
+RECEIVED_SUPPLIES = 0
+RECEIVED_KPI = 0
 
-def send_reply_msg(client, reply_topic, timestamp, amount):
-    data = {
-        "timestamp": timestamp,  
-        "amount": amount
-    }
-    client.publish(reply_topic, json.dumps(data))
+HYDROGEN_DAILY_DEMAND = 0
+TOTAL_HYDROGEN_PRODUCED = 0
 
-def send_plan_msg(client, topic, timestamp, amount):
+SUPPLY_LIST = [] # A list to hold all supplies
+KPI_LIST = [] # A list to hold all requests
+
+SUPPLY_CLASS = namedtuple("Supply", ["supply"]) # A data structure for supplies
+KPI_CLASS = namedtuple("KPI", ["plant_id", "status", "eff", "prod", "cper", "poproduction", "failure", "ploss", "statusoverproduction"]) # A data structure for requests
+
+TICKS_IN_DAY = 96
+
+def send_msg(client, topic, timestamp, amount):
     data = {
         "timestamp": timestamp,  
         "amount": amount
     }
     client.publish(topic, json.dumps(data))
-
-
-"""
-def weighted_supply_function(daily_goal, requests, weights=None):
-"""
-    #Calculate supply distribution based on weighted KPIs.
-    #:param available_supply: Total available hydrogen supply.
-    #:param requests: List of KPIs.
-    #:param weights: Dictionary with weights for eff, prod, and cper.
-"""
-    if weights is None:
-        weights = {"eff": 0.4, "prod": 0.35, "cper": 0.25}
-
-    # Step 1: Normalization of KPIs
-    eff_values = [req.eff for req in requests]
-    prod_values = [req.prod for req in requests]
-    cper_values = [req.cper for req in requests]
-
-    max_eff = max(eff_values) if eff_values else 1
-    max_prod = max(prod_values) if prod_values else 1
-    max_cper = max(cper_values) if cper_values else 1
-
-    # Step 2: Calculate weighted score for each plant
-    scores = {}
-    for request in requests:
-        normalized_eff = request.eff / max_eff
-        normalized_prod = request.prod / max_prod
-        normalized_cper = request.cper / max_cper
-
-        # Weighted sum of normalized values
-        score = (normalized_eff * weights["eff"] +
-                 normalized_prod * weights["prod"] +
-                 normalized_cper * weights["cper"])
-        scores[request.plant_id] = score
-
-    # Step 3: Proportional allocation based on scores
-    total_score = sum(scores.values())
-    allocation = {}
-    for request in requests:
-        share = (scores[request.plant_id] / total_score) * (daily_goal/24 * 4)  # 24 * 4 ticks per day
-        allocation[request.plant_id] = round(share, 2)  # Round for clarity
-
-    return allocation
-
-def no_addaptive_supply_function(daily_goal, requests):
-
-    allocation = {}
-    amount_plants = request.len()
-    for request in requests:
-            allocation[request.plant_id] = (daily_goal/24 * 4) / amount_plants
-
-    return allocation
-
-def calculate_and_publish_amount(client):
-"""
-    #Calculates the supply for each requester and publishes the replies.
-"""
-    global KPIS_LIST, HYDROGEN_DAILY_DEMAND, TIMESTAMP, ADAPTABLE
-
-    if not KPIS_LIST:
-        print("No requests to process.")
-        return
-
-    if ADAPTABLE == True:
-    # Use the supplied supply function to calculate allocation
-        allocation = weighted_supply_function(HYDROGEN_DAILY_DEMAND, KPIS_LIST)
-    else:
-        allocation = no_addaptive_supply_function(HYDROGEN_DAILY_DEMAND, KPIS_LIST)
-    totalsupply = 0
-    # Publish replies (simulate publishing with print statements for now)
-    for request in KPIS_LIST:
-        
-        supply = allocation.get(request.plant_id, 0)
-        totalsupply += supply
-        send_reply_msg(client, HYDROGEN_AMOUNT, TIMESTAMP, supply)
-    
-    send_reply_msg(client, FILTERED_WATER_AMOUNT, TIMESTAMP, totalsupply * 9)  # 1 kg H2O -> 9 kg H2
-    send_reply_msg(client, HYDROGEN_SUPPLY_SUM, TIMESTAMP, totalsupply)
-
-    # Clear the REQUESTS list after processing
-    KPIS_LIST.clear()
-
-def add_request(timestamp, plant_id, status, eff, prod, cper):
-    global RECEIVED_KPI_M, KPIS_LIST, KPIS_CLASS
-
-    KPIS_LIST.append(KPIS_CLASS(timestamp, plant_id, status, eff, prod, cper))
-    RECEIVED_KPI_M += 1
-
-def on_message_request(client, userdata, msg):
-"""
-    #Callback function that processes messages from the request topic.
-"""
-    
-    #extracting the timestamp and other data
-    payload = json.loads(msg.payload)
-    timestamp = payload["timestamp"]
-    plant_id = payload["plant_id"]
-    status = payload["status"]
-    eff = payload["eff"]
-    prod = payload["prod"]
-    cper = payload["cper"]
-
-    add_request(timestamp, plant_id, status, eff, prod, cper)
-"""
-
-def on_message_tick(client, userdata, msg):
-    global TIMESTAMP, RECEIVED_KPI_M
-     
-    TIMESTAMP = msg.payload.decode("utf-8") # extract the timestamp 
-    RECEIVED_KPI_M = 0 # update request number
-    calculate_and_publish_requests(client)
-
-def on_message_daily_hydrogen_amount(client, userdata, msg):
-    """
-    Callback function that processes messages from the daily hydrogen amount topic.
-    """
-    global HYDROGEN_DAILY_DEMAND, TOTAL_HYDROGEN_PRODUCED
-    payload = json.loads(msg.payload)
-    HYDROGEN_DAILY_DEMAND = payload["hydrogen"]
-    TOTAL_HYDROGEN_PRODUCED = 0
 
 def calculate_hydrogen_demand_for_tick():
     global HYDROGEN_DAILY_DEMAND, TOTAL_HYDROGEN_PRODUCED, TICK_COUNT
@@ -189,7 +66,7 @@ def calculate_hydrogen_demand_for_tick():
     # avoid division by 0
     mod = TICK_COUNT % 96 
     if  mod > 0:
-        plan = round((HYDROGEN_DAILY_DEMAND - TOTAL_HYDROGEN_PRODUCED) / (96-mod), 2)
+        plan = round((HYDROGEN_DAILY_DEMAND - TOTAL_HYDROGEN_PRODUCED) / (TICKS_IN_DAY-mod), 2)
     else:
         plan = HYDROGEN_DAILY_DEMAND - TOTAL_HYDROGEN_PRODUCED
 
@@ -199,7 +76,6 @@ def calculate_hydrogen_demand_for_tick():
     else:
         demand_for_tick = 0
 
-    TICK_COUNT += 1 
     return demand_for_tick
 
 def weighted_coefficient_function(kpi):
@@ -210,112 +86,163 @@ def weighted_coefficient_function(kpi):
     eff_weight = 0.5
     prod_weight = 0.3
     cper_weight = 0.2
+    poproduction_weight = 0.0
+    failure_weight = 0.0
+    ploss_weight = 0.0
+    statusoverproduction_weight = 0.0   #TODO kann raus
 
     coefficient = (
         1.0 +
         kpi.eff * eff_weight +
         kpi.prod * prod_weight +
-        kpi.cper * cper_weight
+        kpi.cper * cper_weight +
+        kpi.poproduction * poproduction_weight+
+        kpi.failure * failure_weight +
+        kpi.ploss * ploss_weight +
+        kpi.statusoverproduction * statusoverproduction_weight
     )
     return max(coefficient, 0.0)  # Avoid negative coefficients
 
-def calculate_and_publish_requests(client, coefficient_function=weighted_coefficient_function):
+def calculate_and_publish_hydrogen_requests(client, coefficient_function=weighted_coefficient_function):
     global TIMESTAMP, ADAPTABLE, PLANTS_NUMBER, TOPIC_HYDROGEN_REQEUST_LIST, HYDROGEN_DAILY_DEMAND, RECEIVED_KPI
     global KPI_LIST
 
     # Calculate the total demand for this tick
     total_demand = calculate_hydrogen_demand_for_tick()
 
-    if ADAPTABLE:
-        print("ADAPTABLE HYDROGEN PIPE NOT IMPLEMENTED YET")
-
-        # If first iteration and kpi list is not there yet
-        if not KPI_LIST:
-            partial_demand = round (total_demand / PLANTS_NUMBER, 2)
-            for request_topic in TOPIC_HYDROGEN_REQEUST_LIST:
-                send_plan_msg(
-                    client=client,
-                    topic=request_topic,
-                    timestamp=TIMESTAMP,
-                    amount=partial_demand
-                )
-        else:    
-            total_coefficient = sum(
-                coefficient_function(kpi)
-                for kpi in KPI_LIST if kpi.status == "online"
-            )
-
-            for kpi in KPI_LIST:
-                # Find the topic corresponding to the plant's ID
-                request_topic = next((t for t in TOPIC_HYDROGEN_REQEUST_LIST if f"/{kpi.plant_id}" in t), None)
-                if not request_topic:
-                    print(f"No request topic found for filter plant ID {kpi.plant_id}, skipping...")
-                    continue
-
-                if kpi.status != "online" :
-                    # Offline plants receive 0 allocation
-                    request_amount = 0
-                else:
-                    # Calculate allocation for active plants
-                    coefficient = coefficient_function(kpi)
-                    request_amount = (coefficient/total_coefficient) * total_demand
-
-                # Send the water production request message
-                send_plan_msg(
-                    client=client,
-                    topic=request_topic,
-                    timestamp=TIMESTAMP,
-                    amount=request_amount
-                )
-    else:
-        partial_demand = round (total_demand / PLANTS_NUMBER, 2)
+    # Handling for the initial loop where no kpi is present
+    if not KPI_LIST:
+        logging.debug("Warning. No kpi list. Using default mean allocation")
         for request_topic in TOPIC_HYDROGEN_REQEUST_LIST:
-            send_plan_msg(
+            request_amount = round(total_demand/PLANTS_NUMBER, 4)
+                
+            # Send the water production request message
+            send_msg(
                 client=client,
                 topic=request_topic,
                 timestamp=TIMESTAMP,
-                amount=partial_demand
+                amount=request_amount
             )
+            logging.debug(f"Sending  hydrogen request message to hydrogen plant. Timestamp: {TIMESTAMP}, msg topic: {request_topic}, requested amount: {request_amount}")
+
+        RECEIVED_KPI = 0
+        return
+
+    if ADAPTABLE:
+        # Place for everything that MAPE loop has to do before the iterating trough and publishing requests to filter plants
+        total_coefficient = sum(coefficient_function(kpi) for kpi in KPI_LIST if kpi.status != "offline")
+    else:
+        online_count = sum(1 for kpi in KPI_LIST if kpi.status != "offline")
+
+    for request_topic in TOPIC_HYDROGEN_REQEUST_LIST:
+        # extract corresponding kpi
+        request_plant_id = request_topic.split('/')[-1]
+        corresponding_kpi = next((kpi for kpi in KPI_LIST if kpi.plant_id == request_plant_id), None)
+        logging.debug(f"Plant id: {request_plant_id}")
+
+        if not corresponding_kpi:
+            # No kpi corresponding for plant id in the request 
+            logging.debug(f"Hydrogen plant with id {request_plant_id} and request topic: {request_topic} has no corresponding KPI.")
+            request_amount = 0
+        elif corresponding_kpi.status == "offline" :
+            # Offline plants receive 0 allocation
+            logging.debug(f"Hydrogen plant with id {corresponding_kpi.plant_id} is offline.")
+            request_amount = 0
+        else:
+            # Calculate allocation for active plants
+            if ADAPTABLE:
+                # Iterations of the MAPE loop
+                coefficient = coefficient_function(corresponding_kpi)
+                request_amount = round((coefficient/total_coefficient) * total_demand, 4)
+            else:
+                request_amount = round(total_demand/online_count, 4)
+            
+        # Send the water production request message
+        send_msg(
+            client=client,
+            topic=request_topic,
+            timestamp=TIMESTAMP,
+            amount=request_amount
+        )
+        logging.debug(f"Sending hydrogen request message to hydrogen plant with id {request_plant_id}. timestamp: {TIMESTAMP}, msg topic: {request_topic}, requested amount: {request_amount}")
 
     RECEIVED_KPI = 0
     KPI_LIST.clear()
 
-def calculate_supply(client):
-    global HYDROGEN_PRODUCED, TOTAL_HYDROGEN_PRODUCED, SUPPLY_LIST, RECEIVED_SUPPLIES
+def calculate_total_supply(client):
+    global TOTAL_HYDROGEN_PRODUCED, SUPPLY_LIST, RECEIVED_SUPPLIES
+    
     # Calculate the total supply
-    HYDROGEN_PRODUCED = sum(supply.supply for supply in SUPPLY_LIST)
-    TOTAL_HYDROGEN_PRODUCED = TOTAL_HYDROGEN_PRODUCED + HYDROGEN_PRODUCED
+    hydrogen_produced_current_tick = sum(supply.supply for supply in SUPPLY_LIST)
+    TOTAL_HYDROGEN_PRODUCED = round(TOTAL_HYDROGEN_PRODUCED + hydrogen_produced_current_tick, 4)
 
 
     # Publish the data for the dashboard
     # Maybe delete later
-    global TIMESTAMP, HYDROGEN_SUPPLY_SUM, TICK_COUNT
-    if TICK_COUNT == 0: tick = 1 
-    else: tick = TICK_COUNT
-    data = {"hydrogen": TOTAL_HYDROGEN_PRODUCED, "mean_hydrogen": round(TOTAL_HYDROGEN_PRODUCED/tick,2), "timestamp": TIMESTAMP}
-    client.publish(HYDROGEN_SUPPLY_SUM, json.dumps(data))
+    global TIMESTAMP, TOPIC_HYDROGEN_SUPPLY_SUM, TICK_COUNT, TICKS_IN_DAY
+    tick = TICK_COUNT % TICKS_IN_DAY
+    if tick == 0: tick = TICKS_IN_DAY
+    data = {"hydrogen": TOTAL_HYDROGEN_PRODUCED, "mean_hydrogen": round(TOTAL_HYDROGEN_PRODUCED/tick , 4), "timestamp": TIMESTAMP}
+    client.publish(TOPIC_HYDROGEN_SUPPLY_SUM, json.dumps(data))
 
 
     SUPPLY_LIST.clear()
     RECEIVED_SUPPLIES = 0
-
-def on_message_supply(client, userdata, msg):
-    """
-    Callback function that processes messages from the request topic.
-    """
-    
-    #extracting the timestamp and other data
-    payload = json.loads(msg.payload)
-    timestamp = payload["timestamp"]
-    supply = payload["amount"]
-
-    add_supply(supply)
 
 def add_supply(supply):
     global RECEIVED_SUPPLIES, SUPPLY_LIST, SUPPLY_CLASS
 
     SUPPLY_LIST.append(SUPPLY_CLASS(supply))
     RECEIVED_SUPPLIES += 1
+
+def add_kpi(plant_id, status, eff, prod, cper, poproduction, failure, ploss, statusoverproduction):
+    global RECEIVED_KPI, KPI_LIST, KPI_CLASS
+
+    KPI_LIST.append(KPI_CLASS(plant_id, status, eff, prod, cper, poproduction, failure, ploss, statusoverproduction))
+    RECEIVED_KPI += 1
+
+def on_message_tick(client, userdata, msg):
+    global TIMESTAMP, RECEIVED_KPI, RECEIVED_SUPPLIES, TICK_COUNT
+     
+    TIMESTAMP = msg.payload.decode("utf-8") # extract the timestamp
+    RECEIVED_SUPPLIES = 0
+    RECEIVED_KPI = 0
+    TICK_COUNT += 1
+    logging.debug(f"Received tick message, timestamp: {TIMESTAMP}")
+
+    calculate_and_publish_hydrogen_requests(client)
+
+def on_message_daily_hydrogen_amount(client, userdata, msg):
+    """
+    Callback function that processes messages from the daily hydrogen amount topic.
+    """
+    global HYDROGEN_DAILY_DEMAND, TOTAL_HYDROGEN_PRODUCED
+    payload = json.loads(msg.payload)
+    timestamp = payload["timestamp"]
+    HYDROGEN_DAILY_DEMAND = payload["hydrogen"]
+    TOTAL_HYDROGEN_PRODUCED = 0
+    logging.debug(f"Received message with daily hydrogen request: timestamp: {timestamp}, daily demand: {HYDROGEN_DAILY_DEMAND}")
+
+def on_message_adaptive_mode(client, userdata, msg):
+    global ADAPTABLE
+    boolean = msg.payload.decode("utf-8")
+    if boolean == "true" or boolean == "1" or boolean == "I love Python" or boolean == "True":
+        ADAPTABLE = True
+    else:
+        ADAPTABLE = False
+    logging.info(f"Received message with to change mode, adaptable mode is {ADAPTABLE}")
+
+def on_message_supply(client, userdata, msg):
+    """
+    Callback function that processes messages from the request topic.
+    """
+    #extracting the timestamp and other data
+    payload = json.loads(msg.payload)
+    timestamp = payload["timestamp"]
+    supply = payload["amount"]
+    logging.debug(f"Received message with hydrogen water supply. timestamp: {timestamp}, msg topic: {msg.topic}, supply: {supply}")
+
+    add_supply(supply)
 
 def on_message_kpi(client, userdata, msg):
     #extracting the timestamp and other data
@@ -326,22 +253,13 @@ def on_message_kpi(client, userdata, msg):
     eff = payload["eff"]
     prod = payload["prod"]
     cper = payload["cper"]
+    poproduction = payload["poproduction"]
+    failure = payload["failure"]
+    ploss = payload["ploss"]
+    statusoverproduction = payload["statusoverproduction"] #TODO kann raus
+    logging.debug(f"Received message with KPI: timestamp. {timestamp}, msg topic: {msg.topic}, plant_id: {plant_id}, status: {status}, eff: {eff}, prod: {prod}, cper: {cper}, poproduction: {poproduction}, failure: {failure}, ploss: {ploss}, statusoverproduction: {statusoverproduction}")
 
-    add_kpi(plant_id, status, eff, prod, cper)
-
-def add_kpi(plant_id, status, eff, prod, cper):
-    global RECEIVED_KPI, KPI_LIST, KPI_CLASS
-
-    KPI_LIST.append(KPI_CLASS(plant_id=plant_id, status=status, eff=eff, prod=prod, cper=cper))
-    RECEIVED_KPI += 1
-
-def on_message_adaptive_mode(client, userdata, msg):
-    global ADAPTABLE
-    boolean = msg.payload.decode("utf-8")
-    if boolean == "true" or boolean == "1" or boolean == "I love Python" or boolean == "True":
-        ADAPTABLE = True
-    else:
-        ADAPTABLE = False
+    add_kpi(plant_id, status, eff, prod, cper, poproduction, failure, ploss, statusoverproduction)
 
 def main():
     """
@@ -371,7 +289,7 @@ def main():
         # Start the MQTT loop to process incoming and outgoing messages
         while True:
             if RECEIVED_SUPPLIES >= PLANTS_NUMBER:
-                calculate_supply(mqtt)
+                calculate_total_supply(mqtt)
                 
             mqtt.loop(0.05) # loop every 50ms
     except (KeyboardInterrupt, SystemExit):
