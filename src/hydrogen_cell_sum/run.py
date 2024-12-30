@@ -85,7 +85,7 @@ def decision_kpi(corresponding_kpi):
     total_demand = calculate_hydrogen_demand_for_tick()
     plants_left = PLANTS_NUMBER
     demand_need = total_demand
-    if(corresponding_kpi.soproduction > 8 or (corresponding_kpi.failure > 0.8 and corresponding_kpi.prod > 1.0)):
+    if(corresponding_kpi.soproduction > 8 or (corresponding_kpi.failure > 0.05 and corresponding_kpi.prod > 1.0)):
         if(round(total_demand/plants_left, 4) > (corresponding_kpi.nominalo * 0.8)):
             request_amount = corresponding_kpi.nominalo * 0.8
             demand_need = demand_need - request_amount
@@ -95,7 +95,7 @@ def decision_kpi(corresponding_kpi):
             demand_need = demand_need - request_amount
             plants_left = plants_left - 1
                 
-    elif(corresponding_kpi.soproduction < 2 and corresponding_kpi.ploss < 0.3 and corresponding_kpi.failure < 0.2):         #bei zu hoher production loss lohnt sich keine starke Überlast
+    elif(corresponding_kpi.soproduction < 2 and corresponding_kpi.ploss < 0.3 and corresponding_kpi.failure < 0.02):         #bei zu hoher production loss lohnt sich keine starke Überlast
         if(round(demand_need/plants_left, 4) > (corresponding_kpi.nominalo * 1.5)):
             request_amount = round(demand_need/plants_left, 4)
             demand_need = demand_need - request_amount
@@ -186,10 +186,7 @@ def calculate_and_publish_hydrogen_requests(client):
                 # Iterations of the MAPE loop
                 request_amount = decision_kpi(corresponding_kpi)
             else:
-                if(round(total_demand/online_count, 4) > corresponding_kpi.nominalo):
-                    request_amount = corresponding_kpi.nominalo
-                else:
-                    request_amount = round(total_demand/online_count, 4)
+                request_amount = round(total_demand/online_count, 4)
             
         # Send the water production request message
         send_msg(
