@@ -52,7 +52,8 @@ KPI_LIST = [] # A list to hold all kpis
 
 REQUEST_CLASS = namedtuple("Request", ["plant_id", "reply_topic", "demand"]) # A data structure for requests
 SUPPLY_CLASS = namedtuple("Supply", ["supply"]) # A data structure for supplies
-KPI_CLASS = namedtuple("KPI", ["plant_id", "status", "eff", "prod", "cper", "poproduction", "failure", "ploss", "statusoverproduction"]) # A data structure for kpis TODO: Erweitern um neue KPIs
+KPI_CLASS = namedtuple("KPI", ["plant_id", "status", "eff", "prod", "cper", "soproduction", "failure", "ploss", "nominalo"]) # A data structure for kpis TODO: Erweitern um neue KPIs
+
 
 TICKS_IN_DAY = 96
 
@@ -138,35 +139,63 @@ def calculate_supply(client):
     SUPPLY_LIST.clear()
     RECEIVED_SUPPLIES = 0
 
-def weighted_coefficient_function(kpi):
-    """
-    Replaceable function to calculate the coefficient for allocation.
-    Uses `eff`, `prod`, and `cper` as weights.
-    """
-    eff_weight = 0.5
-    prod_weight = 0.3
-    cper_weight = 0.2
-    poproduction_weight = 0.0
-    failure_weight = 0.0
-    ploss_weight = 0.0
-    statusoverproduction_weight = 0.0
+def decision_kpi(corresponding_kpi):
 
-    
-    #TODO: Gewichtung für neue KPIs hinzufügen
+    global REQUEST_LIST, PLANTS_NUMBER
 
-    coefficient = (
-        1.0 +
-        kpi.eff * eff_weight +
-        kpi.prod * prod_weight +
-        kpi.cper * cper_weight +
-        kpi.poproduction * poproduction_weight+
-        kpi.failure * failure_weight +
-        kpi.ploss * ploss_weight +
-        kpi.statusoverproduction * statusoverproduction_weight
-    )
-    return max(coefficient, 0.0)  # Avoid negative coefficients
+    total_demand = sum(request.demand for request in REQUEST_LIST)
+    plants_left = PLANTS_NUMBER
+    demand_need = total_demand
+    if(corresponding_kpi.soproduction > 8 or (corresponding_kpi.failure > 0.8 and corresponding_kpi.prod > 1.0)):
+        if(round(total_demand/plants_left, 4) > (corresponding_kpi.nominalo * 0.8)):
+            request_amount = corresponding_kpi.nominalo * 0.8
+            demand_need = demand_need - request_amount
+            plants_left = plants_left - 1
+        else:
+            request_amount = round(demand_need/plants_left, 4)
+            demand_need = demand_need - request_amount
+            plants_left = plants_left - 1
+                
+    elif(corresponding_kpi.soproduction < 2 and corresponding_kpi.ploss < 0.3 and corresponding_kpi.failure < 0.2):         #bei zu hoher production loss lohnt sich keine starke Überlast
+        if(round(demand_need/plants_left, 4) > (corresponding_kpi.nominalo * 1.5)):
+            request_amount = round(demand_need/plants_left, 4)
+            demand_need = demand_need - request_amount
+            plants_left = plants_left - 1
+        else:
+            request_amount = corresponding_kpi.nominalo * 1.5
+            demand_need = demand_need - request_amount
+            plants_left = plants_left - 1
 
-def calculate_and_publish_filtered_water_requests(client, coefficient_function=weighted_coefficient_function):
+    elif(corresponding_kpi.soproduction < 4 and corresponding_kpi.ploss < 0.1 and corresponding_kpi.failure < 0.1):
+        if(round(demand_need/plants_left, 4) > (corresponding_kpi.nominalo * 1.3)):
+            request_amount = round(demand_need/plants_left, 4)
+            demand_need = demand_need - request_amount
+            plants_left = plants_left - 1
+        else:
+            request_amount = corresponding_kpi.nominalo * 1.3
+            demand_need = demand_need - request_amount
+            plants_left = plants_left - 1
+    elif(corresponding_kpi.soproduction < 6):
+        if(round(demand_need/plants_left, 4) > (corresponding_kpi.nominalo * 1.1)):
+            request_amount = round(demand_need/plants_left, 4)
+            demand_need = demand_need - request_amount
+            plants_left = plants_left - 1
+        else:
+            request_amount = corresponding_kpi.nominalo * 1.1
+            demand_need = demand_need - request_amount
+            plants_left = plants_left - 1
+    else:
+        if(round(demand_need/plants_left, 4) > corresponding_kpi.nominalo ):
+            request_amount = round(demand_need/plants_left, 4)
+            demand_need = demand_need - request_amount
+            plants_left = plants_left - 1
+        else:
+            request_amount = corresponding_kpi.nominalo
+            demand_need = demand_need - request_amount
+            plants_left = plants_left - 1
+    return request_amount
+
+def calculate_and_publish_filtered_water_requests(client):
     """
         This defenitely needs refactoring
     """
@@ -200,7 +229,7 @@ def calculate_and_publish_filtered_water_requests(client, coefficient_function=w
 
     if ADAPTABLE:
         # Place for everything that MAPE loop has to do before the iterating trough and publishing requests to filter plants
-        total_coefficient = sum(coefficient_function(kpi) for kpi in KPI_LIST if kpi.status != "offline")
+        n = 0
     else:
         online_count = sum(1 for kpi in KPI_LIST if kpi.status != "offline")
 
@@ -221,11 +250,12 @@ def calculate_and_publish_filtered_water_requests(client, coefficient_function=w
         else:
             # Calculate allocation for active plants
             if ADAPTABLE:
-                # Iterations of the MAPE loop
-                coefficient = coefficient_function(corresponding_kpi)
-                request_amount = round((coefficient/total_coefficient) * total_demand, 4)
+                request_amount = decision_kpi(corresponding_kpi)
             else:
-                request_amount = round(total_demand/online_count, 4)
+                if(round(total_demand/online_count, 4) > corresponding_kpi.nominalo):
+                    request_amount = corresponding_kpi.nominalo
+                else:
+                    request_amount = round(total_demand/online_count, 4)
             
         # Send the water production request message
         send_msg(
@@ -239,7 +269,7 @@ def calculate_and_publish_filtered_water_requests(client, coefficient_function=w
     RECEIVED_REQUESTS = 0
     RECEIVED_KPI = 0
     KPI_LIST.clear()
-   
+
 def add_request(plant_id, reply_topic, demand):
     global RECEIVED_REQUESTS, REQUEST_LIST, REQUEST_CLASS
 
@@ -252,10 +282,10 @@ def add_supply(supply):
     SUPPLY_LIST.append(SUPPLY_CLASS(supply))
     RECEIVED_SUPPLIES += 1
 
-def add_kpi(plant_id, status, eff, prod, cper, poproduction, failure, ploss, statusoverproduction):
+def add_kpi(plant_id, status, eff, prod, cper, soproduction, failure, ploss, nominalo):
     global RECEIVED_KPI, KPI_LIST, KPI_CLASS
 
-    KPI_LIST.append(KPI_CLASS(plant_id, status, eff, prod, cper, poproduction, failure, ploss, statusoverproduction))
+    KPI_LIST.append(KPI_CLASS(plant_id, status, eff, prod, cper, soproduction, failure, ploss, nominalo))
     RECEIVED_KPI += 1
 
 def on_message_tick(client, userdata, msg):
@@ -305,13 +335,13 @@ def on_message_kpi(client, userdata, msg):
     eff = payload["eff"]
     prod = payload["prod"]
     cper = payload["cper"]
-    poproduction = payload["poproduction"]
+    soproduction = payload["soproduction"]
     failure = payload["failure"]
     ploss = payload["ploss"]
-    statusoverproduction = payload["statusoverproduction"]
-    logging.debug(f"Received message with KPI: timestamp. {timestamp}, msg topic: {msg.topic}, plant_id: {plant_id}, status: {status}, eff: {eff}, prod: {prod}, cper: {cper}, poproduction: {poproduction}, failure: {failure}, ploss: {ploss}, statusoverproduction: {statusoverproduction}")
+    nominalo = payload["nominalo"]
+    logging.debug(f"Received message with KPI: timestamp. {timestamp}, msg topic: {msg.topic}, plant_id: {plant_id}, status: {status}, eff: {eff}, prod: {prod}, cper: {cper}, soproduction: {soproduction}, failure: {failure}, ploss: {ploss}, nominalo: {nominalo}")
     
-    add_kpi(plant_id, status, eff, prod, cper, poproduction, failure, ploss, statusoverproduction)
+    add_kpi(plant_id, status, eff, prod, cper, soproduction, failure, ploss, nominalo)
     
 def on_message_daily_need(client, userdata, msg):
     global TOTAL_FILTERED_WATER_PRODUCED, TICK_COUNT

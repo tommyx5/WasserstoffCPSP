@@ -50,8 +50,8 @@ STATUS = "online"
 EFFICIENCY = 0
 PRODUCTION = 0
 CURRENT_PERFORMANCE = 0
-COUNTER_OVERPRODUCTION = 0
 COUNTER_FAILURE = 0
+STREAK_OVERPRODUCTION = 0
 
 FAILURE_TICK_COUNT = 0
 FAILURE_TIMEOUT = 0
@@ -80,7 +80,7 @@ def send_supply_msg(client, supply_topic, timestamp, amount):
     }
     client.publish(supply_topic, json.dumps(data))
 
-def send_kpi_msg(client, kpi_topic, timestamp, plant_id, status, eff, prod, cper, npower, namount, poproduction, failure, ploss, statusoverproduction):
+def send_kpi_msg(client, kpi_topic, timestamp, plant_id, status, eff, prod, cper, npower, namount, soproduction, failure, ploss, nominalo):
     data = {
         "timestamp": timestamp, 
         "plant_id": plant_id,
@@ -90,10 +90,10 @@ def send_kpi_msg(client, kpi_topic, timestamp, plant_id, status, eff, prod, cper
         "cper": cper,
         "npower": npower,
         "namount": namount,
-        "poproduction": poproduction,
+        "soproduction": soproduction,
         "failure": failure,
         "ploss": ploss,
-        "statusoverproduction": statusoverproduction
+        "nominalo": nominalo
     }
     client.publish(kpi_topic, json.dumps(data))
 
@@ -128,7 +128,7 @@ def produce_on_supplied_filtered_water():
     return hydrogen
 
 def calculate_kpis():
-    global EFFICIENCY, PRODUCTION, CURRENT_PERFORMANCE, STATUS, COUNTER_OVERPRODUCTION
+    global EFFICIENCY, PRODUCTION, CURRENT_PERFORMANCE, STATUS, STREAK_OVERPRODUCTION
     global HYDROGEN_PRODUCED, POWER_SUPPLIED, FILTERED_WATER_SUPPLIED, NOMINAL_HYDROGEN_SUPPLY
     global STATUS_FAILURE, STATUS_POWER_NOT_RECEIVED, STATUS_FILTERED_WATER_NOT_RECEIVED, OVERPRODUCTION_MODE, COUNTER_FAILURE
     
@@ -149,7 +149,7 @@ def calculate_kpis():
     # Overproduction
     if CURRENT_PERFORMANCE > 1.0:
         OVERPRODUCTION_MODE = True
-        COUNTER_OVERPRODUCTION += 1
+        STREAK_OVERPRODUCTION += 1
     else:
         OVERPRODUCTION_MODE = False
 
@@ -261,7 +261,7 @@ def on_message_water_received(client, userdata, msg):
     After that publishes it along with the timestamp.
     """
     global TIMESTAMP, FILTERED_WATER_SUPPLIED, TOPIC_HYDROGEN_SUPPLY, TOPIC_KPI, ID, HYDROGEN_PRODUCED
-    global STATUS, EFFICIENCY, PRODUCTION, CURRENT_PERFORMANCE, NOMINAL_POWER_DEMAND, NOMINAL_HYDROGEN_SUPPLY, COUNTER_OVERPRODUCTION, COUNTER_FAILURE, COUNTER_ALLTICKS, PRODUCTION_LOSSES
+    global STATUS, EFFICIENCY, PRODUCTION, CURRENT_PERFORMANCE, NOMINAL_POWER_DEMAND, NOMINAL_HYDROGEN_SUPPLY, STREAK_OVERPRODUCTION, COUNTER_FAILURE, COUNTER_ALLTICKS, PRODUCTION_LOSSES
 
     payload = json.loads(msg.payload)
     timestamp = payload["timestamp"]
@@ -286,12 +286,12 @@ def on_message_water_received(client, userdata, msg):
         cper=CURRENT_PERFORMANCE,
         npower=NOMINAL_POWER_DEMAND,
         namount=NOMINAL_HYDROGEN_SUPPLY,
-        poproduction=(COUNTER_OVERPRODUCTION / COUNTER_ALLTICKS),
+        soproduction=STREAK_OVERPRODUCTION,
         failure=(COUNTER_FAILURE / COUNTER_ALLTICKS),
         ploss=PRODUCTION_LOSSES,
-        statusoverproduction=OVERPRODUCTION_MODE
+        nominalo=NOMINAL_HYDROGEN_SUPPLY
     )
-    logging.debug(f"Sending kpi message. timestamp: {TIMESTAMP}, msg topic: {TOPIC_KPI}, plant id: {ID}, status: {STATUS}, eff: {EFFICIENCY}, prod: {PRODUCTION}, cper: {CURRENT_PERFORMANCE}, npower: {NOMINAL_POWER_DEMAND}, namount: {NOMINAL_HYDROGEN_SUPPLY}, poproduction: {(COUNTER_OVERPRODUCTION / COUNTER_ALLTICKS)}, failure: {(COUNTER_FAILURE / COUNTER_ALLTICKS)}, ploss: {PRODUCTION_LOSSES}, statusoverproduction: {OVERPRODUCTION_MODE}")
+    logging.debug(f"Sending kpi message. timestamp: {TIMESTAMP}, msg topic: {TOPIC_KPI}, plant id: {ID}, status: {STATUS}, eff: {EFFICIENCY}, prod: {PRODUCTION}, cper: {CURRENT_PERFORMANCE}, npower: {NOMINAL_POWER_DEMAND}, namount: {NOMINAL_HYDROGEN_SUPPLY}, poproduction: {(STREAK_OVERPRODUCTION)}, failure: {(COUNTER_FAILURE / COUNTER_ALLTICKS)}, ploss: {PRODUCTION_LOSSES}, nominalo: {NOMINAL_HYDROGEN_SUPPLY}")
 
     # Calculate outage risk for the next tick
     calculate_outage_risk()
