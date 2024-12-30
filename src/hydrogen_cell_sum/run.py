@@ -78,14 +78,70 @@ def calculate_hydrogen_demand_for_tick():
 
     return demand_for_tick
 
+def decision_kpi(corresponding_kpi):
+
+    global PLANTS_NUMBER
+
+    total_demand = calculate_hydrogen_demand_for_tick()
+    plants_left = PLANTS_NUMBER
+    demand_need = total_demand
+    if(corresponding_kpi.soproduction > 8 or (corresponding_kpi.failure > 0.8 and corresponding_kpi.prod > 1.0)):
+        if(round(total_demand/plants_left, 4) > (corresponding_kpi.nominalo * 0.8)):
+            request_amount = corresponding_kpi.nominalo * 0.8
+            demand_need = demand_need - request_amount
+            plants_left = plants_left - 1
+        else:
+            request_amount = round(demand_need/plants_left, 4)
+            demand_need = demand_need - request_amount
+            plants_left = plants_left - 1
+                
+    elif(corresponding_kpi.soproduction < 2 and corresponding_kpi.ploss < 0.3 and corresponding_kpi.failure < 0.2):         #bei zu hoher production loss lohnt sich keine starke Überlast
+        if(round(demand_need/plants_left, 4) > (corresponding_kpi.nominalo * 1.5)):
+            request_amount = round(demand_need/plants_left, 4)
+            demand_need = demand_need - request_amount
+            plants_left = plants_left - 1
+        else:
+            request_amount = corresponding_kpi.nominalo * 1.5
+            demand_need = demand_need - request_amount
+            plants_left = plants_left - 1
+
+    elif(corresponding_kpi.soproduction < 4 and corresponding_kpi.ploss < 0.1 and corresponding_kpi.failure < 0.1):
+        if(round(demand_need/plants_left, 4) > (corresponding_kpi.nominalo * 1.3)):
+            request_amount = round(demand_need/plants_left, 4)
+            demand_need = demand_need - request_amount
+            plants_left = plants_left - 1
+        else:
+            request_amount = corresponding_kpi.nominalo * 1.3
+            demand_need = demand_need - request_amount
+            plants_left = plants_left - 1
+    elif(corresponding_kpi.soproduction < 6):
+        if(round(demand_need/plants_left, 4) > (corresponding_kpi.nominalo * 1.1)):
+            request_amount = round(demand_need/plants_left, 4)
+            demand_need = demand_need - request_amount
+            plants_left = plants_left - 1
+        else:
+            request_amount = corresponding_kpi.nominalo * 1.1
+            demand_need = demand_need - request_amount
+            plants_left = plants_left - 1
+    else:
+        if(round(demand_need/plants_left, 4) > corresponding_kpi.nominalo):
+            request_amount = round(demand_need/plants_left, 4)
+            demand_need = demand_need - request_amount
+            plants_left = plants_left - 1
+        else:
+            request_amount = corresponding_kpi.nominalo
+            demand_need = demand_need - request_amount
+            plants_left = plants_left - 1
+    return request_amount
+
+
 def calculate_and_publish_hydrogen_requests(client):
     global TIMESTAMP, ADAPTABLE, PLANTS_NUMBER, TOPIC_HYDROGEN_REQEUST_LIST, HYDROGEN_DAILY_DEMAND, RECEIVED_KPI
     global KPI_LIST
 
     # Calculate the total demand for this tick
     total_demand = calculate_hydrogen_demand_for_tick()
-    plants_left = PLANTS_NUMBER
-    demand_need = total_demand
+
     # Handling for the initial loop where no kpi is present
     if not KPI_LIST:
         logging.debug("Warning. No kpi list. Using default mean allocation")
@@ -105,99 +161,46 @@ def calculate_and_publish_hydrogen_requests(client):
         return
 
     if ADAPTABLE:
-        for request_topic in TOPIC_HYDROGEN_REQEUST_LIST:
-            # extract corresponding kpi
-            request_plant_id = request_topic.split('/')[-1]
-            corresponding_kpi = next((kpi for kpi in KPI_LIST if kpi.plant_id == request_plant_id), None)
-            logging.debug(f"Plant id: {request_plant_id}")
-            if not corresponding_kpi:
-                # No kpi corresponding for plant id in the request 
-                logging.debug(f"Hydrogen plant with id {request_plant_id} and request topic: {request_topic} has no corresponding KPI.")
-                request_amount = 0
-            elif corresponding_kpi.status == "offline" :
-                # Offline plants receive 0 allocation
-                logging.debug(f"Hydrogen plant with id {corresponding_kpi.plant_id} is offline.")
-                request_amount = 0
-            else:
-                if(corresponding_kpi.soproduction > 8 or (corresponding_kpi.failure > 0.8 and corresponding_kpi.prod > 1.0)):
-                    if(round(total_demand/plants_left, 4) > (corresponding_kpi.nominalo * 0.8)):
-                        request_amount = corresponding_kpi.nominalo * 0.8
-                        demand_need = demand_need - request_amount
-                        plants_left = plants_left - 1
-                    else:
-                        request_amount = round(demand_need/plants_left, 4)
-                        demand_need = demand_need - request_amount
-                        plants_left = plants_left - 1
-                
-                elif(corresponding_kpi.soproduction < 2 and corresponding_kpi.ploss < 0.3 and corresponding_kpi.failure < 0.2):         #bei zu hoher production loss lohnt sich keine starke Überlast
-                    if(round(demand_need/plants_left, 4) > (corresponding_kpi.nominalo * 1.5)):
-                        request_amount = round(demand_need/plants_left, 4)
-                        demand_need = demand_need - request_amount
-                        plants_left = plants_left - 1
-                    else:
-                        request_amount = corresponding_kpi.nominalo * 1.5
-                        demand_need = demand_need - request_amount
-                        plants_left = plants_left - 1
-
-                elif(corresponding_kpi.soproduction < 4 and corresponding_kpi.ploss < 0.1 and corresponding_kpi.failure < 0.1):
-                    if(round(demand_need/plants_left, 4) > (corresponding_kpi.nominalo * 1.3)):
-                        request_amount = round(demand_need/plants_left, 4)
-                        demand_need = demand_need - request_amount
-                        plants_left = plants_left - 1
-                    else:
-                        request_amount = corresponding_kpi.nominalo * 1.3
-                        demand_need = demand_need - request_amount
-                        plants_left = plants_left - 1
-                elif(corresponding_kpi.soproduction < 6):
-                    if(round(demand_need/plants_left, 4) > (corresponding_kpi.nominalo * 1.1)):
-                        request_amount = round(demand_need/plants_left, 4)
-                        demand_need = demand_need - request_amount
-                        plants_left = plants_left - 1
-                    else:
-                        request_amount = corresponding_kpi.nominalo * 1.1
-                        demand_need = demand_need - request_amount
-                        plants_left = plants_left - 1
-                else:
-                    if(round(demand_need/plants_left, 4) > corresponding_kpi.nominalo ):
-                        request_amount = round(demand_need/plants_left, 4)
-                        demand_need = demand_need - request_amount
-                        plants_left = plants_left - 1
-                    else:
-                        request_amount = corresponding_kpi.nominalo * 1.1
-                        demand_need = demand_need - request_amount
-                        plants_left = plants_left - 1 
-            send_msg(
-                client=client,
-                topic=request_topic,
-                timestamp=TIMESTAMP,
-                amount=request_amount
-            )     
+        # Place for everything that MAPE loop has to do before the iterating trough and publishing requests to filter plants
+        n = 0
     else:
-        for request_topic in TOPIC_HYDROGEN_REQEUST_LIST:
-            request_plant_id = request_topic.split('/')[-1]
-            corresponding_kpi = next((kpi for kpi in KPI_LIST if kpi.plant_id == request_plant_id), None)
-            logging.debug(f"Plant id: {request_plant_id}")
-            if not corresponding_kpi:
-                # No kpi corresponding for plant id in the request 
-                logging.debug(f"Filter plant with id {request_plant_id} and request topic: {request_topic} has no corresponding KPI.")
-                request_amount = 0
-            elif corresponding_kpi.status == "offline" :
-                # Offline plants receive 0 allocation
-                logging.debug(f"Filter plant with id {corresponding_kpi.plant_id} is offline.")
-                request_amount = 0
+        online_count = sum(1 for kpi in KPI_LIST if kpi.status != "offline")
+
+    for request_topic in TOPIC_HYDROGEN_REQEUST_LIST:
+        # extract corresponding kpi
+        request_plant_id = request_topic.split('/')[-1]
+        corresponding_kpi = next((kpi for kpi in KPI_LIST if kpi.plant_id == request_plant_id), None)
+        logging.debug(f"Plant id: {request_plant_id}")
+
+        if not corresponding_kpi:
+            # No kpi corresponding for plant id in the request 
+            logging.debug(f"Hydrogen plant with id {request_plant_id} and request topic: {request_topic} has no corresponding KPI.")
+            request_amount = 0
+        elif corresponding_kpi.status == "offline" :
+            # Offline plants receive 0 allocation
+            logging.debug(f"Hydrogen plant with id {corresponding_kpi.plant_id} is offline.")
+            request_amount = 0
+        else:
+            # Calculate allocation for active plants
+            if ADAPTABLE:
+                # Iterations of the MAPE loop
+                request_amount = decision_kpi(corresponding_kpi)
             else:
-                online_count = sum(1 for kpi in KPI_LIST if kpi.status != "offline")
-                request_amount = round(total_demand/online_count, 4)  
-            send_msg(
-                client=client,
-                topic=request_topic,
-                timestamp=TIMESTAMP,
-                amount=request_amount
-            )
-    logging.debug(f"Sending hydrogen request message to hydrogen plant with id {request_plant_id}: timestamp: {TIMESTAMP}, msg topic: {request_topic}, requested amount: {request_amount}")
+                request_amount = round(total_demand/online_count, 4)
+            
+        # Send the water production request message
+        send_msg(
+            client=client,
+            topic=request_topic,
+            timestamp=TIMESTAMP,
+            amount=request_amount
+        )
+        logging.debug(f"Sending hydrogen request message to hydrogen plant with id {request_plant_id}. timestamp: {TIMESTAMP}, msg topic: {request_topic}, requested amount: {request_amount}")
 
     RECEIVED_KPI = 0
     KPI_LIST.clear()
+
+
 
 def calculate_total_supply(client):
     global TOTAL_HYDROGEN_PRODUCED, SUPPLY_LIST, RECEIVED_SUPPLIES
