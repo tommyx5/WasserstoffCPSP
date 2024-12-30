@@ -8,7 +8,7 @@ from collections import namedtuple
 
 # Configure the logger
 logging.basicConfig(
-    level=logging.INFO,  # Set minimum level to log
+    level=logging.DEBUG,  # Set minimum level to log
     format="%(asctime)s - %(levelname)s - %(message)s",  # Customize the output format
 )
 
@@ -27,6 +27,8 @@ TOPIC_SUPPLY = getenv_or_exit("TOPIC_FILTER_PLANT_FILTERED_WATER_SUPPLY", "defau
 TOPIC_KPI = getenv_or_exit("TOPIC_FILTER_PLANT_KPI", "default") # Base topic to receive kpis from filter plants (must be followed by Plant ID)
 TOPIC_ADAPTIVE_MODE = getenv_or_exit('TOPIC_ADAPTIVE_MODE', 'default') # Topic to change work modes 
 TOPIC_FILTER_SYSTEM_SUM_DATA = getenv_or_exit("TOPIC_FILTER_SUM_FILTER_SUM_DATA", "default") # Topic to send production data for the dashboard 
+
+TOPIC_HYDROGEN_DAILY_DEMAND = getenv_or_exit("TOPIC_HYDROGEN_DEMAND_GEN_HYDROGEN_DEMAND", 'default')
 
 TOPIC_SUPPLY_LIST = []
 TOPIC_KPI_LIST = []
@@ -52,7 +54,7 @@ KPI_LIST = [] # A list to hold all kpis
 
 REQUEST_CLASS = namedtuple("Request", ["plant_id", "reply_topic", "demand"]) # A data structure for requests
 SUPPLY_CLASS = namedtuple("Supply", ["supply"]) # A data structure for supplies
-KPI_CLASS = namedtuple("KPI", ["plant_id", "status", "eff", "prod", "cper", "soproduction", "failure", "ploss", "nominalo"]) # A data structure for kpis TODO: Erweitern um neue KPIs
+KPI_CLASS = namedtuple("KPI", ["plant_id", "status", "eff", "prod", "cper", "soproduction", "failure", "ploss", "namount"]) # A data structure for kpis TODO: Erweitern um neue KPIs
 
 
 TICKS_IN_DAY = 96
@@ -139,16 +141,11 @@ def calculate_supply(client):
     SUPPLY_LIST.clear()
     RECEIVED_SUPPLIES = 0
 
-def decision_kpi(corresponding_kpi):
+def decision_kpi(corresponding_kpi, plants_left, demand_need):
 
-    global REQUEST_LIST, PLANTS_NUMBER
-
-    total_demand = sum(request.demand for request in REQUEST_LIST)
-    plants_left = PLANTS_NUMBER
-    demand_need = total_demand
     if(corresponding_kpi.soproduction > 8 or (corresponding_kpi.failure > 0.05 and corresponding_kpi.prod > 1.0)):
-        if(round(total_demand/plants_left, 4) > (corresponding_kpi.nominalo * 0.8)):
-            request_amount = corresponding_kpi.nominalo * 0.8
+        if(round(demand_need/plants_left, 4) > (corresponding_kpi.namount * 0.8)):
+            request_amount = corresponding_kpi.namount * 0.8
             demand_need = demand_need - request_amount
             plants_left = plants_left - 1
         else:
@@ -157,43 +154,43 @@ def decision_kpi(corresponding_kpi):
             plants_left = plants_left - 1
                 
     elif(corresponding_kpi.soproduction < 2 and corresponding_kpi.ploss < 0.3 and corresponding_kpi.failure < 0.02):         #bei zu hoher production loss lohnt sich keine starke Überlast
-        if(round(demand_need/plants_left, 4) > (corresponding_kpi.nominalo * 1.5)):
+        if(round(demand_need/plants_left, 4) > (corresponding_kpi.namount * 1.5)):
             request_amount = round(demand_need/plants_left, 4)
             demand_need = demand_need - request_amount
             plants_left = plants_left - 1
         else:
-            request_amount = corresponding_kpi.nominalo * 1.5
+            request_amount = corresponding_kpi.namount * 1.5
             demand_need = demand_need - request_amount
             plants_left = plants_left - 1
 
     elif(corresponding_kpi.soproduction < 4 and corresponding_kpi.ploss < 0.1 and corresponding_kpi.failure < 0.1):
-        if(round(demand_need/plants_left, 4) > (corresponding_kpi.nominalo * 1.3)):
+        if(round(demand_need/plants_left, 4) > (corresponding_kpi.namount * 1.3)):
             request_amount = round(demand_need/plants_left, 4)
             demand_need = demand_need - request_amount
             plants_left = plants_left - 1
         else:
-            request_amount = corresponding_kpi.nominalo * 1.3
+            request_amount = corresponding_kpi.namount * 1.3
             demand_need = demand_need - request_amount
             plants_left = plants_left - 1
     elif(corresponding_kpi.soproduction < 6):
-        if(round(demand_need/plants_left, 4) > (corresponding_kpi.nominalo * 1.1)):
+        if(round(demand_need/plants_left, 4) > (corresponding_kpi.namount * 1.1)):
             request_amount = round(demand_need/plants_left, 4)
             demand_need = demand_need - request_amount
             plants_left = plants_left - 1
         else:
-            request_amount = corresponding_kpi.nominalo * 1.1
+            request_amount = corresponding_kpi.namount * 1.1
             demand_need = demand_need - request_amount
             plants_left = plants_left - 1
     else:
-        if(round(demand_need/plants_left, 4) > corresponding_kpi.nominalo ):
+        if(round(demand_need/plants_left, 4) > corresponding_kpi.namount ):
             request_amount = round(demand_need/plants_left, 4)
             demand_need = demand_need - request_amount
             plants_left = plants_left - 1
         else:
-            request_amount = corresponding_kpi.nominalo
+            request_amount = corresponding_kpi.namount
             demand_need = demand_need - request_amount
             plants_left = plants_left - 1
-    return request_amount
+    return request_amount, plants_left, demand_need
 
 def calculate_and_publish_filtered_water_requests(client):
     """
@@ -230,6 +227,9 @@ def calculate_and_publish_filtered_water_requests(client):
     if ADAPTABLE:
         # Place for everything that MAPE loop has to do before the iterating trough and publishing requests to filter plants
         n = 0
+        total_demand = sum(request.demand for request in REQUEST_LIST)
+        plants_left = PLANTS_NUMBER
+        demand_need = total_demand
     else:
         online_count = sum(1 for kpi in KPI_LIST if kpi.status != "offline")
 
@@ -250,7 +250,8 @@ def calculate_and_publish_filtered_water_requests(client):
         else:
             # Calculate allocation for active plants
             if ADAPTABLE:
-                request_amount = decision_kpi(corresponding_kpi)
+                request_amount, plants_left, demand_need = decision_kpi(corresponding_kpi=corresponding_kpi, plants_left=plants_left, demand_need=demand_need)
+
             else:
                 request_amount = round(total_demand/online_count, 4)
             
@@ -279,10 +280,10 @@ def add_supply(supply):
     SUPPLY_LIST.append(SUPPLY_CLASS(supply))
     RECEIVED_SUPPLIES += 1
 
-def add_kpi(plant_id, status, eff, prod, cper, soproduction, failure, ploss, nominalo):
+def add_kpi(plant_id, status, eff, prod, cper, soproduction, failure, ploss, namount):
     global RECEIVED_KPI, KPI_LIST, KPI_CLASS
 
-    KPI_LIST.append(KPI_CLASS(plant_id, status, eff, prod, cper, soproduction, failure, ploss, nominalo))
+    KPI_LIST.append(KPI_CLASS(plant_id, status, eff, prod, cper, soproduction, failure, ploss, namount))
     RECEIVED_KPI += 1
 
 def on_message_tick(client, userdata, msg):
@@ -335,10 +336,10 @@ def on_message_kpi(client, userdata, msg):
     soproduction = payload["soproduction"]
     failure = payload["failure"]
     ploss = payload["ploss"]
-    nominalo = payload["nominalo"]
-    logging.debug(f"Received message with KPI: timestamp. {timestamp}, msg topic: {msg.topic}, plant_id: {plant_id}, status: {status}, eff: {eff}, prod: {prod}, cper: {cper}, soproduction: {soproduction}, failure: {failure}, ploss: {ploss}, nominalo: {nominalo}")
+    namount = payload["namount"]
+    logging.debug(f"Received message with KPI: timestamp. {timestamp}, msg topic: {msg.topic}, plant_id: {plant_id}, status: {status}, eff: {eff}, prod: {prod}, cper: {cper}, soproduction: {soproduction}, failure: {failure}, ploss: {ploss}, namount: {namount}")
     
-    add_kpi(plant_id, status, eff, prod, cper, soproduction, failure, ploss, nominalo)
+    add_kpi(plant_id, status, eff, prod, cper, soproduction, failure, ploss, namount)
     
 def on_message_daily_need(client, userdata, msg):
     global TOTAL_FILTERED_WATER_PRODUCED, TICK_COUNT
@@ -377,9 +378,11 @@ def main():
     mqtt.subscribe(TICK)
     mqtt.subscribe(TOPIC_REQUEST)
     mqtt.subscribe(TOPIC_ADAPTIVE_MODE)
+    mqtt.subscribe(TOPIC_HYDROGEN_DAILY_DEMAND)
     mqtt.subscribe_with_callback(TICK, on_message_tick)
     mqtt.subscribe_with_callback(TOPIC_REQUEST, on_message_request)
     mqtt.subscribe_with_callback(TOPIC_ADAPTIVE_MODE, on_message_adaptive_mode)
+    mqtt.subscribe_with_callback(TOPIC_HYDROGEN_DAILY_DEMAND, on_message_daily_need)
 
     try:
         # Start the MQTT loop to process incoming and outgoing messages

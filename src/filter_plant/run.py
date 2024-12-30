@@ -7,7 +7,7 @@ from mqtt.mqtt_wrapper import MQTTWrapper
 
 # Configure the logger
 logging.basicConfig(
-    level=logging.INFO,  # Set minimum level to log
+    level=logging.DEBUG,  # Set minimum level to log
     format="%(asctime)s - %(levelname)s - %(message)s",  # Customize the output format
 )
 
@@ -53,10 +53,6 @@ EFFICIENCY = 0
 PRODUCTION = 0
 CURRENT_PERFORMANCE = 0
 
-STREAK_OVERPRODUCTION = 0
-
-COUNTER_FAILURE = 0
-
 FAILURE_TICK_COUNT = 0
 FAILURE_TIMEOUT = 0
 STATUS_POWER_NOT_RECEIVED = True
@@ -65,8 +61,6 @@ STATUS_FAILURE = False
 CURRENT_FAILURE_POSIBILITY = STANDART_FAILURE_POSIBILITY
 MINIMAL_FAILURE_POSIBILITY_CHANGE = 0.0005
 OVERPRODUCTION_MODE = False
-
-COUNTER_ALLTICKS = 0
 
 def send_request_msg(client, request_topic, timestamp, plant_id, reply_topic, amount):
     data = {
@@ -85,7 +79,7 @@ def send_supply_msg(client, supply_topic, timestamp, amount):
     client.publish(supply_topic, json.dumps(data))
 
 
-def send_kpi_msg(client, kpi_topic, timestamp, plant_id, status, eff, prod, cper, npower, namount, soproduction, failure, ploss, nominalo):
+def send_kpi_msg(client, kpi_topic, timestamp, plant_id, status, eff, prod, cper, npower, namount, soproduction, failure, ploss):
 
     data_KPI = {
         "timestamp": timestamp, 
@@ -99,8 +93,7 @@ def send_kpi_msg(client, kpi_topic, timestamp, plant_id, status, eff, prod, cper
 
         "soproduction": soproduction,
         "failure": failure,
-        "ploss": ploss,
-        "nominalo": nominalo
+        "ploss": ploss
 
         #TODO: ADD NEW KPIs
         }
@@ -116,6 +109,7 @@ def water_demand_on_supplied_power():
         water_demand = 0
     else:
         water_demand = round(((POWER_SUPPLIED / PLANED_POWER_DEMAND) * PLANED_WATER_DEMAND),4) 
+    logging.debug(f"Water demand :{water_demand}, POWER_SUPPLIED {POWER_SUPPLIED}, PLANED_POWER_DEMAND: {PLANED_POWER_DEMAND}")
 
     return water_demand
 
@@ -127,6 +121,7 @@ def produce_on_supplied_water():
         filtered_water = round(((WATER_SUPPLIED * (NOMINAL_FILTERED_WATER_SUPPLY / NOMINAL_WATER_DEMAND)) / PRODUCTION_LOSSES),4)
     else:
         filtered_water = PLANED_FILTERED_WATER_SUPPLY
+    logging.debug(f"Filtered water produced :{filtered_water}, WATER_SUPPLIED {WATER_SUPPLIED}, PLANED_WATER_DEMAND: {PLANED_WATER_DEMAND}")
 
     # Water outage status
     if WATER_SUPPLIED != 0:
@@ -138,9 +133,9 @@ def produce_on_supplied_water():
 
 def calculate_kpis():
 
-    global EFFICIENCY, PRODUCTION, CURRENT_PERFORMANCE, STATUS, STREAK_OVERPRODUCTION
+    global EFFICIENCY, PRODUCTION, CURRENT_PERFORMANCE, STATUS
     global FILTERED_WATER_PRODUCED, POWER_SUPPLIED, WATER_SUPPLIED, NOMINAL_FILTERED_WATER_SUPPLY
-    global STATUS_FAILURE, STATUS_POWER_NOT_RECEIVED, STATUS_WATER_NOT_RECEIVED, OVERPRODUCTION_MODE, COUNTER_FAILURE
+    global STATUS_FAILURE, STATUS_POWER_NOT_RECEIVED, STATUS_WATER_NOT_RECEIVED, OVERPRODUCTION_MODE
     
     # Calculate Efficiency
     if(POWER_SUPPLIED != 0):
@@ -159,15 +154,12 @@ def calculate_kpis():
     # Overproduction
     if CURRENT_PERFORMANCE > 1.0:
         OVERPRODUCTION_MODE = True
-        STREAK_OVERPRODUCTION += 1
     else:
         OVERPRODUCTION_MODE = False
-        STREAK_OVERPRODUCTION = 0       #TODO: vorerst auf 0 setzen, später evtl. // 2
 
     # Decide status (The order matters!)
     if STATUS_FAILURE:
         STATUS = "offline"
-        COUNTER_FAILURE += 1
     elif STATUS_POWER_NOT_RECEIVED:
         STATUS = "power not received"
     elif STATUS_WATER_NOT_RECEIVED:
@@ -182,12 +174,18 @@ def calculate_demands():
     if(PLANED_FILTERED_WATER_SUPPLY < MINIMAL_FILTERED_WATER_SUPPLY):
         PLANED_WATER_DEMAND = 0
         PLANED_POWER_DEMAND = 0
+        PLANED_FILTERED_WATER_SUPPLY = 0
     elif(PLANED_FILTERED_WATER_SUPPLY > MAXIMAL_FILTERED_WATER_SUPPLY):
-        PLANED_WATER_DEMAND = round((MAXIMAL_FILTERED_WATER_SUPPLY * (NOMINAL_FILTERED_WATER_SUPPLY / NOMINAL_WATER_DEMAND) * PRODUCTION_LOSSES),4)
+        PLANED_WATER_DEMAND = round((MAXIMAL_FILTERED_WATER_SUPPLY / (NOMINAL_FILTERED_WATER_SUPPLY / NOMINAL_WATER_DEMAND) * PRODUCTION_LOSSES),4)
         PLANED_POWER_DEMAND = round((NOMINAL_PERFORMANCE * MAXIMAL_FILTERED_WATER_SUPPLY),4)
+        PLANED_FILTERED_WATER_SUPPLY = MAXIMAL_FILTERED_WATER_SUPPLY
     else:
-        PLANED_WATER_DEMAND = round((PLANED_FILTERED_WATER_SUPPLY * (NOMINAL_FILTERED_WATER_SUPPLY / NOMINAL_WATER_DEMAND) * PRODUCTION_LOSSES),4)
+        PLANED_WATER_DEMAND = round((PLANED_FILTERED_WATER_SUPPLY / (NOMINAL_FILTERED_WATER_SUPPLY / NOMINAL_WATER_DEMAND) * PRODUCTION_LOSSES),4)
         PLANED_POWER_DEMAND = round((NOMINAL_PERFORMANCE * PLANED_FILTERED_WATER_SUPPLY),4)
+
+    logging.debug(f"NOMINAL_FILTERED_WATER_SUPPLY :{NOMINAL_FILTERED_WATER_SUPPLY}, NOMINAL_WATER_DEMAND {NOMINAL_WATER_DEMAND}")
+    logging.debug(f"PLANED_FILTERED_WATER_SUPPLY :{PLANED_FILTERED_WATER_SUPPLY}, PLANED_WATER_DEMAND {PLANED_WATER_DEMAND}, PLANED_WATER_DEMAND: {PLANED_POWER_DEMAND}")
+
 
 def calculate_outage_risk():
     global CURRENT_FAILURE_POSIBILITY, STANDART_FAILURE_POSIBILITY, STATUS_FAILURE, MINIMAL_FAILURE_POSIBILITY_CHANGE
@@ -230,9 +228,7 @@ def on_message_tick(client, userdata, msg):
     """
     global TIMESTAMP, TOPIC_POWER_REQUEST, ID, TOPIC_POWER_RECEIVE, PLANED_POWER_DEMAND
     global STATUS_POWER_NOT_RECEIVED, STATUS_WATER_NOT_RECEIVED
-    global COUNTER_ALLTICKS
 
-    COUNTER_ALLTICKS += 1
     # get timestamp from tick msg and request power
     TIMESTAMP = msg.payload.decode("utf-8")
 
@@ -277,7 +273,8 @@ def on_message_water_received(client, userdata, msg):
     After that publishes it along with the KPIs.
     """
     global TIMESTAMP, WATER_SUPPLIED, TOPIC_FILTERED_WATER_SUPPLY, TOPIC_KPI, ID, FILTERED_WATER_PRODUCED
-    global STATUS, EFFICIENCY, PRODUCTION, CURRENT_PERFORMANCE, NOMINAL_POWER_DEMAND, NOMINAL_FILTERED_WATER_SUPPLY, STREAK_OVERPRODUCTION, COUNTER_FAILURE, COUNTER_ALLTICKS, PRODUCTION_LOSSES, NOMINAL_FILTERED_WATER_SUPPLY
+    global STATUS, EFFICIENCY, PRODUCTION, CURRENT_PERFORMANCE, NOMINAL_POWER_DEMAND, NOMINAL_FILTERED_WATER_SUPPLY, STREAK_OVERPRODUCTION, PRODUCTION_LOSSES, NOMINAL_FILTERED_WATER_SUPPLY
+    global CURRENT_FAILURE_POSIBILITY, FAILURE_TICK_COUNT
 
 
     payload = json.loads(msg.payload)
@@ -303,12 +300,11 @@ def on_message_water_received(client, userdata, msg):
         cper=CURRENT_PERFORMANCE,
         npower=NOMINAL_POWER_DEMAND,
         namount=NOMINAL_FILTERED_WATER_SUPPLY,
-        soproduction=STREAK_OVERPRODUCTION,
-        failure=(COUNTER_FAILURE / COUNTER_ALLTICKS),
-        ploss=PRODUCTION_LOSSES,
-        nominalo=NOMINAL_FILTERED_WATER_SUPPLY
+        soproduction=FAILURE_TICK_COUNT,
+        failure=CURRENT_FAILURE_POSIBILITY,
+        ploss=PRODUCTION_LOSSES
     )
-    logging.debug(f"Sending kpi message. timestamp: {TIMESTAMP}, msg topic: {TOPIC_KPI}, plant_id: {ID}, status: {STATUS}, eff: {EFFICIENCY}, prod: {PRODUCTION}, cper: {CURRENT_PERFORMANCE}, npower: {NOMINAL_POWER_DEMAND}, namount: {NOMINAL_FILTERED_WATER_SUPPLY}, soproduction: {(STREAK_OVERPRODUCTION)}, failure: {(COUNTER_FAILURE / COUNTER_ALLTICKS)}, ploss: {PRODUCTION_LOSSES}, nominalo: {NOMINAL_FILTERED_WATER_SUPPLY}")
+    logging.debug(f"Sending kpi message. timestamp: {TIMESTAMP}, msg topic: {TOPIC_KPI}, plant_id: {ID}, status: {STATUS}, eff: {EFFICIENCY}, prod: {PRODUCTION}, cper: {CURRENT_PERFORMANCE}, npower: {NOMINAL_POWER_DEMAND}, namount: {NOMINAL_FILTERED_WATER_SUPPLY}, soproduction: {FAILURE_TICK_COUNT}, failure: {CURRENT_FAILURE_POSIBILITY}, ploss: {PRODUCTION_LOSSES}")
 
     # Calculate outage risk for the next tick
     calculate_outage_risk()

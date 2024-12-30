@@ -7,7 +7,7 @@ from mqtt.mqtt_wrapper import MQTTWrapper
 
 # Configure the logger
 logging.basicConfig(
-    level=logging.INFO,  # Set minimum level to log
+    level=logging.DEBUG,  # Set minimum level to log
     format="%(asctime)s - %(levelname)s - %(message)s",  # Customize the output format
 )
 
@@ -52,8 +52,6 @@ STATUS = "online"
 EFFICIENCY = 0
 PRODUCTION = 0
 CURRENT_PERFORMANCE = 0
-COUNTER_FAILURE = 0
-STREAK_OVERPRODUCTION = 0
 
 FAILURE_TICK_COUNT = 0
 FAILURE_TIMEOUT = 0
@@ -82,7 +80,7 @@ def send_supply_msg(client, supply_topic, timestamp, amount):
     }
     client.publish(supply_topic, json.dumps(data))
 
-def send_kpi_msg(client, kpi_topic, timestamp, plant_id, status, eff, prod, cper, npower, namount, soproduction, failure, ploss, nominalo):
+def send_kpi_msg(client, kpi_topic, timestamp, plant_id, status, eff, prod, cper, npower, namount, soproduction, failure, ploss):
     data = {
         "timestamp": timestamp, 
         "plant_id": plant_id,
@@ -94,8 +92,7 @@ def send_kpi_msg(client, kpi_topic, timestamp, plant_id, status, eff, prod, cper
         "namount": namount,
         "soproduction": soproduction,
         "failure": failure,
-        "ploss": ploss,
-        "nominalo": nominalo
+        "ploss": ploss
     }
     client.publish(kpi_topic, json.dumps(data))
 
@@ -109,6 +106,8 @@ def filtered_water_demand_on_supplied_power():
         filtered_water_demand = 0
     else:
         filtered_water_demand = round(((POWER_SUPPLIED / PLANED_POWER_DEMAND) * PLANED_FILTERED_WATER_DEMAND),4) 
+        
+    logging.debug(f"filtered_water_demand :{filtered_water_demand}, POWER_SUPPLIED {POWER_SUPPLIED}, PLANED_POWER_DEMAND: {PLANED_POWER_DEMAND}")
 
     return filtered_water_demand
 
@@ -120,6 +119,7 @@ def produce_on_supplied_filtered_water():
         hydrogen = round(((FILTERED_WATER_SUPPLIED * (NOMINAL_HYDROGEN_SUPPLY / NOMINAL_FILTERED_WATER_DEMAND)) / PRODUCTION_LOSSES),4)
     else:
         hydrogen = PLANED_HYDROGEN_SUPPLY
+    logging.debug(f"hydrogen produced :{hydrogen}, FILTERED_WATER_SUPPLIED {FILTERED_WATER_SUPPLIED}, PLANED_FILTERED_WATER_DEMAND: {PLANED_FILTERED_WATER_DEMAND}")
     
     # Water outage status
     if FILTERED_WATER_SUPPLIED != 0:
@@ -130,9 +130,9 @@ def produce_on_supplied_filtered_water():
     return hydrogen
 
 def calculate_kpis():
-    global EFFICIENCY, PRODUCTION, CURRENT_PERFORMANCE, STATUS, STREAK_OVERPRODUCTION
+    global EFFICIENCY, PRODUCTION, CURRENT_PERFORMANCE, STATUS
     global HYDROGEN_PRODUCED, POWER_SUPPLIED, FILTERED_WATER_SUPPLIED, NOMINAL_HYDROGEN_SUPPLY
-    global STATUS_FAILURE, STATUS_POWER_NOT_RECEIVED, STATUS_FILTERED_WATER_NOT_RECEIVED, OVERPRODUCTION_MODE, COUNTER_FAILURE
+    global STATUS_FAILURE, STATUS_POWER_NOT_RECEIVED, STATUS_FILTERED_WATER_NOT_RECEIVED, OVERPRODUCTION_MODE
     
     # Calculate Efficiency
     if(POWER_SUPPLIED != 0):
@@ -151,14 +151,12 @@ def calculate_kpis():
     # Overproduction
     if CURRENT_PERFORMANCE > 1.0:
         OVERPRODUCTION_MODE = True
-        STREAK_OVERPRODUCTION += 1
     else:
         OVERPRODUCTION_MODE = False
 
     # Decide status (The order matters!)
     if STATUS_FAILURE:
         STATUS = "offline"
-        COUNTER_FAILURE += 1
     elif STATUS_POWER_NOT_RECEIVED:
         STATUS = "power not received"
     elif STATUS_FILTERED_WATER_NOT_RECEIVED:
@@ -173,12 +171,17 @@ def calculate_demands():
     if(PLANED_HYDROGEN_SUPPLY < MINIMAL_HYDROGEN_SUPPLY):
         PLANED_FILTERED_WATER_DEMAND = 0
         PLANED_POWER_DEMAND = 0
+        PLANED_HYDROGEN_SUPPLY = 0
     elif(PLANED_HYDROGEN_SUPPLY > MAXIMAL_HYDROGEN_SUPPLY):
-        PLANED_FILTERED_WATER_DEMAND = round((MAXIMAL_HYDROGEN_SUPPLY * (NOMINAL_HYDROGEN_SUPPLY / NOMINAL_FILTERED_WATER_DEMAND) * PRODUCTION_LOSSES),4)
+        PLANED_FILTERED_WATER_DEMAND = round((MAXIMAL_HYDROGEN_SUPPLY / (NOMINAL_HYDROGEN_SUPPLY / NOMINAL_FILTERED_WATER_DEMAND) * PRODUCTION_LOSSES),4)
         PLANED_POWER_DEMAND = round((NOMINAL_PERFORMANCE * MAXIMAL_HYDROGEN_SUPPLY),4)
+        PLANED_HYDROGEN_SUPPLY = MAXIMAL_HYDROGEN_SUPPLY
     else:
-        PLANED_FILTERED_WATER_DEMAND = round((PLANED_HYDROGEN_SUPPLY * (NOMINAL_HYDROGEN_SUPPLY / NOMINAL_FILTERED_WATER_DEMAND) * PRODUCTION_LOSSES),4)
+        PLANED_FILTERED_WATER_DEMAND = round((PLANED_HYDROGEN_SUPPLY / (NOMINAL_HYDROGEN_SUPPLY / NOMINAL_FILTERED_WATER_DEMAND) * PRODUCTION_LOSSES),4)
         PLANED_POWER_DEMAND = round((NOMINAL_PERFORMANCE * PLANED_HYDROGEN_SUPPLY),4)
+
+    logging.debug(f"NOMINAL_HYDROGEN_SUPPLY :{NOMINAL_HYDROGEN_SUPPLY}, NOMINAL_FILTERED_WATER_DEMAND {NOMINAL_FILTERED_WATER_DEMAND}")
+    logging.debug(f"PLANED_HYDROGEN_SUPPLY :{PLANED_HYDROGEN_SUPPLY}, PLANED_FILTERED_WATER_DEMAND {PLANED_FILTERED_WATER_DEMAND}, PLANED_WATER_DEMAND: {PLANED_POWER_DEMAND}")
 
 def calculate_outage_risk():
     global CURRENT_FAILURE_POSIBILITY, STANDART_FAILURE_POSIBILITY, STATUS_FAILURE, MINIMAL_FAILURE_POSIBILITY_CHANGE
@@ -270,8 +273,8 @@ def on_message_water_received(client, userdata, msg):
     After that publishes it along with the timestamp.
     """
     global TIMESTAMP, FILTERED_WATER_SUPPLIED, TOPIC_HYDROGEN_SUPPLY, TOPIC_KPI, ID, HYDROGEN_PRODUCED
-    global STATUS, EFFICIENCY, PRODUCTION, CURRENT_PERFORMANCE, NOMINAL_POWER_DEMAND, NOMINAL_HYDROGEN_SUPPLY, STREAK_OVERPRODUCTION, COUNTER_FAILURE, COUNTER_ALLTICKS, PRODUCTION_LOSSES
-
+    global STATUS, EFFICIENCY, PRODUCTION, CURRENT_PERFORMANCE, NOMINAL_POWER_DEMAND, NOMINAL_HYDROGEN_SUPPLY, COUNTER_ALLTICKS, PRODUCTION_LOSSES
+    global FAILURE_TICK_COUNT, CURRENT_FAILURE_POSIBILITY
     payload = json.loads(msg.payload)
     timestamp = payload["timestamp"]
     FILTERED_WATER_SUPPLIED = payload["amount"]
@@ -295,12 +298,11 @@ def on_message_water_received(client, userdata, msg):
         cper=CURRENT_PERFORMANCE,
         npower=NOMINAL_POWER_DEMAND,
         namount=NOMINAL_HYDROGEN_SUPPLY,
-        soproduction=STREAK_OVERPRODUCTION,
-        failure=(COUNTER_FAILURE / COUNTER_ALLTICKS),
-        ploss=PRODUCTION_LOSSES,
-        nominalo=NOMINAL_HYDROGEN_SUPPLY
+        soproduction=FAILURE_TICK_COUNT,
+        failure=CURRENT_FAILURE_POSIBILITY,
+        ploss=PRODUCTION_LOSSES
     )
-    logging.debug(f"Sending kpi message. timestamp: {TIMESTAMP}, msg topic: {TOPIC_KPI}, plant id: {ID}, status: {STATUS}, eff: {EFFICIENCY}, prod: {PRODUCTION}, cper: {CURRENT_PERFORMANCE}, npower: {NOMINAL_POWER_DEMAND}, namount: {NOMINAL_HYDROGEN_SUPPLY}, poproduction: {(STREAK_OVERPRODUCTION)}, failure: {(COUNTER_FAILURE / COUNTER_ALLTICKS)}, ploss: {PRODUCTION_LOSSES}, nominalo: {NOMINAL_HYDROGEN_SUPPLY}")
+    logging.debug(f"Sending kpi message. timestamp: {TIMESTAMP}, msg topic: {TOPIC_KPI}, plant id: {ID}, status: {STATUS}, eff: {EFFICIENCY}, prod: {PRODUCTION}, cper: {CURRENT_PERFORMANCE}, npower: {NOMINAL_POWER_DEMAND}, namount: {NOMINAL_HYDROGEN_SUPPLY}, poproduction: {FAILURE_TICK_COUNT}, failure: {CURRENT_FAILURE_POSIBILITY}, ploss: {PRODUCTION_LOSSES}")
 
     # Calculate outage risk for the next tick
     calculate_outage_risk()
