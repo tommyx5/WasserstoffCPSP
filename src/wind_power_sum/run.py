@@ -146,7 +146,7 @@ def calc_mean():
     else:
         MEAN_POWER = 0
 
-def get_key(liste):
+def get_prio(liste):
     return liste[0]
 
 def calculate_supply(typ, sortByPrio = False):
@@ -157,14 +157,15 @@ def calculate_supply(typ, sortByPrio = False):
     for id in PLANT_DATA[typ].keys():
         result_list.append([PLANT_DATA[typ][id]["priority"],typ,id,PLANT_DATA[typ][id]["amount"],PLANT_DATA[typ][id]["reply_topic"]])
     if sortByPrio:
-        result_list.sort(key=get_key,reverse=True)
+        result_list.sort(key=get_prio,reverse=True)
     if typ == FILTER_PLANT:
         for e in result_list:
             FILTER_SUM_AMOUNT += e[3]
             if FILTER_AVAILABLE_POWER - e[3] >= 0:
                 FILTER_AVAILABLE_POWER = FILTER_AVAILABLE_POWER - e[3]
             else:
-                e[3] = 0 
+                e[3] = FILTER_AVAILABLE_POWER
+                FILTER_AVAILABLE_POWER = 0 
         if FILTER_SUM_AMOUNT+HYDROGEN_SUM_AMOUNT > 0:
             FILTER_RATIO = FILTER_SUM_AMOUNT/(FILTER_SUM_AMOUNT+HYDROGEN_SUM_AMOUNT)
             HYDROGEN_RATIO = HYDROGEN_SUM_AMOUNT/(FILTER_SUM_AMOUNT+HYDROGEN_SUM_AMOUNT)
@@ -174,7 +175,8 @@ def calculate_supply(typ, sortByPrio = False):
             if HYDROGEN_AVAILABLE_POWER - e[3] >= 0:
                 HYDROGEN_AVAILABLE_POWER = HYDROGEN_AVAILABLE_POWER - e[3]
             else:
-                e[3] = 0 
+                e[3] = HYDROGEN_AVAILABLE_POWER
+                HYDROGEN_AVAILABLE_POWER = 0
     return result_list
     
 def on_message_adaptive_mode(client, userdata, msg):

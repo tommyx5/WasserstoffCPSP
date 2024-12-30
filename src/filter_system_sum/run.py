@@ -28,8 +28,6 @@ TOPIC_KPI = getenv_or_exit("TOPIC_FILTER_PLANT_KPI", "default") # Base topic to 
 TOPIC_ADAPTIVE_MODE = getenv_or_exit('TOPIC_ADAPTIVE_MODE', 'default') # Topic to change work modes 
 TOPIC_FILTER_SYSTEM_SUM_DATA = getenv_or_exit("TOPIC_FILTER_SUM_FILTER_SUM_DATA", "default") # Topic to send production data for the dashboard 
 
-
-
 TOPIC_SUPPLY_LIST = []
 TOPIC_KPI_LIST = []
 TOPIC_FILTERED_WATER_REQEUST_LIST = []
@@ -55,6 +53,7 @@ KPI_LIST = [] # A list to hold all kpis
 REQUEST_CLASS = namedtuple("Request", ["plant_id", "reply_topic", "demand"]) # A data structure for requests
 SUPPLY_CLASS = namedtuple("Supply", ["supply"]) # A data structure for supplies
 KPI_CLASS = namedtuple("KPI", ["plant_id", "status", "eff", "prod", "cper", "soproduction", "failure", "ploss", "nominalo"]) # A data structure for kpis TODO: Erweitern um neue KPIs
+
 
 TICKS_IN_DAY = 96
 
@@ -139,7 +138,6 @@ def calculate_supply(client):
 
     SUPPLY_LIST.clear()
     RECEIVED_SUPPLIES = 0
-
 
 def decision_kpi(corresponding_kpi):
 

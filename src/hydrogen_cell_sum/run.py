@@ -200,8 +200,6 @@ def calculate_and_publish_hydrogen_requests(client):
     RECEIVED_KPI = 0
     KPI_LIST.clear()
 
-
-
 def calculate_total_supply(client):
     global TOTAL_HYDROGEN_PRODUCED, SUPPLY_LIST, RECEIVED_SUPPLIES
     

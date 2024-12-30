@@ -50,7 +50,9 @@ STATUS = "online"
 EFFICIENCY = 0
 PRODUCTION = 0
 CURRENT_PERFORMANCE = 0
+
 STREAK_OVERPRODUCTION = 0
+
 COUNTER_FAILURE = 0
 
 FAILURE_TICK_COUNT = 0
@@ -80,7 +82,9 @@ def send_supply_msg(client, supply_topic, timestamp, amount):
     }
     client.publish(supply_topic, json.dumps(data))
 
+
 def send_kpi_msg(client, kpi_topic, timestamp, plant_id, status, eff, prod, cper, npower, namount, soproduction, failure, ploss, nominalo):
+
     data_KPI = {
         "timestamp": timestamp, 
         "plant_id": plant_id,
@@ -90,10 +94,12 @@ def send_kpi_msg(client, kpi_topic, timestamp, plant_id, status, eff, prod, cper
         "cper": cper,
         "npower": npower,
         "namount": namount,
+
         "soproduction": soproduction,
         "failure": failure,
         "ploss": ploss,
         "nominalo": nominalo
+
         #TODO: ADD NEW KPIs
         }
     client.publish(kpi_topic, json.dumps(data_KPI))
@@ -129,6 +135,7 @@ def produce_on_supplied_water():
     return filtered_water
 
 def calculate_kpis():
+
     global EFFICIENCY, PRODUCTION, CURRENT_PERFORMANCE, STATUS, STREAK_OVERPRODUCTION
     global FILTERED_WATER_PRODUCED, POWER_SUPPLIED, WATER_SUPPLIED, NOMINAL_FILTERED_WATER_SUPPLY
     global STATUS_FAILURE, STATUS_POWER_NOT_RECEIVED, STATUS_WATER_NOT_RECEIVED, OVERPRODUCTION_MODE, COUNTER_FAILURE
@@ -262,6 +269,7 @@ def on_message_water_received(client, userdata, msg):
     """
     global TIMESTAMP, WATER_SUPPLIED, TOPIC_FILTERED_WATER_SUPPLY, TOPIC_KPI, ID, FILTERED_WATER_PRODUCED
     global STATUS, EFFICIENCY, PRODUCTION, CURRENT_PERFORMANCE, NOMINAL_POWER_DEMAND, NOMINAL_FILTERED_WATER_SUPPLY, STREAK_OVERPRODUCTION, COUNTER_FAILURE, COUNTER_ALLTICKS, PRODUCTION_LOSSES, NOMINAL_FILTERED_WATER_SUPPLY
+
 
     payload = json.loads(msg.payload)
     timestamp = payload["timestamp"]
