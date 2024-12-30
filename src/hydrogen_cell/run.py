@@ -21,9 +21,11 @@ ID = getenv_or_exit("ID", "default")
 NOMINAL_FILTERED_WATER_DEMAND = float(getenv_or_exit("HYDROGEN_CELL_" + ID + "_NOMINAL_FILTERED_WATER_DEMAND", 0.0)) # Filtered water demand at 100% Perfomance (in m^3)
 NOMINAL_POWER_DEMAND = float(getenv_or_exit("HYDROGEN_CELL_" + ID + "_NOMINAL_POWER_DEMAND", 0.0)) # Power demand at 100% Perfomance (in kW)
 NOMINAL_HYDROGEN_SUPPLY = float(getenv_or_exit("HYDROGEN_CELL_" + ID + "_NOMINAL_HYDROGEN_SUPPLY", 0.0)) # Hydrogen supply at 100% Perfomance (in m^3)
+MINIMAL_HYDROGEN_SUPPLY = float(getenv_or_exit("HYDROGEN_CELL_" + ID + "_MINIMAL_HYDROGEN_SUPPLY", 0.0)) # Hydrogen supply at minimal Perfomance (in m^3)
 MAXIMAL_HYDROGEN_SUPPLY = float(getenv_or_exit("HYDROGEN_CELL_" + ID + "_MAXIMAL_HYDROGEN_SUPPLY", 0.0)) # Hydrogen supply at maximal Perfomance (in m^3)
 PRODUCTION_LOSSES = float(getenv_or_exit("HYDROGEN_CELL_" + ID + "_PRODUCTION_LOSSES", 0.0)) # Percent of ressources lost during proccesing
 STANDART_FAILURE_POSIBILITY = float(getenv_or_exit("HYDROGEN_CELL_" + ID + "_FAILURE_POSIBILITY", 0.0)) # Posibility of the outage
+MINIMAL_OUTAGE_DURATION = float(getenv_or_exit("HYDROGEN_CELL_" + ID + "_MINIMAL_OUTAGE_DURATION", 0.0)) # Minimal outage duration 
 
 TICK = getenv_or_exit("TOPIC_TICK_GEN_TICK", "default")
 TOPIC_FILTERED_WATER_REQUEST = getenv_or_exit("TOPIC_FILTER_SUM_FILTERED_WATER_REQUEST", "default") # topic to request water
@@ -59,7 +61,7 @@ STATUS_POWER_NOT_RECEIVED = True
 STATUS_FILTERED_WATER_NOT_RECEIVED = True
 STATUS_FAILURE = False
 CURRENT_FAILURE_POSIBILITY = STANDART_FAILURE_POSIBILITY
-MINIMAL_FAILURE_POSIBILITY_CHANGE = 0.005
+MINIMAL_FAILURE_POSIBILITY_CHANGE = 0.0005
 OVERPRODUCTION_MODE = False
 
 COUNTER_ALLTICKS = 0
@@ -164,12 +166,19 @@ def calculate_kpis():
     else:
         STATUS = "online"
 
-def calculate_filtererd_water_demand():
-    global PLANED_HYDROGEN_SUPPLY, PLANED_FILTERED_WATER_DEMAND, PLANED_POWER_DEMAND, PRODUCTION_LOSSES, NOMINAL_PERFORMANCE, NOMINAL_FILTERED_WATER_DEMAND, NOMINAL_HYDROGEN_SUPPLY 
+def calculate_demands():
+    global PLANED_HYDROGEN_SUPPLY, PLANED_FILTERED_WATER_DEMAND, PLANED_POWER_DEMAND, PRODUCTION_LOSSES, NOMINAL_PERFORMANCE, NOMINAL_FILTERED_WATER_DEMAND
+    global NOMINAL_HYDROGEN_SUPPLY, MINIMAL_HYDROGEN_SUPPLY, MAXIMAL_HYDROGEN_SUPPLY
 
-    PLANED_FILTERED_WATER_DEMAND = round((PLANED_HYDROGEN_SUPPLY * (NOMINAL_HYDROGEN_SUPPLY / NOMINAL_FILTERED_WATER_DEMAND) * PRODUCTION_LOSSES),4)
-
-    PLANED_POWER_DEMAND = round((NOMINAL_PERFORMANCE * PLANED_HYDROGEN_SUPPLY),4)
+    if(PLANED_HYDROGEN_SUPPLY < MINIMAL_HYDROGEN_SUPPLY):
+        PLANED_FILTERED_WATER_DEMAND = 0
+        PLANED_POWER_DEMAND = 0
+    elif(PLANED_HYDROGEN_SUPPLY > MAXIMAL_HYDROGEN_SUPPLY):
+        PLANED_FILTERED_WATER_DEMAND = round((MAXIMAL_HYDROGEN_SUPPLY * (NOMINAL_HYDROGEN_SUPPLY / NOMINAL_FILTERED_WATER_DEMAND) * PRODUCTION_LOSSES),4)
+        PLANED_POWER_DEMAND = round((NOMINAL_PERFORMANCE * MAXIMAL_HYDROGEN_SUPPLY),4)
+    else:
+        PLANED_FILTERED_WATER_DEMAND = round((PLANED_HYDROGEN_SUPPLY * (NOMINAL_HYDROGEN_SUPPLY / NOMINAL_FILTERED_WATER_DEMAND) * PRODUCTION_LOSSES),4)
+        PLANED_POWER_DEMAND = round((NOMINAL_PERFORMANCE * PLANED_HYDROGEN_SUPPLY),4)
 
 def calculate_outage_risk():
     global CURRENT_FAILURE_POSIBILITY, STANDART_FAILURE_POSIBILITY, STATUS_FAILURE, MINIMAL_FAILURE_POSIBILITY_CHANGE
@@ -201,7 +210,7 @@ def failure_check():
         if rng_value <= CURRENT_FAILURE_POSIBILITY:
             # calculate the time the plant will be out
             FAILURE_TICK_COUNT = 0
-            FAILURE_TIMEOUT = int(rng_value * 100) 
+            FAILURE_TIMEOUT = MINIMAL_OUTAGE_DURATION + int(rng_value * 1000) 
             STATUS_FAILURE = True
             logging.info(f"{TIMESTAMP} The hydrogen plant experienced Failure and will be out for {FAILURE_TIMEOUT} ticks")
 
@@ -305,7 +314,7 @@ def on_message_hydrogen_request(client, userdata, msg):
     PLANED_HYDROGEN_SUPPLY = payload["amount"]
     logging.debug(f"Received hydrogen request message. timestamp: {timestamp}, msg topic: {msg.topic}, requested amount: {PLANED_HYDROGEN_SUPPLY}")
 
-    calculate_filtererd_water_demand()
+    calculate_demands()
     send_request_msg(client, TOPIC_POWER_REQUEST, TIMESTAMP, ID, TOPIC_POWER_RECEIVE, PLANED_POWER_DEMAND)
     logging.debug(f"Sending power request message to power line. timestamp: {TIMESTAMP}, msg topic: {TOPIC_POWER_REQUEST}, plant id: {ID}, reply topic: {TOPIC_POWER_RECEIVE}, demand: {PLANED_POWER_DEMAND}")
 
