@@ -186,7 +186,10 @@ def calculate_and_publish_hydrogen_requests(client):
                 # Iterations of the MAPE loop
                 request_amount = decision_kpi(corresponding_kpi)
             else:
-                request_amount = round(total_demand/online_count, 4)
+                if(round(total_demand/online_count, 4) > corresponding_kpi.nominalo):
+                    request_amount = corresponding_kpi.nominalo
+                else:
+                    request_amount = round(total_demand/online_count, 4)
             
         # Send the water production request message
         send_msg(
