@@ -8,7 +8,7 @@ from collections import namedtuple
 
 # Configure the logger
 logging.basicConfig(
-    level=logging.INFO,  # Set minimum level to log
+    level=logging.DEBUG,  # Set minimum level to log
     format="%(asctime)s - %(levelname)s - %(message)s",  # Customize the output format
 )
 
@@ -49,7 +49,7 @@ SUPPLY_LIST = [] # A list to hold all supplies
 KPI_LIST = [] # A list to hold all requests
 
 SUPPLY_CLASS = namedtuple("Supply", ["supply"]) # A data structure for supplies
-KPI_CLASS = namedtuple("KPI", ["plant_id", "status", "eff", "prod", "cper"]) # A data structure for requests
+KPI_CLASS = namedtuple("KPI", ["plant_id", "status", "eff", "prod", "cper", "soproduction", "failure", "ploss", "namount"]) # A data structure for requests
 
 TICKS_IN_DAY = 96
 
@@ -78,24 +78,59 @@ def calculate_hydrogen_demand_for_tick():
 
     return demand_for_tick
 
-def weighted_coefficient_function(kpi):
-    """
-    Replaceable function to calculate the coefficient for allocation.
-    Uses `eff`, `prod`, and `cper` as weights.
-    """
-    eff_weight = 0.5
-    prod_weight = 0.3
-    cper_weight = 0.2
+def decision_kpi(corresponding_kpi, plants_left, demand_need):
 
-    coefficient = (
-        1.0 +
-        kpi.eff * eff_weight +
-        kpi.prod * prod_weight +
-        kpi.cper * cper_weight
-    )
-    return max(coefficient, 0.0)  # Avoid negative coefficients
+    if(corresponding_kpi.soproduction > 8 or (corresponding_kpi.failure > 0.05 and corresponding_kpi.prod > 1.0)):
+        if(round(demand_need/plants_left, 4) > (corresponding_kpi.namount * 0.8)):
+            request_amount = corresponding_kpi.namount * 0.8
+            demand_need = demand_need - request_amount
+            plants_left = plants_left - 1
+        else:
+            request_amount = round(demand_need/plants_left, 4)
+            demand_need = demand_need - request_amount
+            plants_left = plants_left - 1
+                
+    elif(corresponding_kpi.soproduction < 2 and corresponding_kpi.ploss < 0.3 and corresponding_kpi.failure < 0.02):         #bei zu hoher production loss lohnt sich keine starke Überlast
+        if(round(demand_need/plants_left, 4) > (corresponding_kpi.namount * 1.5)):
+            request_amount = round(demand_need/plants_left, 4)
+            demand_need = demand_need - request_amount
+            plants_left = plants_left - 1
+        else:
+            request_amount = corresponding_kpi.namount * 1.5
+            demand_need = demand_need - request_amount
+            plants_left = plants_left - 1
 
-def calculate_and_publish_hydrogen_requests(client, coefficient_function=weighted_coefficient_function):
+    elif(corresponding_kpi.soproduction < 4 and corresponding_kpi.ploss < 0.1 and corresponding_kpi.failure < 0.1):
+        if(round(demand_need/plants_left, 4) > (corresponding_kpi.namount * 1.3)):
+            request_amount = round(demand_need/plants_left, 4)
+            demand_need = demand_need - request_amount
+            plants_left = plants_left - 1
+        else:
+            request_amount = corresponding_kpi.namount * 1.3
+            demand_need = demand_need - request_amount
+            plants_left = plants_left - 1
+    elif(corresponding_kpi.soproduction < 6):
+        if(round(demand_need/plants_left, 4) > (corresponding_kpi.namount * 1.1)):
+            request_amount = round(demand_need/plants_left, 4)
+            demand_need = demand_need - request_amount
+            plants_left = plants_left - 1
+        else:
+            request_amount = corresponding_kpi.namount * 1.1
+            demand_need = demand_need - request_amount
+            plants_left = plants_left - 1
+    else:
+        if(round(demand_need/plants_left, 4) > corresponding_kpi.namount):
+            request_amount = round(demand_need/plants_left, 4)
+            demand_need = demand_need - request_amount
+            plants_left = plants_left - 1
+        else:
+            request_amount = corresponding_kpi.namount
+            demand_need = demand_need - request_amount
+            plants_left = plants_left - 1
+    return request_amount, plants_left, demand_need
+
+
+def calculate_and_publish_hydrogen_requests(client):
     global TIMESTAMP, ADAPTABLE, PLANTS_NUMBER, TOPIC_HYDROGEN_REQEUST_LIST, HYDROGEN_DAILY_DEMAND, RECEIVED_KPI
     global KPI_LIST
 
@@ -122,7 +157,9 @@ def calculate_and_publish_hydrogen_requests(client, coefficient_function=weighte
 
     if ADAPTABLE:
         # Place for everything that MAPE loop has to do before the iterating trough and publishing requests to filter plants
-        total_coefficient = sum(coefficient_function(kpi) for kpi in KPI_LIST if kpi.status != "offline")
+        n = 0
+        plants_left = PLANTS_NUMBER
+        demand_need = total_demand
     else:
         online_count = sum(1 for kpi in KPI_LIST if kpi.status != "offline")
 
@@ -144,8 +181,7 @@ def calculate_and_publish_hydrogen_requests(client, coefficient_function=weighte
             # Calculate allocation for active plants
             if ADAPTABLE:
                 # Iterations of the MAPE loop
-                coefficient = coefficient_function(corresponding_kpi)
-                request_amount = round((coefficient/total_coefficient) * total_demand, 4)
+                request_amount, plants_left, demand_need = decision_kpi(corresponding_kpi=corresponding_kpi, plants_left=plants_left, demand_need=demand_need)
             else:
                 request_amount = round(total_demand/online_count, 4)
             
@@ -187,10 +223,10 @@ def add_supply(supply):
     SUPPLY_LIST.append(SUPPLY_CLASS(supply))
     RECEIVED_SUPPLIES += 1
 
-def add_kpi(plant_id, status, eff, prod, cper):
+def add_kpi(plant_id, status, eff, prod, cper, soproduction, failure, ploss, namount):
     global RECEIVED_KPI, KPI_LIST, KPI_CLASS
 
-    KPI_LIST.append(KPI_CLASS(plant_id=plant_id, status=status, eff=eff, prod=prod, cper=cper))
+    KPI_LIST.append(KPI_CLASS(plant_id, status, eff, prod, cper, soproduction, failure, ploss, namount))
     RECEIVED_KPI += 1
 
 def on_message_tick(client, userdata, msg):
@@ -245,9 +281,13 @@ def on_message_kpi(client, userdata, msg):
     eff = payload["eff"]
     prod = payload["prod"]
     cper = payload["cper"]
-    logging.debug(f"Received message with KPI. timestamp: {timestamp}, msg topic: {msg.topic}, plant_id: {plant_id}, status: {status}, eff: {eff}, prod: {prod}, cper: {cper}")
+    soproduction = payload["soproduction"]
+    failure = payload["failure"]
+    ploss = payload["ploss"]
+    namount = payload["namount"] #TODO kann raus
+    logging.debug(f"Received message with KPI: timestamp. {timestamp}, msg topic: {msg.topic}, plant_id: {plant_id}, status: {status}, eff: {eff}, prod: {prod}, cper: {cper}, soproduction: {soproduction}, failure: {failure}, ploss: {ploss}, namount: {namount}")
 
-    add_kpi(plant_id, status, eff, prod, cper)
+    add_kpi(plant_id, status, eff, prod, cper, soproduction, failure, ploss, namount)
 
 def main():
     """

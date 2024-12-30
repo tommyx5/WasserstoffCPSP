@@ -30,9 +30,10 @@ def on_message_tick(client, userdata, msg):
 
     if COUNT == 0:
         hydrogen = randint(int(MAX_OUTPUT/1.25), int(MAX_OUTPUT*1.25))
+        #hydrogen = 5000 # HARDCODE
         # Extract the timestamp from the tick message and decode it from UTF-8
         ts_iso = msg.payload.decode("utf-8")
-        data = {"hydrogen": hydrogen, "timestamp": ts_iso}
+        data = {"hydrogen": hydrogen, "timestamp": ts_iso}  
         # Publish the data to the chaos sensor topic in JSON format
         client.publish(HYDROGEN_REQUEST, json.dumps(data))
     COUNT = (COUNT + 1) % LIMIT
