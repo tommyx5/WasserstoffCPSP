@@ -951,14 +951,14 @@
         "label": "[m³]",
         "format": "{{value}}",
         "min": "0",
-        "max": "10",
+        "max": "500",
         "colors": [
-            "#00b500",
+            "#db0000",
             "#e6e600",
-            "#d13a3c"
+            "#06b71a"
         ],
-        "seg1": "3.33",
-        "seg2": "6.66",
+        "seg1": "200",
+        "seg2": "300",
         "x": 770,
         "y": 2000,
         "wires": []
@@ -980,10 +980,10 @@
         "nodata": "",
         "dot": true,
         "ymin": "0",
-        "ymax": "10",
-        "removeOlder": "24",
-        "removeOlderPoints": "96",
-        "removeOlderUnit": "3600",
+        "ymax": "500",
+        "removeOlder": "1",
+        "removeOlderPoints": "672",
+        "removeOlderUnit": "604800",
         "cutout": 0,
         "useOneColor": false,
         "useUTC": false,
@@ -1089,12 +1089,12 @@
         "min": "0",
         "max": "16500",
         "colors": [
-            "#00b500",
+            "#b30000",
             "#e6e600",
-            "#d13a3c"
+            "#5ad039"
         ],
-        "seg1": "14000",
-        "seg2": "15000",
+        "seg1": "5000",
+        "seg2": "10000",
         "x": 770,
         "y": 1780,
         "wires": []
