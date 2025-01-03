@@ -7,6 +7,416 @@
         "info": ""
     },
     {
+        "id": "3b931ee9.0688c2",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "mqttbroker",
+        "port": "1883",
+        "clientid": "",
+        "usetls": false,
+        "compatmode": false,
+        "keepalive": "60",
+        "cleansession": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthPayload": "",
+        "closeTopic": "",
+        "closeQos": "0",
+        "closePayload": "",
+        "willTopic": "",
+        "willQos": "0",
+        "willPayload": ""
+    },
+    {
+        "id": "675fff50.e5e07",
+        "type": "ui_group",
+        "name": "Configuration",
+        "tab": "8d5b248b.b32978",
+        "order": 1,
+        "disp": true,
+        "width": "24",
+        "collapse": true
+    },
+    {
+        "id": "8ed936e7.6ee748",
+        "type": "ui_group",
+        "name": "Filter Plant Status",
+        "tab": "8d5b248b.b32978",
+        "order": 5,
+        "disp": true,
+        "width": "24",
+        "collapse": false
+    },
+    {
+        "id": "49170427.e9c34c",
+        "type": "ui_group",
+        "name": "Hydrogen cell Status",
+        "tab": "8d5b248b.b32978",
+        "order": 6,
+        "disp": true,
+        "width": "24",
+        "collapse": false
+    },
+    {
+        "id": "82589263.04fb3",
+        "type": "ui_group",
+        "name": "produced hydrogen daily",
+        "tab": "8d5b248b.b32978",
+        "order": 3,
+        "disp": true,
+        "width": "24",
+        "collapse": false
+    },
+    {
+        "id": "a64e0f17.85ccc",
+        "type": "ui_group",
+        "name": "filtered water daily",
+        "tab": "8d5b248b.b32978",
+        "order": 4,
+        "disp": true,
+        "width": "24",
+        "collapse": false
+    },
+    {
+        "id": "a7c03f91.8126",
+        "type": "ui_group",
+        "name": "Input Information",
+        "tab": "8d5b248b.b32978",
+        "order": 2,
+        "disp": true,
+        "width": "24",
+        "collapse": false
+    },
+    {
+        "id": "210d4dd0.319092",
+        "type": "ui_group",
+        "name": "ID: 0",
+        "tab": "e78265c3.aa1d18",
+        "order": 2,
+        "disp": true,
+        "width": "24",
+        "collapse": false
+    },
+    {
+        "id": "4bee3804.109978",
+        "type": "ui_group",
+        "name": "ID: 1",
+        "tab": "e78265c3.aa1d18",
+        "order": 3,
+        "disp": true,
+        "width": "24",
+        "collapse": false
+    },
+    {
+        "id": "47d801f0.676f6",
+        "type": "ui_group",
+        "name": "ID: 2",
+        "tab": "e78265c3.aa1d18",
+        "order": 5,
+        "disp": true,
+        "width": "24",
+        "collapse": false
+    },
+    {
+        "id": "dee44879.9ee3a8",
+        "type": "ui_group",
+        "name": "ID: 0",
+        "tab": "2ad33223.e7f58e",
+        "order": 1,
+        "disp": true,
+        "width": "24",
+        "collapse": false
+    },
+    {
+        "id": "1f5f8839.6b7d28",
+        "type": "ui_group",
+        "name": "ID: 1",
+        "tab": "2ad33223.e7f58e",
+        "order": 2,
+        "disp": true,
+        "width": "24",
+        "collapse": false
+    },
+    {
+        "id": "8080b369.ad59b",
+        "type": "ui_group",
+        "name": "ID: 2",
+        "tab": "2ad33223.e7f58e",
+        "order": 3,
+        "disp": true,
+        "width": "24",
+        "collapse": false
+    },
+    {
+        "id": "52ff491.3eac6b8",
+        "type": "ui_group",
+        "name": "Debug Mode",
+        "tab": "8d5b248b.b32978",
+        "order": 7,
+        "disp": true,
+        "width": "24",
+        "collapse": false
+    },
+    {
+        "id": "8723a343.e6a4",
+        "type": "ui_group",
+        "name": "ID: 3",
+        "tab": "e78265c3.aa1d18",
+        "order": 7,
+        "disp": true,
+        "width": "24",
+        "collapse": false
+    },
+    {
+        "id": "392171dc.19dc3e",
+        "type": "ui_group",
+        "name": "ID: 4",
+        "tab": "e78265c3.aa1d18",
+        "order": 8,
+        "disp": true,
+        "width": "24",
+        "collapse": false
+    },
+    {
+        "id": "c7d5998.8ef8968",
+        "type": "ui_group",
+        "name": "ID: 5",
+        "tab": "e78265c3.aa1d18",
+        "order": 9,
+        "disp": true,
+        "width": "24",
+        "collapse": false
+    },
+    {
+        "id": "3966a43c.8597ec",
+        "type": "ui_group",
+        "name": "ID: 6",
+        "tab": "e78265c3.aa1d18",
+        "order": 10,
+        "disp": true,
+        "width": "24",
+        "collapse": false
+    },
+    {
+        "id": "cdd1ec75.7bade",
+        "type": "ui_group",
+        "name": "ID: 7",
+        "tab": "e78265c3.aa1d18",
+        "order": 11,
+        "disp": true,
+        "width": "24",
+        "collapse": false
+    },
+    {
+        "id": "a892056.740e9f8",
+        "type": "ui_group",
+        "name": "ID: 8",
+        "tab": "e78265c3.aa1d18",
+        "order": 12,
+        "disp": true,
+        "width": "24",
+        "collapse": false
+    },
+    {
+        "id": "c595b151.eb43f",
+        "type": "ui_group",
+        "name": "ID: 9",
+        "tab": "e78265c3.aa1d18",
+        "order": 13,
+        "disp": true,
+        "width": "24",
+        "collapse": false
+    },
+    {
+        "id": "222795e4.bd398a",
+        "type": "ui_group",
+        "name": "ID: 3",
+        "tab": "2ad33223.e7f58e",
+        "order": 4,
+        "disp": true,
+        "width": "24",
+        "collapse": false
+    },
+    {
+        "id": "330f7f03.32263",
+        "type": "ui_group",
+        "name": "ID: 4",
+        "tab": "2ad33223.e7f58e",
+        "order": 5,
+        "disp": true,
+        "width": "24",
+        "collapse": false
+    },
+    {
+        "id": "b7961d08.056db",
+        "type": "ui_group",
+        "name": "ID: 5",
+        "tab": "2ad33223.e7f58e",
+        "order": 6,
+        "disp": true,
+        "width": "24",
+        "collapse": false
+    },
+    {
+        "id": "e9a4cf87.92e51",
+        "type": "ui_group",
+        "name": "ID: 6",
+        "tab": "2ad33223.e7f58e",
+        "order": 7,
+        "disp": true,
+        "width": "24",
+        "collapse": false
+    },
+    {
+        "id": "59ca20a0.bafb4",
+        "type": "ui_group",
+        "name": "ID: 7",
+        "tab": "2ad33223.e7f58e",
+        "order": 8,
+        "disp": true,
+        "width": "24",
+        "collapse": false
+    },
+    {
+        "id": "18e8b246.238aee",
+        "type": "ui_group",
+        "name": "ID: 8",
+        "tab": "2ad33223.e7f58e",
+        "order": 9,
+        "disp": true,
+        "width": "24",
+        "collapse": false
+    },
+    {
+        "id": "2899338.28dd7cc",
+        "type": "ui_group",
+        "name": "ID: 9",
+        "tab": "2ad33223.e7f58e",
+        "order": 10,
+        "disp": true,
+        "width": "24",
+        "collapse": false
+    },
+    {
+        "id": "8d5b248b.b32978",
+        "type": "ui_tab",
+        "name": "Home",
+        "icon": "dashboard",
+        "disabled": false,
+        "hidden": false
+    },
+    {
+        "id": "e78265c3.aa1d18",
+        "type": "ui_tab",
+        "name": "Hydrogen Cells",
+        "icon": "dashboard",
+        "disabled": false,
+        "hidden": false
+    },
+    {
+        "id": "2ad33223.e7f58e",
+        "type": "ui_tab",
+        "name": "Filter Water Plants",
+        "icon": "dashboard",
+        "disabled": false,
+        "hidden": false
+    },
+    {
+        "id": "ac27ef73.1fa39",
+        "type": "ui_base",
+        "theme": {
+            "name": "theme-light",
+            "lightTheme": {
+                "default": "#0094CE",
+                "baseColor": "#0094CE",
+                "baseFont": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif",
+                "edited": false
+            },
+            "darkTheme": {
+                "default": "#097479",
+                "baseColor": "#097479",
+                "baseFont": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif",
+                "edited": false
+            },
+            "customTheme": {
+                "name": "Untitled Theme 1",
+                "default": "#4B7930",
+                "baseColor": "#4B7930",
+                "baseFont": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif"
+            },
+            "themeState": {
+                "base-color": {
+                    "default": "#0094CE",
+                    "value": "#0094CE",
+                    "edited": false
+                },
+                "page-titlebar-backgroundColor": {
+                    "value": "#0094CE",
+                    "edited": false
+                },
+                "page-backgroundColor": {
+                    "value": "#fafafa",
+                    "edited": false
+                },
+                "page-sidebar-backgroundColor": {
+                    "value": "#ffffff",
+                    "edited": false
+                },
+                "group-textColor": {
+                    "value": "#1bbfff",
+                    "edited": false
+                },
+                "group-borderColor": {
+                    "value": "#ffffff",
+                    "edited": false
+                },
+                "group-backgroundColor": {
+                    "value": "#ffffff",
+                    "edited": false
+                },
+                "widget-textColor": {
+                    "value": "#111111",
+                    "edited": false
+                },
+                "widget-backgroundColor": {
+                    "value": "#0094ce",
+                    "edited": false
+                },
+                "widget-borderColor": {
+                    "value": "#ffffff",
+                    "edited": false
+                },
+                "base-font": {
+                    "value": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif"
+                }
+            },
+            "angularTheme": {
+                "primary": "indigo",
+                "accents": "blue",
+                "warn": "red",
+                "background": "grey"
+            }
+        },
+        "site": {
+            "name": "Node-RED Dashboard",
+            "hideToolbar": "false",
+            "allowSwipe": "false",
+            "lockMenu": "false",
+            "allowTempTheme": "true",
+            "dateFormat": "DD/MM/YYYY",
+            "sizes": {
+                "sx": 48,
+                "sy": 48,
+                "gx": 6,
+                "gy": 6,
+                "cx": 6,
+                "cy": 6,
+                "px": 0,
+                "py": 0
+            }
+        }
+    },
+    {
         "id": "3686d445.ae6fac",
         "type": "mqtt in",
         "z": "5992b366.f9457c",
@@ -816,16 +1226,16 @@
         "rules": [
             {
                 "t": "set",
-                "p": "payload",
+                "p": "timestamp",
                 "pt": "msg",
-                "to": "payload.hydrogen",
+                "to": "payload.timestamp",
                 "tot": "msg"
             },
             {
                 "t": "set",
-                "p": "timestamp",
+                "p": "payload",
                 "pt": "msg",
-                "to": "payload.timestamp",
+                "to": "payload.hydrogen",
                 "tot": "msg"
             }
         ],
@@ -910,16 +1320,16 @@
         "rules": [
             {
                 "t": "set",
-                "p": "payload",
+                "p": "timestamp",
                 "pt": "msg",
-                "to": "payload.fwater",
+                "to": "payload.timestamp",
                 "tot": "msg"
             },
             {
                 "t": "set",
-                "p": "timestamp",
+                "p": "payload",
                 "pt": "msg",
-                "to": "payload.timestamp",
+                "to": "payload.fwater",
                 "tot": "msg"
             }
         ],
@@ -975,7 +1385,7 @@
         "label": "filtered water [m³]",
         "chartType": "line",
         "legend": "false",
-        "xformat": "HH:mm",
+        "xformat": "dd HH:mm",
         "interpolate": "cubic",
         "nodata": "",
         "dot": true,
@@ -1204,7 +1614,7 @@
         "label": "produced hydrogen [kg]",
         "chartType": "line",
         "legend": "false",
-        "xformat": "HH:mm",
+        "xformat": "dd HH:mm",
         "interpolate": "cubic",
         "nodata": "",
         "dot": true,
@@ -1276,16 +1686,16 @@
         "rules": [
             {
                 "t": "set",
-                "p": "payload",
+                "p": "timestamp",
                 "pt": "msg",
-                "to": "payload.amount",
+                "to": "payload.timestamp",
                 "tot": "msg"
             },
             {
                 "t": "set",
-                "p": "timestamp",
+                "p": "payload",
                 "pt": "msg",
-                "to": "payload.timestamp",
+                "to": "payload.amount",
                 "tot": "msg"
             }
         ],
@@ -1341,7 +1751,7 @@
         "label": "produced hydrogen [kg]",
         "chartType": "line",
         "legend": "false",
-        "xformat": "HH:mm",
+        "xformat": "dd HH:mm",
         "interpolate": "linear",
         "nodata": "",
         "dot": false,
@@ -1413,16 +1823,16 @@
         "rules": [
             {
                 "t": "set",
-                "p": "payload",
+                "p": "timestamp",
                 "pt": "msg",
-                "to": "payload.amount",
+                "to": "payload.timestamp",
                 "tot": "msg"
             },
             {
                 "t": "set",
-                "p": "timestamp",
+                "p": "payload",
                 "pt": "msg",
-                "to": "payload.timestamp",
+                "to": "payload.amount",
                 "tot": "msg"
             }
         ],
@@ -1478,7 +1888,7 @@
         "label": "produced hydrogen [kg]",
         "chartType": "line",
         "legend": "false",
-        "xformat": "HH:mm",
+        "xformat": "dd HH:mm",
         "interpolate": "linear",
         "nodata": "",
         "dot": false,
@@ -1550,16 +1960,16 @@
         "rules": [
             {
                 "t": "set",
-                "p": "payload",
+                "p": "timestamp",
                 "pt": "msg",
-                "to": "payload.amount",
+                "to": "payload.timestamp",
                 "tot": "msg"
             },
             {
                 "t": "set",
-                "p": "timestamp",
+                "p": "payload",
                 "pt": "msg",
-                "to": "payload.timestamp",
+                "to": "payload.amount",
                 "tot": "msg"
             }
         ],
@@ -1615,7 +2025,7 @@
         "label": "produced hydrogen [kg]",
         "chartType": "line",
         "legend": "false",
-        "xformat": "HH:mm",
+        "xformat": "dd HH:mm",
         "interpolate": "linear",
         "nodata": "",
         "dot": false,
@@ -3401,16 +3811,16 @@
         "rules": [
             {
                 "t": "set",
-                "p": "payload",
+                "p": "timestamp",
                 "pt": "msg",
-                "to": "payload.amount",
+                "to": "payload.timestamp",
                 "tot": "msg"
             },
             {
                 "t": "set",
-                "p": "timestamp",
+                "p": "payload",
                 "pt": "msg",
-                "to": "payload.timestamp",
+                "to": "payload.amount",
                 "tot": "msg"
             }
         ],
@@ -3466,7 +3876,7 @@
         "label": "produced hydrogen [kg]",
         "chartType": "line",
         "legend": "false",
-        "xformat": "HH:mm",
+        "xformat": "dd HH:mm",
         "interpolate": "linear",
         "nodata": "",
         "dot": false,
@@ -5277,320 +5687,5 @@
         "wires": [
             []
         ]
-    },
-    {
-        "id": "3b931ee9.0688c2",
-        "type": "mqtt-broker",
-        "name": "",
-        "broker": "mqttbroker",
-        "port": "1883",
-        "clientid": "",
-        "usetls": false,
-        "compatmode": false,
-        "keepalive": "60",
-        "cleansession": true,
-        "birthTopic": "",
-        "birthQos": "0",
-        "birthPayload": "",
-        "closeTopic": "",
-        "closeQos": "0",
-        "closePayload": "",
-        "willTopic": "",
-        "willQos": "0",
-        "willPayload": ""
-    },
-    {
-        "id": "675fff50.e5e07",
-        "type": "ui_group",
-        "name": "Configuration",
-        "tab": "8d5b248b.b32978",
-        "order": 1,
-        "disp": true,
-        "width": "24",
-        "collapse": true
-    },
-    {
-        "id": "8ed936e7.6ee748",
-        "type": "ui_group",
-        "name": "Filter Plant Status",
-        "tab": "8d5b248b.b32978",
-        "order": 5,
-        "disp": true,
-        "width": "24",
-        "collapse": false
-    },
-    {
-        "id": "49170427.e9c34c",
-        "type": "ui_group",
-        "name": "Hydrogen cell Status",
-        "tab": "8d5b248b.b32978",
-        "order": 6,
-        "disp": true,
-        "width": "24",
-        "collapse": false
-    },
-    {
-        "id": "82589263.04fb3",
-        "type": "ui_group",
-        "name": "produced hydrogen daily",
-        "tab": "8d5b248b.b32978",
-        "order": 3,
-        "disp": true,
-        "width": "24",
-        "collapse": false
-    },
-    {
-        "id": "a64e0f17.85ccc",
-        "type": "ui_group",
-        "name": "filtered water daily",
-        "tab": "8d5b248b.b32978",
-        "order": 4,
-        "disp": true,
-        "width": "24",
-        "collapse": false
-    },
-    {
-        "id": "a7c03f91.8126",
-        "type": "ui_group",
-        "name": "Input Information",
-        "tab": "8d5b248b.b32978",
-        "order": 2,
-        "disp": true,
-        "width": "24",
-        "collapse": false
-    },
-    {
-        "id": "210d4dd0.319092",
-        "type": "ui_group",
-        "name": "ID: 0",
-        "tab": "e78265c3.aa1d18",
-        "order": 2,
-        "disp": true,
-        "width": "24",
-        "collapse": false
-    },
-    {
-        "id": "4bee3804.109978",
-        "type": "ui_group",
-        "name": "ID: 1",
-        "tab": "e78265c3.aa1d18",
-        "order": 3,
-        "disp": true,
-        "width": "24",
-        "collapse": false
-    },
-    {
-        "id": "47d801f0.676f6",
-        "type": "ui_group",
-        "name": "ID: 2",
-        "tab": "e78265c3.aa1d18",
-        "order": 5,
-        "disp": true,
-        "width": "24",
-        "collapse": false
-    },
-    {
-        "id": "dee44879.9ee3a8",
-        "type": "ui_group",
-        "name": "ID: 0",
-        "tab": "2ad33223.e7f58e",
-        "order": 1,
-        "disp": true,
-        "width": "24",
-        "collapse": false
-    },
-    {
-        "id": "1f5f8839.6b7d28",
-        "type": "ui_group",
-        "name": "ID: 1",
-        "tab": "2ad33223.e7f58e",
-        "order": 2,
-        "disp": true,
-        "width": "24",
-        "collapse": false
-    },
-    {
-        "id": "8080b369.ad59b",
-        "type": "ui_group",
-        "name": "ID: 2",
-        "tab": "2ad33223.e7f58e",
-        "order": 3,
-        "disp": true,
-        "width": "24",
-        "collapse": false
-    },
-    {
-        "id": "52ff491.3eac6b8",
-        "type": "ui_group",
-        "name": "Debug Mode",
-        "tab": "8d5b248b.b32978",
-        "order": 7,
-        "disp": true,
-        "width": "24",
-        "collapse": false
-    },
-    {
-        "id": "8723a343.e6a4",
-        "type": "ui_group",
-        "name": "ID: 3",
-        "tab": "e78265c3.aa1d18",
-        "order": 7,
-        "disp": true,
-        "width": "24",
-        "collapse": false
-    },
-    {
-        "id": "392171dc.19dc3e",
-        "type": "ui_group",
-        "name": "ID: 4",
-        "tab": "e78265c3.aa1d18",
-        "order": 8,
-        "disp": true,
-        "width": "24",
-        "collapse": false
-    },
-    {
-        "id": "c7d5998.8ef8968",
-        "type": "ui_group",
-        "name": "ID: 5",
-        "tab": "e78265c3.aa1d18",
-        "order": 9,
-        "disp": true,
-        "width": "24",
-        "collapse": false
-    },
-    {
-        "id": "3966a43c.8597ec",
-        "type": "ui_group",
-        "name": "ID: 6",
-        "tab": "e78265c3.aa1d18",
-        "order": 10,
-        "disp": true,
-        "width": "24",
-        "collapse": false
-    },
-    {
-        "id": "cdd1ec75.7bade",
-        "type": "ui_group",
-        "name": "ID: 7",
-        "tab": "e78265c3.aa1d18",
-        "order": 11,
-        "disp": true,
-        "width": "24",
-        "collapse": false
-    },
-    {
-        "id": "a892056.740e9f8",
-        "type": "ui_group",
-        "name": "ID: 8",
-        "tab": "e78265c3.aa1d18",
-        "order": 12,
-        "disp": true,
-        "width": "24",
-        "collapse": false
-    },
-    {
-        "id": "c595b151.eb43f",
-        "type": "ui_group",
-        "name": "ID: 9",
-        "tab": "e78265c3.aa1d18",
-        "order": 13,
-        "disp": true,
-        "width": "24",
-        "collapse": false
-    },
-    {
-        "id": "222795e4.bd398a",
-        "type": "ui_group",
-        "name": "ID: 3",
-        "tab": "2ad33223.e7f58e",
-        "order": 4,
-        "disp": true,
-        "width": "24",
-        "collapse": false
-    },
-    {
-        "id": "330f7f03.32263",
-        "type": "ui_group",
-        "name": "ID: 4",
-        "tab": "2ad33223.e7f58e",
-        "order": 5,
-        "disp": true,
-        "width": "24",
-        "collapse": false
-    },
-    {
-        "id": "b7961d08.056db",
-        "type": "ui_group",
-        "name": "ID: 5",
-        "tab": "2ad33223.e7f58e",
-        "order": 6,
-        "disp": true,
-        "width": "24",
-        "collapse": false
-    },
-    {
-        "id": "e9a4cf87.92e51",
-        "type": "ui_group",
-        "name": "ID: 6",
-        "tab": "2ad33223.e7f58e",
-        "order": 7,
-        "disp": true,
-        "width": "24",
-        "collapse": false
-    },
-    {
-        "id": "59ca20a0.bafb4",
-        "type": "ui_group",
-        "name": "ID: 7",
-        "tab": "2ad33223.e7f58e",
-        "order": 8,
-        "disp": true,
-        "width": "24",
-        "collapse": false
-    },
-    {
-        "id": "18e8b246.238aee",
-        "type": "ui_group",
-        "name": "ID: 8",
-        "tab": "2ad33223.e7f58e",
-        "order": 9,
-        "disp": true,
-        "width": "24",
-        "collapse": false
-    },
-    {
-        "id": "2899338.28dd7cc",
-        "type": "ui_group",
-        "name": "ID: 9",
-        "tab": "2ad33223.e7f58e",
-        "order": 10,
-        "disp": true,
-        "width": "24",
-        "collapse": false
-    },
-    {
-        "id": "8d5b248b.b32978",
-        "type": "ui_tab",
-        "name": "Home",
-        "icon": "dashboard",
-        "disabled": false,
-        "hidden": false
-    },
-    {
-        "id": "e78265c3.aa1d18",
-        "type": "ui_tab",
-        "name": "Hydrogen Cells",
-        "icon": "dashboard",
-        "disabled": false,
-        "hidden": false
-    },
-    {
-        "id": "2ad33223.e7f58e",
-        "type": "ui_tab",
-        "name": "Filter Water Plants",
-        "icon": "dashboard",
-        "disabled": false,
-        "hidden": false
     }
 ]
