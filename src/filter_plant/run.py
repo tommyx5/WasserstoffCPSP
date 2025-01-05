@@ -79,25 +79,34 @@ def send_supply_msg(client, supply_topic, timestamp, amount):
     client.publish(supply_topic, json.dumps(data))
 
 
-def send_kpi_msg(client, kpi_topic, timestamp, plant_id, status, eff, prod, cper, npower, namount, soproduction, failure, ploss):
-
-    data_KPI = {
+def send_kpi_msg(client, kpi_topic, timestamp, plant_id, status, cper, npower, namount, min_output, max_output, pfailure, ratio, eff, prod):
+    """
+    plantid: ID of the plant.
+    namount: Filtered water output at 100% capacity.
+    npower: Power demand at 100% capacity.
+    ratio: Efficiency of resource processing.
+    pfailure: Possibility of failure.
+    status: Current status of the plant.
+    cper: Current performance (current_output / namount).
+    min_output: Filtered water output at minimal performance.
+    max_output: Filtered water output at maximal performance (including overproduction).
+    """
+    data = {
         "timestamp": timestamp, 
         "plant_id": plant_id,
-        "status": status,
-        "eff": eff, 
-        "prod": prod, 
+        "status": status, 
         "cper": cper,
         "npower": npower,
         "namount": namount,
+        "min_output": min_output,
+        "max_output": max_output,
+        "pfailure": pfailure,
+        "ratio": ratio,
 
-        "soproduction": soproduction,
-        "failure": failure,
-        "ploss": ploss
-
-        #TODO: ADD NEW KPIs
-        }
-    client.publish(kpi_topic, json.dumps(data_KPI))
+        "eff": eff, # for power line
+        "prod": prod
+    }
+    client.publish(kpi_topic, json.dumps(data))
 
 def water_demand_on_supplied_power():
     global POWER_SUPPLIED, PLANED_POWER_DEMAND, PLANED_WATER_DEMAND
@@ -273,8 +282,8 @@ def on_message_water_received(client, userdata, msg):
     After that publishes it along with the KPIs.
     """
     global TIMESTAMP, WATER_SUPPLIED, TOPIC_FILTERED_WATER_SUPPLY, TOPIC_KPI, ID, FILTERED_WATER_PRODUCED
-    global STATUS, EFFICIENCY, PRODUCTION, CURRENT_PERFORMANCE, NOMINAL_POWER_DEMAND, NOMINAL_FILTERED_WATER_SUPPLY, NOMINAL_FILTERED_WATER_SUPPLY, NOMINAL_PRODUCTION_RATIO
-    global CURRENT_FAILURE_POSIBILITY, FAILURE_TICK_COUNT
+    global STATUS, CURRENT_PERFORMANCE, NOMINAL_POWER_DEMAND, NOMINAL_FILTERED_WATER_SUPPLY, NOMINAL_FILTERED_WATER_SUPPLY, NOMINAL_PRODUCTION_RATIO
+    global CURRENT_FAILURE_POSIBILITY, FAILURE_TICK_COUNT, MINIMAL_FILTERED_WATER_SUPPLY, MAXIMAL_FILTERED_WATER_SUPPLY
 
 
     payload = json.loads(msg.payload)
@@ -294,17 +303,21 @@ def on_message_water_received(client, userdata, msg):
         kpi_topic=TOPIC_KPI, 
         timestamp=TIMESTAMP, 
         plant_id=ID,
-        status=STATUS, 
-        eff=EFFICIENCY, 
-        prod=PRODUCTION, 
+        status=STATUS,  
         cper=CURRENT_PERFORMANCE,
         npower=NOMINAL_POWER_DEMAND,
         namount=NOMINAL_FILTERED_WATER_SUPPLY,
-        soproduction=FAILURE_TICK_COUNT,
-        failure=CURRENT_FAILURE_POSIBILITY,
-        ploss=NOMINAL_PRODUCTION_RATIO
+        min_output=MINIMAL_FILTERED_WATER_SUPPLY,
+        max_output=MAXIMAL_FILTERED_WATER_SUPPLY, 
+        pfailure=CURRENT_FAILURE_POSIBILITY,
+        ratio=NOMINAL_PRODUCTION_RATIO,
+
+        eff=round(NOMINAL_FILTERED_WATER_SUPPLY / NOMINAL_POWER_DEMAND, 4),
+        prod=NOMINAL_FILTERED_WATER_SUPPLY
     )
-    logging.debug(f"Sending kpi message. timestamp: {TIMESTAMP}, msg topic: {TOPIC_KPI}, plant_id: {ID}, status: {STATUS}, eff: {EFFICIENCY}, prod: {PRODUCTION}, cper: {CURRENT_PERFORMANCE}, npower: {NOMINAL_POWER_DEMAND}, namount: {NOMINAL_FILTERED_WATER_SUPPLY}, soproduction: {FAILURE_TICK_COUNT}, failure: {CURRENT_FAILURE_POSIBILITY}, ploss: {NOMINAL_PRODUCTION_RATIO}")
+    logging.debug(f"Sending kpi message. Timestamp: {TIMESTAMP}, msg topic: {TOPIC_KPI}, plant id: {ID}, status: {STATUS}, cper: {CURRENT_PERFORMANCE}, npower: {NOMINAL_POWER_DEMAND}, namount: {NOMINAL_FILTERED_WATER_SUPPLY}, min_output: {MINIMAL_FILTERED_WATER_SUPPLY}, max_output: {MAXIMAL_FILTERED_WATER_SUPPLY}, failure: {CURRENT_FAILURE_POSIBILITY}, ratio: {NOMINAL_PRODUCTION_RATIO}, eff: {round(NOMINAL_FILTERED_WATER_SUPPLY / NOMINAL_POWER_DEMAND, 4)}, prod: {NOMINAL_FILTERED_WATER_SUPPLY}")
+    
+    #logging.debug(f"Sending kpi message. timestamp: {TIMESTAMP}, msg topic: {TOPIC_KPI}, plant_id: {ID}, status: {STATUS}, eff: {EFFICIENCY}, prod: {PRODUCTION}, cper: {CURRENT_PERFORMANCE}, npower: {NOMINAL_POWER_DEMAND}, namount: {NOMINAL_FILTERED_WATER_SUPPLY}, soproduction: {FAILURE_TICK_COUNT}, failure: {CURRENT_FAILURE_POSIBILITY}, ploss: {NOMINAL_PRODUCTION_RATIO}")
 
     # Calculate outage risk for the next tick
     calculate_outage_risk()

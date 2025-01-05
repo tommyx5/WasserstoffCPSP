@@ -62,8 +62,6 @@ CURRENT_FAILURE_POSIBILITY = STANDART_FAILURE_POSIBILITY
 MINIMAL_FAILURE_POSIBILITY_CHANGE = 0.00005
 OVERPRODUCTION_MODE = False
 
-COUNTER_ALLTICKS = 0
-
 def send_request_msg(client, request_topic, timestamp, plant_id, reply_topic, amount):
     data = {
         "timestamp": timestamp, 
@@ -80,19 +78,32 @@ def send_supply_msg(client, supply_topic, timestamp, amount):
     }
     client.publish(supply_topic, json.dumps(data))
 
-def send_kpi_msg(client, kpi_topic, timestamp, plant_id, status, eff, prod, cper, npower, namount, soproduction, failure, ploss):
+def send_kpi_msg(client, kpi_topic, timestamp, plant_id, status, cper, npower, namount, min_output, max_output, pfailure, ratio, eff, prod):
+    """
+    plantid: ID of the plant.
+    namount: Hydrogen output at 100% capacity.
+    npower: Power demand at 100% capacity.
+    ratio: Efficiency of resource processing.
+    pfailure: Possibility of failure.
+    status: Current status of the plant.
+    cper: Current performance (current_output / namount).
+    min_output: Hydrogen output at minimal performance.
+    max_output: Hydrogen output at maximal performance (including overproduction).
+    """
     data = {
         "timestamp": timestamp, 
         "plant_id": plant_id,
-        "status": status,
-        "eff": eff, 
-        "prod": prod, 
+        "status": status, 
         "cper": cper,
         "npower": npower,
         "namount": namount,
-        "soproduction": soproduction,
-        "failure": failure,
-        "ploss": ploss
+        "min_output": min_output,
+        "max_output": max_output,
+        "pfailure": pfailure,
+        "ratio": ratio,
+        
+        "eff": eff, # for power line
+        "prod": prod
     }
     client.publish(kpi_topic, json.dumps(data))
 
@@ -224,10 +235,7 @@ def on_message_tick(client, userdata, msg):
     """
     global TIMESTAMP, TOPIC_POWER_REQUEST, ID, TOPIC_POWER_RECEIVE, PLANED_POWER_DEMAND
     global STATUS_POWER_NOT_RECEIVED, STATUS_FILTERED_WATER_NOT_RECEIVED
-    global COUNTER_ALLTICKS
 
-
-    COUNTER_ALLTICKS += 1
     # get timestamp from tick msg and request power
     TIMESTAMP = msg.payload.decode("utf-8")
 
@@ -273,17 +281,17 @@ def on_message_water_received(client, userdata, msg):
     After that publishes it along with the timestamp.
     """
     global TIMESTAMP, FILTERED_WATER_SUPPLIED, TOPIC_HYDROGEN_SUPPLY, TOPIC_KPI, ID, HYDROGEN_PRODUCED
-    global STATUS, EFFICIENCY, PRODUCTION, CURRENT_PERFORMANCE, NOMINAL_POWER_DEMAND, NOMINAL_HYDROGEN_SUPPLY, COUNTER_ALLTICKS, NOMINAL_PRODUCTION_RATIO
-    global FAILURE_TICK_COUNT, CURRENT_FAILURE_POSIBILITY
+    global STATUS, EFFICIENCY, PRODUCTION, CURRENT_PERFORMANCE, NOMINAL_POWER_DEMAND, NOMINAL_HYDROGEN_SUPPLY
+    global FAILURE_TICK_COUNT, CURRENT_FAILURE_POSIBILITY, MINIMAL_HYDROGEN_SUPPLY, MAXIMAL_HYDROGEN_SUPPLY, NOMINAL_PRODUCTION_RATIO
     payload = json.loads(msg.payload)
     timestamp = payload["timestamp"]
     FILTERED_WATER_SUPPLIED = payload["amount"]
-    logging.debug(f"Received filtered water message. timestamp: {timestamp}, msg topic: {msg.topic}, supplied filtered water: {FILTERED_WATER_SUPPLIED}")
+    logging.debug(f"Received filtered water message. Timestamp: {timestamp}, msg topic: {msg.topic}, supplied filtered water: {FILTERED_WATER_SUPPLIED}")
 
     # Calculate the amount of filtered water based on supplied water and publish supply msg 
     HYDROGEN_PRODUCED = produce_on_supplied_filtered_water()
     send_supply_msg(client, TOPIC_HYDROGEN_SUPPLY, TIMESTAMP, HYDROGEN_PRODUCED)
-    logging.debug(f"Sending filtered water supply message. timestamp: {TIMESTAMP}, msg topic: {TOPIC_HYDROGEN_SUPPLY}, supply: {HYDROGEN_PRODUCED}")
+    logging.debug(f"Sending filtered water supply message. Timestamp: {TIMESTAMP}, msg topic: {TOPIC_HYDROGEN_SUPPLY}, supply: {HYDROGEN_PRODUCED}")
 
     # Calculate the current KPIs and publish them
     calculate_kpis()
@@ -292,17 +300,20 @@ def on_message_water_received(client, userdata, msg):
         kpi_topic=TOPIC_KPI, 
         timestamp=TIMESTAMP, 
         plant_id=ID,
-        status=STATUS, 
-        eff=EFFICIENCY, 
-        prod=PRODUCTION, 
+        status=STATUS,  
         cper=CURRENT_PERFORMANCE,
         npower=NOMINAL_POWER_DEMAND,
         namount=NOMINAL_HYDROGEN_SUPPLY,
-        soproduction=FAILURE_TICK_COUNT,
-        failure=CURRENT_FAILURE_POSIBILITY,
-        ploss=NOMINAL_PRODUCTION_RATIO
+        min_output=MINIMAL_HYDROGEN_SUPPLY,
+        max_output=MAXIMAL_HYDROGEN_SUPPLY, 
+        pfailure=CURRENT_FAILURE_POSIBILITY,
+        ratio=NOMINAL_PRODUCTION_RATIO,
+
+        eff=round(NOMINAL_HYDROGEN_SUPPLY / NOMINAL_POWER_DEMAND, 4),
+        prod=NOMINAL_HYDROGEN_SUPPLY
     )
-    logging.debug(f"Sending kpi message. timestamp: {TIMESTAMP}, msg topic: {TOPIC_KPI}, plant id: {ID}, status: {STATUS}, eff: {EFFICIENCY}, prod: {PRODUCTION}, cper: {CURRENT_PERFORMANCE}, npower: {NOMINAL_POWER_DEMAND}, namount: {NOMINAL_HYDROGEN_SUPPLY}, poproduction: {FAILURE_TICK_COUNT}, failure: {CURRENT_FAILURE_POSIBILITY}, ploss: {NOMINAL_PRODUCTION_RATIO}")
+    logging.debug(f"Sending kpi message. Timestamp: {TIMESTAMP}, msg topic: {TOPIC_KPI}, plant id: {ID}, status: {STATUS}, cper: {CURRENT_PERFORMANCE}, npower: {NOMINAL_POWER_DEMAND}, namount: {NOMINAL_HYDROGEN_SUPPLY}, min_output: {MINIMAL_HYDROGEN_SUPPLY}, max_output: {MAXIMAL_HYDROGEN_SUPPLY}, pfailure: {CURRENT_FAILURE_POSIBILITY}, ratio: {NOMINAL_PRODUCTION_RATIO}, eff: {round(NOMINAL_HYDROGEN_SUPPLY / NOMINAL_POWER_DEMAND, 4)}, prod: {NOMINAL_HYDROGEN_SUPPLY}")
+    #logging.debug(f"Sending kpi message. timestamp: {TIMESTAMP}, msg topic: {TOPIC_KPI}, plant id: {ID}, status: {STATUS}, eff: {EFFICIENCY}, prod: {PRODUCTION}, cper: {CURRENT_PERFORMANCE}, npower: {NOMINAL_POWER_DEMAND}, namount: {NOMINAL_HYDROGEN_SUPPLY}, poproduction: {FAILURE_TICK_COUNT}, failure: {CURRENT_FAILURE_POSIBILITY}, ploss: {NOMINAL_PRODUCTION_RATIO}")
 
     # Calculate outage risk for the next tick
     calculate_outage_risk()

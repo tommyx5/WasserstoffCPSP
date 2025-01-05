@@ -49,7 +49,7 @@ SUPPLY_LIST = [] # A list to hold all supplies
 KPI_LIST = [] # A list to hold all requests
 
 SUPPLY_CLASS = namedtuple("Supply", ["supply"]) # A data structure for supplies
-KPI_CLASS = namedtuple("KPI", ["plant_id", "status", "eff", "prod", "cper", "soproduction", "failure", "ploss", "namount"]) # A data structure for requests
+KPI_CLASS = namedtuple("KPI", ["plant_id", "status", "cper", "npower", "namount","min_output", "max_output", "pfailure", "ratio", "eff", "prod"]) # A data structure for kpis
 
 TICKS_IN_DAY = 96
 
@@ -75,64 +75,96 @@ def calculate_hydrogen_demand_for_tick():
         demand_for_tick = plan
     else:
         demand_for_tick = 0
+    logging.debug(f"Total tick count: {TICK_COUNT}, current tick in day: {mod}, tick demand: {plan}")
 
     return demand_for_tick
 
-def decision_kpi(corresponding_kpi, plants_left, demand_need):
+def allocate_adaptive_production(total_demand):
+    """
+    Distributes hydrogen production demand among plants considering their KPIs,
+    dynamically accounting for individual failure probabilities.
+    """
+    global KPI_LIST
+    # Step 1: Initialize allocations
+    allocations = {plant.plant_id: 0 for plant in KPI_LIST}  # Default to 0 for all plants
 
-    if(corresponding_kpi.soproduction > 8 or (corresponding_kpi.failure > 0.05 and corresponding_kpi.prod > 1.0)):
-        if(round(demand_need/plants_left, 4) > (corresponding_kpi.namount * 0.8)):
-            request_amount = corresponding_kpi.namount * 0.8
-            demand_need = demand_need - request_amount
-            plants_left = plants_left - 1
-        else:
-            request_amount = round(demand_need/plants_left, 4)
-            demand_need = demand_need - request_amount
-            plants_left = plants_left - 1
-                
-    elif(corresponding_kpi.soproduction < 2 and corresponding_kpi.ploss < 0.3 and corresponding_kpi.failure < 0.02):         #bei zu hoher production loss lohnt sich keine starke Überlast
-        if(round(demand_need/plants_left, 4) > (corresponding_kpi.namount * 1.5)):
-            request_amount = round(demand_need/plants_left, 4)
-            demand_need = demand_need - request_amount
-            plants_left = plants_left - 1
-        else:
-            request_amount = corresponding_kpi.namount * 1.5
-            demand_need = demand_need - request_amount
-            plants_left = plants_left - 1
+    # Step 2: Filter usable plants (exclude offline plants)
+    usable_plants = [plant for plant in KPI_LIST if plant.status != "offline"]
 
-    elif(corresponding_kpi.soproduction < 4 and corresponding_kpi.ploss < 0.1 and corresponding_kpi.failure < 0.1):
-        if(round(demand_need/plants_left, 4) > (corresponding_kpi.namount * 1.3)):
-            request_amount = round(demand_need/plants_left, 4)
-            demand_need = demand_need - request_amount
-            plants_left = plants_left - 1
-        else:
-            request_amount = corresponding_kpi.namount * 1.3
-            demand_need = demand_need - request_amount
-            plants_left = plants_left - 1
-    elif(corresponding_kpi.soproduction < 6):
-        if(round(demand_need/plants_left, 4) > (corresponding_kpi.namount * 1.1)):
-            request_amount = round(demand_need/plants_left, 4)
-            demand_need = demand_need - request_amount
-            plants_left = plants_left - 1
-        else:
-            request_amount = corresponding_kpi.namount * 1.1
-            demand_need = demand_need - request_amount
-            plants_left = plants_left - 1
-    else:
-        if(round(demand_need/plants_left, 4) > corresponding_kpi.namount):
-            request_amount = round(demand_need/plants_left, 4)
-            demand_need = demand_need - request_amount
-            plants_left = plants_left - 1
-        else:
-            request_amount = corresponding_kpi.namount
-            demand_need = demand_need - request_amount
-            plants_left = plants_left - 1
-    return request_amount, plants_left, demand_need
+    # Step 3: Prioritize plants (adjust for failure probability inversely)
+    prioritized_plants = sorted(
+        usable_plants,
+        key=lambda p: (p.ratio, -p.cper, -1 / (p.pfailure + 1))  # Adding 1 to avoid division by zero
+    )
 
+    # Step 4: Allocate baseline workloads
+    remaining_demand = total_demand
+
+    for plant in prioritized_plants:
+        # Start with the plant's minimum output allocation
+        allocations[plant.plant_id] = plant.min_output
+        remaining_demand = round(remaining_demand - plant.min_output, 4)
+
+    # Step 5: Distribute remaining demand
+    for plant in prioritized_plants:
+        if remaining_demand <= 0:
+            break
+
+        # Calculate plant's potential contribution
+        available_capacity = round(plant.namount - allocations[plant.plant_id], 4)
+
+        # Scale contribution based on failure probability
+        failure_penalty = 1 / (plant.pfailure + 1)  # Higher `pfailure` reduces capacity proportionally
+        scaled_capacity = available_capacity * failure_penalty
+
+        # Allocate capacity adjusted for failure risk
+        contribution = min(remaining_demand, scaled_capacity)
+
+        # Check if the plant can enter overproduction
+        max_overproduction = plant.max_output - plant.namount
+        if contribution > available_capacity:
+            additional_contribution = min(remaining_demand - contribution, max_overproduction)
+            contribution = round(contribution + additional_contribution, 4)
+
+        # Update allocations and remaining resources
+        allocations[plant.plant_id] += contribution
+        remaining_demand -= contribution
+
+    # Rescale if total exceeds demand (to balance errors due to floating-point arithmetic)
+    total_allocated = sum(allocations.values())
+    if total_allocated > total_demand:
+        scaling_factor = total_demand / total_allocated
+        for plant_id in allocations:
+            allocations[plant_id] *= scaling_factor
+
+    return allocations
+
+def allocate_not_adaptive_production(total_demand):
+    """
+    Allocate hydrogen production based solely on the status of the plants.
+    """
+    # Step 1: Filter plants that are not offline
+    active_plants = [kpi for kpi in KPI_LIST if kpi.status != "offline"]
+    
+    if not active_plants:
+        # If no plants are available, return zero allocation for all
+        return {kpi.plant_id: 0 for kpi in KPI_LIST}
+
+    # Step 2: Distribute demand equally among active plants
+    equal_allocation = round(total_demand / len(active_plants), 4)
+    allocations = {}
+
+    for kpi in KPI_LIST:
+        if kpi.status != "offline":
+            allocations[kpi.plant_id] = equal_allocation
+        else:
+            allocations[kpi.plant_id] = 0  # Offline plants get 0 allocation
+
+    return allocations
 
 def calculate_and_publish_hydrogen_requests(client):
-    global TIMESTAMP, ADAPTABLE, PLANTS_NUMBER, TOPIC_HYDROGEN_REQEUST_LIST, HYDROGEN_DAILY_DEMAND, RECEIVED_KPI
-    global KPI_LIST
+    global TIMESTAMP, ADAPTABLE, PLANTS_NUMBER, TOPIC_HYDROGEN_REQEUST_LIST, HYDROGEN_DAILY_DEMAND
+    global KPI_LIST, RECEIVED_KPI
 
     # Calculate the total demand for this tick
     total_demand = calculate_hydrogen_demand_for_tick()
@@ -141,58 +173,45 @@ def calculate_and_publish_hydrogen_requests(client):
     if not KPI_LIST:
         logging.debug("Warning. No kpi list. Using default mean allocation")
         for request_topic in TOPIC_HYDROGEN_REQEUST_LIST:
-            request_amount = round(total_demand/PLANTS_NUMBER, 4)
+            allocation_for_plant = round(total_demand/PLANTS_NUMBER, 4)
                 
             # Send the water production request message
             send_msg(
                 client=client,
                 topic=request_topic,
                 timestamp=TIMESTAMP,
-                amount=request_amount
+                amount=allocation_for_plant
             )
-            logging.debug(f"Sending  hydrogen request message to hydrogen plant. Timestamp: {TIMESTAMP}, msg topic: {request_topic}, requested amount: {request_amount}")
+            logging.debug(f"Sending  hydrogen request message to hydrogen plant. Timestamp: {TIMESTAMP}, msg topic: {request_topic}, requested amount: {allocation_for_plant}")
 
         RECEIVED_KPI = 0
         return
 
     if ADAPTABLE:
-        # Place for everything that MAPE loop has to do before the iterating trough and publishing requests to filter plants
-        n = 0
-        plants_left = PLANTS_NUMBER
-        demand_need = total_demand
+        allocation = allocate_adaptive_production(total_demand)
     else:
-        online_count = sum(1 for kpi in KPI_LIST if kpi.status != "offline")
+        allocation = allocate_not_adaptive_production(total_demand)
 
     for request_topic in TOPIC_HYDROGEN_REQEUST_LIST:
         # extract corresponding kpi
         request_plant_id = request_topic.split('/')[-1]
         corresponding_kpi = next((kpi for kpi in KPI_LIST if kpi.plant_id == request_plant_id), None)
-        logging.debug(f"Plant id: {request_plant_id}")
+        #logging.debug(f"Plant id: {request_plant_id}")
+
+        allocation_for_plant = allocation.get(request_plant_id, 0)
 
         if not corresponding_kpi:
             # No kpi corresponding for plant id in the request 
             logging.debug(f"Hydrogen plant with id {request_plant_id} and request topic: {request_topic} has no corresponding KPI.")
-            request_amount = 0
-        elif corresponding_kpi.status == "offline" :
-            # Offline plants receive 0 allocation
-            logging.debug(f"Hydrogen plant with id {corresponding_kpi.plant_id} is offline.")
-            request_amount = 0
-        else:
-            # Calculate allocation for active plants
-            if ADAPTABLE:
-                # Iterations of the MAPE loop
-                request_amount, plants_left, demand_need = decision_kpi(corresponding_kpi=corresponding_kpi, plants_left=plants_left, demand_need=demand_need)
-            else:
-                request_amount = round(total_demand/online_count, 4)
             
-        # Send the water production request message
+        # Send the hydrogen production request message
         send_msg(
             client=client,
             topic=request_topic,
             timestamp=TIMESTAMP,
-            amount=request_amount
+            amount=allocation_for_plant
         )
-        logging.debug(f"Sending hydrogen request message to hydrogen plant with id {request_plant_id}. timestamp: {TIMESTAMP}, msg topic: {request_topic}, requested amount: {request_amount}")
+        logging.debug(f"Sending hydrogen request message to hydrogen plant with id {request_plant_id}. timestamp: {TIMESTAMP}, msg topic: {request_topic}, requested amount: {allocation_for_plant}")
 
     RECEIVED_KPI = 0
     KPI_LIST.clear()
@@ -223,10 +242,20 @@ def add_supply(supply):
     SUPPLY_LIST.append(SUPPLY_CLASS(supply))
     RECEIVED_SUPPLIES += 1
 
-def add_kpi(plant_id, status, eff, prod, cper, soproduction, failure, ploss, namount):
+def add_kpi(plant_id, status, cper, npower, namount, min_output, max_output, pfailure, ratio, eff, prod):
     global RECEIVED_KPI, KPI_LIST, KPI_CLASS
 
-    KPI_LIST.append(KPI_CLASS(plant_id, status, eff, prod, cper, soproduction, failure, ploss, namount))
+    KPI_LIST.append(KPI_CLASS(plant_id=plant_id, 
+                              status=status, 
+                              cper=cper, 
+                              npower=npower, 
+                              namount=namount, 
+                              min_output=min_output, 
+                              max_output=max_output,
+                              pfailure=pfailure,
+                              ratio=ratio,
+                              eff=eff,
+                              prod=prod))
     RECEIVED_KPI += 1
 
 def on_message_tick(client, userdata, msg):
@@ -278,17 +307,19 @@ def on_message_kpi(client, userdata, msg):
     timestamp = payload["timestamp"]
     plant_id = payload["plant_id"]
     status = payload["status"]
+    cper = payload["cper"]
+    npower = payload["npower"]
+    namount = payload["namount"]
+    min_output = payload["min_output"]
+    max_output = payload["max_output"]
+    pfailure = payload["pfailure"]
+    ratio = payload["ratio"]
     eff = payload["eff"]
     prod = payload["prod"]
-    cper = payload["cper"]
-    soproduction = payload["soproduction"]
-    failure = payload["failure"]
-    ploss = payload["ploss"]
-    namount = payload["namount"] #TODO kann raus
-    logging.debug(f"Received message with KPI: timestamp. {timestamp}, msg topic: {msg.topic}, plant_id: {plant_id}, status: {status}, eff: {eff}, prod: {prod}, cper: {cper}, soproduction: {soproduction}, failure: {failure}, ploss: {ploss}, namount: {namount}")
-
-    add_kpi(plant_id, status, eff, prod, cper, soproduction, failure, ploss, namount)
-
+    logging.debug(f"Received message with KPI: timestamp. {timestamp}, msg topic: {msg.topic}, plant_id: {plant_id}, status: {status}, cper: {cper}, npower: {npower}, namount: {namount}, min_output: {min_output}, max_output: {max_output}, pfailure: {pfailure}, ratio: {ratio}, eff: {eff}, prod: {prod}")
+    
+    add_kpi(plant_id=plant_id, status=status, cper=cper, npower=npower, namount=namount, min_output=min_output, max_output=max_output, pfailure=pfailure, ratio=ratio, eff=eff, prod=prod)
+    
 def main():
     """
     Main function to initialize the MQTT client, set up subscriptions, 
