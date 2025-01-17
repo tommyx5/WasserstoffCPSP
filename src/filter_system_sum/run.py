@@ -8,7 +8,7 @@ from collections import namedtuple
 
 # Configure the logger
 logging.basicConfig(
-    level=logging.DEBUG,  # Set minimum level to log
+    level=logging.INFO,  # Set minimum level to log
     format="%(asctime)s - %(levelname)s - %(message)s",  # Customize the output format
 )
 
@@ -214,24 +214,37 @@ def allocate_adaptive_production(total_demand):
 
 def allocate_not_adaptive_production(total_demand):
     """
-    Allocate hydrogen production based solely on the status of the plants.
+    Smarter and optimized allocation of hydrogen production based on plant characteristics.
     """
-    # Step 1: Filter plants that are not offline
-    active_plants = [kpi for kpi in KPI_LIST if kpi.status != "offline"]
+    global KPI_LIST, TOPIC_FILTERED_WATER_REQEUST_LIST
     
-    if not active_plants:
-        # If no plants are available, return zero allocation for all
-        return {kpi.plant_id: 0 for kpi in KPI_LIST}
-
-    # Step 2: Distribute demand equally among active plants
-    equal_allocation = round(total_demand / len(active_plants), 4)
+    precomputed_allocations = {}
     allocations = {}
 
-    for kpi in KPI_LIST:
-        if kpi.status != "offline":
-            allocations[kpi.plant_id] = equal_allocation
+    # Step 1: Filter active plants and calculate total weight
+    active_plants = [kpi for kpi in KPI_LIST if kpi.status != "offline"]
+    if not active_plants:
+        precomputed_allocations = {kpi.plant_id: 0 for kpi in KPI_LIST}  # All offline, zero allocation
+
+    total_weight = sum(plant.ratio * plant.namount for plant in active_plants)
+    default_allocation = round(total_demand / len(active_plants), 4) if total_weight == 0 else None
+
+    # Step 2: Precompute allocations based on weights or equal distribution
+    precomputed_allocations = {
+        plant.plant_id: round((plant.ratio * plant.namount / total_weight) * total_demand, 4)
+        if total_weight > 0 else default_allocation
+        for plant in active_plants
+    }
+
+    # Step 3: Assign allocations based on request topics
+    for request_topic in TOPIC_FILTERED_WATER_REQEUST_LIST:
+        plant_id = request_topic.split('/')[-1]
+        corresponding_kpi = next((kpi for kpi in KPI_LIST if kpi.plant_id == plant_id), None)
+
+        if corresponding_kpi and corresponding_kpi.status != "offline":
+            allocations[plant_id] = precomputed_allocations.get(corresponding_kpi.plant_id, 0)
         else:
-            allocations[kpi.plant_id] = 0  # Offline plants get 0 allocation
+            allocations[plant_id] = 0  # Offline or missing KPI gets zero allocation
 
     return allocations
 
@@ -275,14 +288,7 @@ def calculate_and_publish_filtered_water_requests(client):
     for request_topic in TOPIC_FILTERED_WATER_REQEUST_LIST:
         # extract corresponding kpi
         request_plant_id = request_topic.split('/')[-1]
-        corresponding_kpi = next((kpi for kpi in KPI_LIST if kpi.plant_id == request_plant_id), None)
-        #logging.debug(f"Plant id: {request_plant_id}")
-
         allocation_for_plant = allocation.get(request_plant_id, 0)
-
-        if not corresponding_kpi:
-            # No kpi corresponding for plant id in the request 
-            logging.debug(f"Filter plant with id {request_plant_id} and request topic: {request_topic} has no corresponding KPI.")
             
         # Send the hydrogen production request message
         send_msg(
