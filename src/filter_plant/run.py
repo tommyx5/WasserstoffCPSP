@@ -285,7 +285,6 @@ def on_message_water_received(client, userdata, msg):
     global STATUS, CURRENT_PERFORMANCE, NOMINAL_POWER_DEMAND, NOMINAL_FILTERED_WATER_SUPPLY, NOMINAL_FILTERED_WATER_SUPPLY, NOMINAL_PRODUCTION_RATIO
     global CURRENT_FAILURE_POSIBILITY, FAILURE_TICK_COUNT, MINIMAL_FILTERED_WATER_SUPPLY, MAXIMAL_FILTERED_WATER_SUPPLY
 
-
     payload = json.loads(msg.payload)
     timestamp = payload["timestamp"]
     WATER_SUPPLIED = payload["amount"]
