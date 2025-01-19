@@ -1,6 +1,7 @@
 import sys
 import json
 import logging
+import math
 from random import seed, randint
 from mqtt.mqtt_wrapper import MQTTWrapper
 import os
@@ -61,23 +62,47 @@ def send_msg(client, topic, timestamp, amount):
     client.publish(topic, json.dumps(data))
 
 def calculate_hydrogen_demand_for_tick():
-    global HYDROGEN_DAILY_DEMAND, TOTAL_HYDROGEN_PRODUCED, TICK_COUNT
+    """
+    Calculate hydrogen demand for the current tick, prioritizing early production 
+    using a smooth exponential distribution, while considering plant nominal output from KPI_LIST.
+    """
+    global HYDROGEN_DAILY_DEMAND, TOTAL_HYDROGEN_PRODUCED, TICK_COUNT, KPI_LIST
 
-    # avoid division by 0
-    mod = TICK_COUNT % 96 
-    if  mod > 0:
-        plan = round((HYDROGEN_DAILY_DEMAND - TOTAL_HYDROGEN_PRODUCED) / (TICKS_IN_DAY-mod), 2)
+    TICKS_IN_DAY = 96
+    current_tick = TICK_COUNT % TICKS_IN_DAY
+
+    # Step 1: Get remaining ticks and avoid division by zero
+    remaining_ticks = TICKS_IN_DAY - current_tick
+    if remaining_ticks <= 0:
+        return 0
+
+    # Step 2: Calculate total nominal output from active plants
+    if not KPI_LIST:
+        total_nominal_output = 34
     else:
-        plan = HYDROGEN_DAILY_DEMAND - TOTAL_HYDROGEN_PRODUCED
+        total_nominal_output = sum(kpi.namount for kpi in KPI_LIST)
 
-    # avoid planing negative numbers
-    if(plan >= 0):
-        demand_for_tick = plan
-    else:
-        demand_for_tick = 0
-    logging.debug(f"Total tick count: {TICK_COUNT}, current tick in day: {mod}, tick demand: {plan}")
+    # Step 3: Compute remaining demand
+    remaining_demand = HYDROGEN_DAILY_DEMAND - TOTAL_HYDROGEN_PRODUCED
 
-    return demand_for_tick
+    # Step 4: Apply smooth exponential front-loading
+    # Use a scaling factor to control the shape of the exponential curve
+    scale_factor = 5  # Controls how steeply the demand tapers off
+    exp_weight = math.exp(-scale_factor * current_tick / TICKS_IN_DAY)
+    normalized_weight = exp_weight / math.exp(-scale_factor)  # Normalize to avoid demand overestimation
+
+    # Calculate base demand per tick and apply weighting
+    base_demand_per_tick = remaining_demand / remaining_ticks if remaining_ticks > 0 else 0
+    demand_for_tick = base_demand_per_tick * normalized_weight
+
+    # Step 5: Avoid exceeding total demand or nominal capacity
+    demand_for_tick = min(demand_for_tick, remaining_demand)
+
+    # Step 6: Log and return
+    logging.debug(f"Tick: {TICK_COUNT}, Current Tick: {current_tick}, "
+                  f"Demand: {demand_for_tick}, Remaining Demand: {remaining_demand}, "
+                  f"Total Nominal Output: {total_nominal_output}, Normalized Weight: {normalized_weight}")
+    return round(demand_for_tick, 4)
 
 def allocate_adaptive_production(total_demand):
     """
