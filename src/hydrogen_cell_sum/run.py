@@ -81,61 +81,137 @@ def calculate_hydrogen_demand_for_tick():
 
 def allocate_adaptive_production(total_demand):
     """
-    Distributes hydrogen production demand among plants considering their KPIs,
-    dynamically accounting for individual failure probabilities.
+    Allocate hydrogen production adaptively, ensuring safety limits and efficiency.
     """
-    global KPI_LIST
-    # Step 1: Initialize allocations
-    allocations = {plant.plant_id: 0 for plant in KPI_LIST}  # Default to 0 for all plants
+    global KPI_LIST, TOPIC_HYDROGEN_REQEUST_LIST
 
-    # Step 2: Filter usable plants (exclude offline plants)
-    usable_plants = [plant for plant in KPI_LIST if plant.status != "offline"]
+    # Step 1: Get active plants
+    active_plants = get_active_plants(KPI_LIST)
+    if not active_plants:
+        return initialize_zero_allocations(KPI_LIST)
 
-    # Step 3: Prioritize plants (adjust for failure probability inversely)
-    prioritized_plants = sorted(
-        usable_plants,
-        key=lambda p: (p.ratio, -p.cper, -1 / (p.pfailure + 1))  # Adding 1 to avoid division by zero
+    # Step 2: Calculate weights and precompute allocations
+    precomputed_allocations = precompute_allocations(active_plants, total_demand)
+
+    # Step 3: Adjust allocations based on failure possibility
+    precomputed_allocations = adjust_allocations_for_safety(active_plants, precomputed_allocations)
+
+    # Step 4: Redistribute remaining demand if needed
+    precomputed_allocations = redistribute_remaining_demand(active_plants, precomputed_allocations, total_demand)
+
+    # Step 5: Map allocations to request topics
+    allocations = map_allocations_to_topics(precomputed_allocations, TOPIC_HYDROGEN_REQEUST_LIST)
+
+    return allocations
+
+def get_active_plants(kpi_list):
+    """Filter out offline plants from the KPI list."""
+    return [kpi for kpi in kpi_list if kpi.status != "offline"]
+
+def initialize_zero_allocations(kpi_list):
+    """Return zero allocations for all plants."""
+    return {kpi.plant_id: 0 for kpi in kpi_list}
+
+def calculate_total_weight(plants):
+    """Calculate the total weight based on `cper` and `pfailure`."""
+    return sum(
+        (plant.ratio * plant.namount * plant.npower)
+        #(plant.ratio * plant.namount) * plant.cper / (1 + (plant.pfailure / 100))
+        for plant in plants
     )
 
-    # Step 4: Allocate baseline workloads
-    remaining_demand = total_demand
+def precompute_allocations(plants, total_demand):
+    """
+    Precompute allocations based on plant weights.
+    Distribute equally if total weight is zero.
+    """
+    total_weight = calculate_total_weight(plants)
 
-    for plant in prioritized_plants:
-        # Start with the plant's minimum output allocation
-        allocations[plant.plant_id] = plant.min_output
-        remaining_demand = round(remaining_demand - plant.min_output, 4)
+    if total_weight == 0:
+        equal_allocation = round(total_demand / len(plants), 4)
+        return {plant.plant_id: equal_allocation for plant in plants}
 
-    # Step 5: Distribute remaining demand
-    for plant in prioritized_plants:
-        if remaining_demand <= 0:
-            break
+    return {
+        plant.plant_id: round(
+            (plant.ratio * plant.namount * plant.npower) / total_weight * total_demand, 4
+            #((plant.ratio * plant.namount) * plant.cper / (1 + (plant.pfailure / 100))) / total_weight * total_demand, 4
+        )
+        for plant in plants
+    }
 
-        # Calculate plant's potential contribution
-        available_capacity = round(plant.namount - allocations[plant.plant_id], 4)
+def adjust_allocations_for_safety(plants, allocations):
+    """
+    Adjust allocations to ensure no plant exceeds the `pfailure` threshold (0.003).
+    Scale down production if necessary.
+    """
 
-        # Scale contribution based on failure probability
-        failure_penalty = 1 / (plant.pfailure + 1)  # Higher `pfailure` reduces capacity proportionally
-        scaled_capacity = available_capacity * failure_penalty
+    for plant in plants:
+        plant_id = plant.plant_id
+        allocation = allocations[plant_id]
 
-        # Allocate capacity adjusted for failure risk
-        contribution = min(remaining_demand, scaled_capacity)
+        # Determine the maximum allowable allocation to keep `pfailure` ≤ 0.003
+        max_safe_allocation = calculate_safe_allocation(plant)
+        max_safe_allocation = min(max_safe_allocation, plant.max_output)
 
-        # Check if the plant can enter overproduction
-        max_overproduction = plant.max_output - plant.namount
-        if contribution > available_capacity:
-            additional_contribution = min(remaining_demand - contribution, max_overproduction)
-            contribution = round(contribution + additional_contribution, 4)
+        # Adjust allocation if it exceeds safety limits
+        if allocation > max_safe_allocation:
+            allocation = max_safe_allocation
 
-        # Update allocations and remaining resources
-        allocations[plant.plant_id] += contribution
-        remaining_demand -= contribution
+        # Ensure allocation does not drop below the minimum output
+        allocation = max(allocation, plant.min_output)
 
-    # Rescale if total exceeds demand (to balance errors due to floating-point arithmetic)
-    total_allocated = sum(allocations.values())
-    if total_allocated > total_demand:
-        scaling_factor = total_demand / total_allocated
-        for plant_id in allocations:
-            allocations[plant_id] *= scaling_factor
+        # Update allocations and remaining demand
+        allocations[plant_id] = allocation
+
+    return allocations
+
+def calculate_safe_allocation(plant):
+    """Calculate the maximum safe allocation for a plant based on `pfailure`."""
+    if plant.pfailure >= 0.002:
+        return round(plant.namount * 0.99, 4) 
+    else:
+        return plant.max_output
+    #return plant.namount * (1 - (0.003 - plant.pfailure) / 0.003)
+
+def redistribute_remaining_demand(plants, allocations, total_demand):
+    """
+    Redistribute any remaining demand among plants with spare capacity.
+    Only allocate to plants performing under 100% and ensure the total additional load does not exceed 100% of the remaining demand.
+    """
+    remaining_demand = total_demand - sum(allocations.values())
+    if remaining_demand > 0:
+
+        for plant in plants:
+            plant_id = plant.plant_id
+            current_load = allocations[plant_id]
+            max_load = round(plant.namount * 0.99, 4)
+            if current_load < max_load:  # Only redistribute to plants under 100% load
+                
+                additional_allocation = min(max_load-current_load, remaining_demand)
+
+                allocations[plant_id] += additional_allocation
+                remaining_demand -= additional_allocation
+
+                # Stop redistribution if no remaining demand
+                if remaining_demand <= 0:
+                    break
+
+    return allocations
+
+def map_allocations_to_topics(precomputed_allocations, request_topics):
+    """
+    Map precomputed allocations to the corresponding request topics.
+    """
+    global KPI_LIST
+    allocations = {}
+    for request_topic in request_topics:
+        plant_id = request_topic.split('/')[-1]
+        corresponding_kpi = next((kpi for kpi in KPI_LIST if kpi.plant_id == plant_id), None)
+
+        if corresponding_kpi and corresponding_kpi.status != "offline":
+            allocations[plant_id] = precomputed_allocations.get(plant_id, 0)
+        else:
+            allocations[plant_id] = 0  # Offline or missing KPI gets zero allocation
 
     return allocations
 
@@ -293,7 +369,7 @@ def on_message_adaptive_mode(client, userdata, msg):
         ADAPTABLE = True
     else:
         ADAPTABLE = False
-    logging.info(f"Received message with to change mode, adaptable mode is {ADAPTABLE}")
+    logging.info(f"Received message to change mode, adaptable mode is now {ADAPTABLE}")
 
 def on_message_supply(client, userdata, msg):
     """

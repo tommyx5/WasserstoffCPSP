@@ -59,7 +59,7 @@ STATUS_POWER_NOT_RECEIVED = True
 STATUS_FILTERED_WATER_NOT_RECEIVED = True
 STATUS_FAILURE = False
 CURRENT_FAILURE_POSIBILITY = STANDART_FAILURE_POSIBILITY
-MINIMAL_FAILURE_POSIBILITY_CHANGE = 0.00005
+MINIMAL_FAILURE_POSIBILITY_CHANGE = 0.0001
 OVERPRODUCTION_MODE = False
 
 def send_request_msg(client, request_topic, timestamp, plant_id, reply_topic, amount):
@@ -221,10 +221,10 @@ def failure_check():
     else:
         # decide if the plant is experiencing outage
         rng_value = random.random()
-        if rng_value <= CURRENT_FAILURE_POSIBILITY:
+        if rng_value <= CURRENT_FAILURE_POSIBILITY and CURRENT_FAILURE_POSIBILITY > 0.002:
             # calculate the time the plant will be out
             FAILURE_TICK_COUNT = 0
-            FAILURE_TIMEOUT = MINIMAL_OUTAGE_DURATION + int(rng_value * 1000) 
+            FAILURE_TIMEOUT = MINIMAL_OUTAGE_DURATION + int(rng_value * 15000) 
             STATUS_FAILURE = True
             logging.info(f"{TIMESTAMP} The hydrogen plant experienced Failure and will be out for {FAILURE_TIMEOUT} ticks")
 
