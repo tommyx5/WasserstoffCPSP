@@ -30,7 +30,7 @@ def on_message_tick(client, userdata, msg):
 
     if COUNT == 0:
         #hydrogen = randint(int(MAX_OUTPUT/1.25), int(MAX_OUTPUT*1.25))
-        hydrogen = 2000 # HARDCODE
+        hydrogen = 5000 # HARDCODE
         # Extract the timestamp from the tick message and decode it from UTF-8
         ts_iso = msg.payload.decode("utf-8")
         data = {"hydrogen": hydrogen, "timestamp": ts_iso}  

@@ -89,19 +89,25 @@ def calculate_hydrogen_demand_for_tick():
     # Use a scaling factor to control the shape of the exponential curve
     scale_factor = 5  # Controls how steeply the demand tapers off
     exp_weight = math.exp(-scale_factor * current_tick / TICKS_IN_DAY)
-    normalized_weight = exp_weight / math.exp(-scale_factor)  # Normalize to avoid demand overestimation
 
-    # Calculate base demand per tick and apply weighting
+    # Calculate base demand per tick
     base_demand_per_tick = remaining_demand / remaining_ticks if remaining_ticks > 0 else 0
-    demand_for_tick = base_demand_per_tick * normalized_weight
 
-    # Step 5: Avoid exceeding total demand or nominal capacity
+    # Adjust demand for the start of the day
+    if base_demand_per_tick < total_nominal_output:
+        # Apply normalized exponential weighting only if base demand is smaller than total nominal output
+        demand_for_tick = total_nominal_output * exp_weight
+    else:
+        # Use base demand directly if it is greater than nominal capacity
+        demand_for_tick = base_demand_per_tick
+
+    # Step 5: Avoid exceeding total demand
     demand_for_tick = min(demand_for_tick, remaining_demand)
 
     # Step 6: Log and return
     logging.debug(f"Tick: {TICK_COUNT}, Current Tick: {current_tick}, "
                   f"Demand: {demand_for_tick}, Remaining Demand: {remaining_demand}, "
-                  f"Total Nominal Output: {total_nominal_output}, Normalized Weight: {normalized_weight}")
+                  f"Exponential Weight: {exp_weight}")
     return round(demand_for_tick, 4)
 
 def allocate_adaptive_production(total_demand):
